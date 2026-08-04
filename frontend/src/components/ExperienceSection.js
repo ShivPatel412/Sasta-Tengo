@@ -4,7 +4,7 @@ import '../styles/ExperienceSection.css';
 const experiences = [
   {
     company: 'Bugle Technologies', role: 'Web Developer', start: 'Jan 2023', end: 'Present', current: true,
-    logo: 'https://placehold.co/120x120/1d496f/ffffff?text=BT',
+    logo: '/experience/bugle-technologies.png',
     summary: 'Built 10+ business websites, custom WordPress plugins, ACF solutions, and React frontends.',
     description: 'Developed and maintained high-performance business websites, custom WordPress solutions, and React-based frontend applications while focusing on performance, scalability, and SEO.',
     highlights: ['Built and launched 10+ business websites across multiple industries.', 'Developed custom WordPress plugins to automate business workflows.', 'Created dynamic websites using Advanced Custom Fields (ACF).', 'Built responsive frontend interfaces using React.', 'Integrated REST APIs and third-party services.', 'Optimized website speed, SEO, and Core Web Vitals.', 'Customized Elementor themes and reusable components.', 'Maintained and improved existing client websites.'],
@@ -12,7 +12,7 @@ const experiences = [
   },
   {
     company: 'Genz Miner', role: 'Web Developer', start: 'May 2022', end: 'Dec 2022',
-    logo: 'https://placehold.co/120x120/193b5a/ffffff?text=GM',
+    logo: '/experience/genz-miner.jpg',
     summary: 'Developed eCommerce websites, inventory management systems, and client-focused business solutions.',
     description: 'Developed eCommerce platforms and internal business management systems while working closely with clients to deliver customized web solutions.',
     highlights: ['Developed responsive eCommerce websites.', 'Built stock and inventory management modules.', 'Worked directly with clients to gather requirements and implement features.', 'Customized dashboards and business workflows.', 'Improved website usability and frontend performance.', 'Integrated Firebase authentication and backend services.', 'Created reusable React components.'],
@@ -20,7 +20,7 @@ const experiences = [
   },
   {
     company: 'Kalpataru Innovation', role: 'Junior Web Developer', start: 'Jan 2022', end: 'Apr 2022',
-    logo: 'https://placehold.co/120x120/345e4f/ffffff?text=KI',
+    logo: '/experience/kalpataru-innovation.webp',
     summary: 'Created responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms.',
     description: 'Worked on responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms while gaining experience in full website development.',
     highlights: ['Developed responsive WordPress business websites.', 'Built WooCommerce eCommerce stores.', 'Created multi-vendor marketplace websites.', 'Customized WordPress themes and plugins.', 'Implemented responsive layouts for desktop and mobile devices.', 'Improved website performance and user experience.', 'Assisted in deployment and website maintenance.'],
