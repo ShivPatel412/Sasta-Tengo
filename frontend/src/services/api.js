@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { isJsonContentType } from './apiResponse';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -26,7 +27,12 @@ api.interceptors.request.use(
 
 // Response interceptor for handling errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (!isJsonContentType(response.headers['content-type'])) {
+      return Promise.reject(new Error('API returned a non-JSON response'));
+    }
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       // Handle unauthorized access
