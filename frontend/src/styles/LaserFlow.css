@@ -1,0 +1,102 @@
+.laser-flow {
+  position: relative;
+  --mouse-x: 0px;
+  --mouse-y: 0px;
+  overflow: hidden;
+}
+
+.laser-flow::before {
+  content: '';
+  position: absolute;
+  top: var(--mouse-y);
+  left: var(--mouse-x);
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(
+    circle,
+    rgba(14, 18, 241, 0.3) 0%,
+    rgba(73, 7, 226, 0.2) 25%,
+    transparent 70%
+  );
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  opacity: 0;
+  z-index: 1;
+}
+
+.laser-flow:hover::before {
+  opacity: 1;
+}
+
+.laser-flow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y),
+    rgba(99, 102, 241, 0.1),
+    transparent 40%
+  );
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.laser-flow:hover::after {
+  opacity: 1;
+}
+
+.laser-flow-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* Laser border effect */
+.laser-flow-border {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+}
+
+.laser-flow-border::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(99, 102, 241, 0.8) 50%,
+    transparent 70%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.laser-flow-border:hover::before {
+  opacity: 1;
+  animation: laser-rotate 3s linear infinite;
+}
+
+@keyframes laser-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}

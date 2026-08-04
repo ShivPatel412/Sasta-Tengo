@@ -1,0 +1,13 @@
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "dependencies": {
+    "react-scripts": "^5.0.1"
+  },
+  "scripts": {
+    "start": "npm --prefix frontend start",
+    "build": "npm --prefix frontend build",
+    "test": "npm --prefix frontend test",
+    "eject": "npm --prefix frontend eject"
+  }
+}

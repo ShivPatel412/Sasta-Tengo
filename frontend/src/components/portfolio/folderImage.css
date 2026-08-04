@@ -1,0 +1,102 @@
+.pf-folder {
+  display: block;
+  width: 112px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 8px;
+  color: initial;
+}
+
+.project-browser.list .pf-folder {
+  width: 46px;
+  height: auto;
+  margin: 0;
+}
+
+.project-browser.list .portfolio-project {
+  grid-template-columns: 50px minmax(0, 1fr);
+}
+
+.preview-actions button {
+  padding: 11px 14px;
+  border: 1px solid #2563eb;
+  border-radius: 9px;
+  background: #fff;
+  color: #2563eb;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.gallery-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, .72);
+}
+
+.project-gallery {
+  width: min(1100px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  padding: 24px;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.project-gallery header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.project-gallery h3 { margin: 0; color: #0f172a; }
+.project-gallery header button { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid #e2e8f0; border-radius: 50%; background: #fff; cursor: pointer; }
+.project-gallery > div { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.project-gallery > div > button { padding: 0; overflow: hidden; border: 0; border-radius: 12px; background: none; cursor: zoom-in; }
+.project-gallery img { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover; }
+
+.gallery-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 2300;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 64px;
+  grid-template-rows: minmax(0, 1fr) 96px;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  background: #050914;
+}
+
+.lightbox-main { grid-column: 2; width: 100%; height: 100%; min-height: 0; object-fit: contain; }
+.lightbox-close,.lightbox-arrow { display: grid; place-items: center; border: 1px solid #334155; border-radius: 50%; background: rgba(15,23,42,.85); color: #fff; cursor: pointer; }
+.lightbox-close { position: absolute; top: 20px; right: 20px; width: 48px; height: 48px; z-index: 2; }
+.lightbox-arrow { width: 52px; height: 52px; }.lightbox-arrow.previous { grid-column: 1; grid-row: 1; }.lightbox-arrow.next { grid-column: 3; grid-row: 1; }
+.lightbox-thumbnails { grid-column: 1 / -1; grid-row: 2; display: flex; gap: 10px; justify-content: center; overflow-x: auto; padding: 6px; }
+.lightbox-thumbnails button { flex: 0 0 110px; padding: 3px; border: 2px solid transparent; border-radius: 9px; background: transparent; cursor: pointer; opacity: .55; }
+.lightbox-thumbnails button.active { border-color: #60a5fa; opacity: 1; }
+.lightbox-thumbnails img { display: block; width: 100%; height: 68px; object-fit: cover; border-radius: 5px; }
+
+@media (max-width: 760px) {
+  .project-gallery > div { grid-template-columns: 1fr; }
+  .gallery-lightbox { grid-template-columns: 44px minmax(0,1fr) 44px; grid-template-rows: minmax(0,1fr) 78px; gap: 6px; padding: 12px; }
+  .lightbox-arrow { width: 40px; height: 40px; }
+  .lightbox-close { top: 12px; right: 12px; width: 42px; height: 42px; }
+  .lightbox-thumbnails button { flex-basis: 82px; }
+  .lightbox-thumbnails img { height: 52px; }
+}
+
+.project-browser.grid .portfolio-project:hover,
+.project-browser.grid .portfolio-project:focus-visible,
+.project-browser.list .portfolio-project:hover {
+  border-color: transparent;
+  background: transparent;
+  transform: none;
+}
+
+.portfolio-project:hover .project-copy strong { color: #0f172a; }
+.portfolio-project:hover .pf-folder { transform: translateY(-6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-folder { transition: none; }
+}

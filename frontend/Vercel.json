@@ -1,0 +1,9 @@
+{
+  "buildCommand": "git lfs pull && pnpm run build",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+<?php
+
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Dashboard\AuthController;
+use App\Http\Controllers\Dashboard\DashboardController;
+
+// Dashboard Authentication Routes
+Route::prefix('dashboard')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('dashboard.login');
+    Route::post('/login', [AuthController::class, 'login'])->name('dashboard.login.submit');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('dashboard.logout');
+
+    // Protected Dashboard Routes
+    Route::middleware('check.dashboard.auth')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('dashboard.index');
+        Route::get('/contacts', [DashboardController::class, 'contacts'])->name('dashboard.contacts');
+        Route::get('/contacts/{id}', [DashboardController::class, 'showContact'])->name('dashboard.contact-detail');
+        Route::put('/contacts/{contact}', [DashboardController::class, 'updateContact'])->name('dashboard.contact-update');
+        Route::delete('/contacts/{id}', [DashboardController::class, 'deleteContact'])->name('dashboard.contact-delete');
+        Route::get('/appointments', [DashboardController::class, 'appointments'])->name('dashboard.appointments');
+        Route::get('/projects', [DashboardController::class, 'projects'])->name('dashboard.projects');
+        Route::post('/projects', [DashboardController::class, 'storeProject'])->name('dashboard.projects.store');
+        Route::put('/projects/{project}', [DashboardController::class, 'updateProject'])->name('dashboard.projects.update');
+        Route::delete('/projects/{project}', [DashboardController::class, 'deleteProject'])->name('dashboard.projects.delete');
+    });
+});
+
+// React frontend (keep this last so Laravel routes win).
+Route::get('/{path?}', fn () => response()->file(public_path('index.html')))
+    ->where('path', '^(?!api(?:/|$)|dashboard(?:/|$)).*');

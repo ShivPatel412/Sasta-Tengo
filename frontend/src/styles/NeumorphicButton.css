@@ -1,0 +1,74 @@
+/* Neumorphic Button with Glass Morphism - From Uiverse.io by Kabak */
+.neumorphic-btn {
+  height: 50px;
+  margin: 5px;
+  width: auto;
+  padding: 0 15px;
+  display: flex;
+  justify-content: center;
+  cursor: pointer;
+  align-items: center;
+  font-family: Consolas, 'Courier New', monospace;
+  border: solid rgba(255, 255, 255, 0.2) 1px;
+  font-size: 16px;
+  color: rgb(200, 200, 200);
+  transition: 500ms;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.01);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  box-shadow: -1px -5px 15px rgba(65, 70, 91, 0.2), 5px 5px 15px rgba(65, 70, 91, 0.2),
+    inset 5px 5px 10px rgba(33, 33, 33, 0.1), inset -5px -5px 10px rgba(33, 33, 33, 0.1);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.neumorphic-btn:hover {
+  box-shadow: 1px 1px 13px rgba(32, 35, 46, 0.3), -1px -1px 13px rgba(84, 91, 120, 0.3);
+  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.3);
+  transition: 500ms;
+}
+
+.neumorphic-btn:active {
+  box-shadow: 1px 1px 13px rgba(32, 35, 46, 0.4), -1px -1px 33px rgba(84, 91, 120, 0.4);
+  color: #e0e0e0;
+  background: rgba(255, 255, 255, 0.06);
+  transition: 100ms;
+}
+
+.neumorphic-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: -1px -5px 15px rgba(65, 70, 91, 0.3), 5px 5px 15px rgba(65, 70, 91, 0.3),
+    inset 5px 5px 10px rgba(33, 33, 33, 0.2), inset -5px -5px 10px rgba(33, 33, 33, 0.2);
+}
+
+.neumorphic-btn:focus {
+  outline: none;
+}
+
+.neumorphic-btn:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .neumorphic-btn {
+    height: 45px;
+    width: 110px;
+    font-size: 14px;
+    margin: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .neumorphic-btn {
+    height: 44px;
+    width: 100px;
+    font-size: 12px;
+    margin: 3px;
+  }
+}

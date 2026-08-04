@@ -1,0 +1,143 @@
+/* Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Custom Font Face */
+@font-face {
+  font-family: 'Emilio';
+  src: url('./fonts/Emilio-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Emilio-Light';
+  src: url('./fonts/Emilio-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'THICCCBOI-Bold';
+  src: url('./fonts/THICCCBOI-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #0f0e0d;
+  line-height: 1.6;
+  font-size: 16px;
+}
+
+/* Typography - Common Styles */
+h1 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 4rem;
+  line-height: 1.1;
+  color: #0f0e0d;
+}
+
+h2 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 2.5rem;
+  line-height: 1.2;
+  color: #0f0e0d;
+}
+
+h3 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 1.8rem;
+  line-height: 1.3;
+  color: #0f0e0d;
+}
+
+h4 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+  line-height: 1.3;
+  color: #0f0e0d;
+}
+
+h5 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 1.25rem;
+  line-height: 1.4;
+  color: #0f0e0d;
+}
+
+h6 {
+  font-family: 'Emilio', 'Inter', sans-serif;
+  font-weight: 400;
+  font-size: 1rem;
+  line-height: 1.4;
+  color: #0f0e0d;
+}
+
+p {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  font-size: 18px;
+  line-height: 1.8;
+  color: #1a1818;
+}
+
+a {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  color: #0f0e0d;
+  text-decoration: none;
+}
+
+span, label, input, textarea, button {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+/* Responsive Typography */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2.5rem;
+  }
+  
+  h2 {
+    font-size: 2rem;
+  }
+  
+  h3 {
+    font-size: 1.5rem;
+  }
+  
+  h4 {
+    font-size: 1.25rem;
+  }
+  
+  p {
+    font-size: 16px;
+  }
+}
+
+.App {
+  min-height: 100vh;
+}
+
+/* Loading State */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1.2rem;
+  color: #667eea;
+}

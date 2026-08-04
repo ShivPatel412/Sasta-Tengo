@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/static/css/main.473c5d0d.css",
+    "main.js": "/static/js/main.92417ad5.js",
+    "static/js/453.d7446e4a.chunk.js": "/static/js/453.d7446e4a.chunk.js",
+    "static/media/THICCCBOI-Bold.ttf": "/static/media/THICCCBOI-Bold.8fbe03a6e2681c1a9427.ttf",
+    "static/media/Emilio-Regular.ttf": "/static/media/Emilio-Regular.0c5b0869fc22bb956308.ttf",
+    "static/media/Emilio-Light.ttf": "/static/media/Emilio-Light.b77e4ab7d76d0b5538b3.ttf",
+    "index.html": "/index.html",
+    "main.473c5d0d.css.map": "/static/css/main.473c5d0d.css.map",
+    "main.92417ad5.js.map": "/static/js/main.92417ad5.js.map",
+    "453.d7446e4a.chunk.js.map": "/static/js/453.d7446e4a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.473c5d0d.css",
+    "static/js/main.92417ad5.js"
+  ]
+}

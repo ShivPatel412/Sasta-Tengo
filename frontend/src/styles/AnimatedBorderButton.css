@@ -1,0 +1,202 @@
+/* Animated Border Button */
+.animated-border-btn {
+  position: relative;
+  display: inline-block;
+  padding: 5px 30px;
+  border: 2px solid #000000;
+  text-transform: uppercase;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #ffffff;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.animated-border-btn::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% - 12px);
+  background-color: #ffffff;
+  transition: 0.25s ease-in-out;
+  transform: scaleY(1);
+  z-index: 1;
+}
+
+.animated-border-btn:hover::before {
+  transform: scaleY(0);
+}
+
+.animated-border-btn::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: -2px;
+  height: calc(100% + 4px);
+  width: calc(100% - 12px);
+  background-color: #ffffff;
+  transition: 0.25s ease-in-out;
+  transform: scaleX(1);
+  transition-delay: 0.25s;
+  z-index: 1;
+}
+
+.animated-border-btn:hover::after {
+  transform: scaleX(0);
+}
+
+.animated-border-btn span {
+  position: relative;
+  z-index: 3;
+}
+
+/* Remove default button styles when used as button element */
+.animated-border-btn:focus {
+  outline: none;
+}
+
+.animated-border-btn:focus-visible,
+.animated-border-btn-dark:focus-visible,
+.animated-border-btn-gray:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 4px;
+}
+
+.animated-border-btn:active {
+  transform: scale(0.98);
+}
+
+/* Dark variant - Glass morphism effect */
+.animated-border-btn-dark {
+  position: relative;
+  display: inline-block;
+  padding: 5px 30px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  text-transform: uppercase;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.animated-border-btn-dark::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% - 12px);
+  background-color: #0e0d0c;
+  transition: 0.25s ease-in-out;
+  transform: scaleY(1);
+  z-index: 1;
+}
+
+.animated-border-btn-dark:hover::before {
+  transform: scaleY(0);
+}
+
+.animated-border-btn-dark::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: -2px;
+  height: calc(100% + 4px);
+  width: calc(100% - 12px);
+  background-color: #0e0d0c;
+  transition: 0.25s ease-in-out;
+  transform: scaleX(1);
+  transition-delay: 0.25s;
+  z-index: 1;
+}
+
+.animated-border-btn-dark:hover::after {
+  transform: scaleX(0);
+}
+
+.animated-border-btn-dark span {
+  position: relative;
+  z-index: 3;
+}
+
+.animated-border-btn-dark:focus {
+  outline: none;
+}
+
+.animated-border-btn-dark:active {
+  transform: scale(0.98);
+}
+
+/* Gray variant - For project section buttons */
+.animated-border-btn-gray {
+  position: relative;
+  display: inline-block;
+  padding: 5px 30px;
+  border: 2px solid #000000;
+  text-transform: uppercase;
+  color: #000000;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 20px;
+  background-color: #e0e0e0;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.animated-border-btn-gray::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: -2px;
+  width: calc(100% + 4px);
+  height: calc(100% - 12px);
+  background-color: #e0e0e0;
+  transition: 0.25s ease-in-out;
+  transform: scaleY(1);
+  z-index: 1;
+}
+
+.animated-border-btn-gray:hover::before {
+  transform: scaleY(0);
+}
+
+.animated-border-btn-gray::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: -2px;
+  height: calc(100% + 4px);
+  width: calc(100% - 12px);
+  background-color: #e0e0e0;
+  transition: 0.25s ease-in-out;
+  transform: scaleX(1);
+  transition-delay: 0.25s;
+  z-index: 1;
+}
+
+.animated-border-btn-gray:hover::after {
+  transform: scaleX(0);
+}
+
+.animated-border-btn-gray span {
+  position: relative;
+  z-index: 3;
+}
+
+.animated-border-btn-gray:focus {
+  outline: none;
+}
+
+.animated-border-btn-gray:active {
+  transform: scale(0.98);
+}

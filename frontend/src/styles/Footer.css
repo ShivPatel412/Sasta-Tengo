@@ -1,0 +1,119 @@
+.footer {
+  background: #05070c;
+  color: #fefcfb;
+  padding: 56px clamp(20px, 5vw, 72px) 28px;
+  text-align: left;
+}
+
+.footer .container {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(320px, 1.6fr) auto;
+  align-items: start;
+  gap: 36px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+.footer-brand h2 {
+  margin: 0;
+  color: #ffffff;
+  font-family: 'THICCCBOI-Bold', 'Inter', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.footer-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(90px, 1fr));
+  gap: 4px 24px;
+  justify-content: start;
+}
+
+.footer-nav a {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  color: #cbd5e1;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer-nav a:hover {
+  color: #fff;
+}
+
+.footer a:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.footer-social {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+}
+
+.footer-social a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: #0d1422;
+  border: 1px solid #263247;
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  color: #fefcfb;
+}
+
+.footer-social a:hover {
+  background: rgba(254, 252, 251, 0.1);
+  transform: translateY(-3px);
+}
+
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+}
+
+.footer-bottom {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, .1);
+  box-sizing: border-box;
+}
+
+.footer-bottom p {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 14px;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 20px;
+}
+
+@media (max-width: 768px) {
+  .footer {
+    padding: 44px 20px 24px;
+  }
+
+  .footer .container {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .footer-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2px 20px;
+    width: 100%;
+  }
+
+  .footer-social {
+    margin-top: 2px;
+  }
+}
