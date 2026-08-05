@@ -4,6 +4,7 @@ import '../styles/ExperienceSection.css';
 const experiences = [
   {
     company: 'Bugle Technologies', role: 'Web Developer', start: 'Jan 2023', end: 'Present', current: true,
+    website: 'https://bugle.in/',
     logo: '/experience/bugle-technologies.png',
     summary: 'Built 10+ business websites, custom WordPress plugins, ACF solutions, and React frontends.',
     description: 'Developed and maintained high-performance business websites, custom WordPress solutions, and React-based frontend applications while focusing on performance, scalability, and SEO.',
@@ -12,6 +13,7 @@ const experiences = [
   },
   {
     company: 'Genz Miner', role: 'Web Developer', start: 'May 2022', end: 'Dec 2022',
+    website: 'https://www.saifeeinfotech.com/',
     logo: '/experience/genz-miner.jpg',
     summary: 'Developed eCommerce websites, inventory management systems, and client-focused business solutions.',
     description: 'Developed eCommerce platforms and internal business management systems while working closely with clients to deliver customized web solutions.',
@@ -20,6 +22,7 @@ const experiences = [
   },
   {
     company: 'Kalpataru Innovation', role: 'Junior Web Developer', start: 'Jan 2022', end: 'Apr 2022',
+    website: 'https://www.kalpataruinnovation.com/',
     logo: '/experience/kalpataru-innovation.webp',
     summary: 'Created responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms.',
     description: 'Worked on responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms while gaining experience in full website development.',
@@ -56,7 +59,7 @@ const ExperienceSection = () => {
           <button type="button" className="experience-arrow" onClick={() => move(1)} aria-label="Next experience">→</button>
         </div>
         <article className="experience-featured-card" key={experience.company}>
-          <header className="experience-card-header"><img src={experience.logo} alt={`${experience.company} logo`} /><div><h3>{experience.company}</h3><p>{experience.role}</p></div><time>{experience.start} — {experience.end}</time></header>
+          <header className="experience-card-header"><a href={experience.website} target="_blank" rel="noopener noreferrer"><img src={experience.logo} alt={`${experience.company} logo`} /></a><div><h3><a href={experience.website} target="_blank" rel="noopener noreferrer">{experience.company}</a></h3><p>{experience.role}</p></div><time>{experience.start} — {experience.end}</time></header>
           <p className="experience-summary">{experience.summary}</p>
           <section className="experience-overview"><h4>Description</h4><p className="experience-description">{experience.description}</p></section>
           <div className="experience-card-details"><section><h4>Key highlights</h4><ul>{experience.highlights.map(item => <li key={item}>{item}</li>)}</ul></section><section><h4>Technologies</h4><div className="experience-technologies">{experience.technologies.map(item => <span key={item}>{item}</span>)}</div></section></div>
