@@ -51,6 +51,7 @@ Route::prefix('v1')->group(function () {
     
     // Public forms: limited to prevent spam. Appointment details are never public.
     Route::post('/appointments', [AppointmentController::class, 'store'])->middleware('throttle:10,1');
+    Route::post('/project-requests', [AppointmentController::class, 'storeProjectRequest'])->middleware('throttle:10,1');
     
     // Authentication routes
     Route::post('/login', [AuthController::class, 'login']);

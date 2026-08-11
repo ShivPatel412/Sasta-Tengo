@@ -172,20 +172,6 @@
             text-decoration: underline;
         }
 
-        .demo-creds {
-            background: #f0f4ff;
-            border-left: 4px solid #667eea;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            color: #333;
-            margin-bottom: 20px;
-        }
-
-        .demo-creds strong {
-            color: #667eea;
-        }
-
         @media (max-width: 480px) {
             .login-container {
                 padding: 30px 20px;
@@ -224,12 +210,6 @@
 
         <form action="{{ route('dashboard.login.submit') }}" method="POST">
             @csrf
-
-            <div class="demo-creds">
-                <strong>Demo Credentials:</strong><br>
-                Email: admin@sastatengo.com<br>
-                Password: admin123
-            </div>
 
             <div class="form-group">
                 <label for="email">Email Address</label>

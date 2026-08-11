@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Contact;
+use App\Notifications\LeadSubmitted;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Notification;
 
 class ContactController extends Controller
 {
@@ -44,6 +46,9 @@ class ContactController extends Controller
 
         $validated['is_read'] = false;
         $contact = Contact::create($validated);
+
+        rescue(fn () => Notification::route('mail', $contact->email)->notify(new LeadSubmitted($contact)), report: true);
+        rescue(fn () => Notification::route('mail', config('mail.lead_recipient'))->notify(new LeadSubmitted($contact, true)), report: true);
         
         return response()->json($contact, 201);
     }

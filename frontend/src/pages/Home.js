@@ -199,7 +199,6 @@ const Home = () => {
             }}
           />
         </div>
-        {/* <SplineScene scene="https://prod.spline.design/sStWXVF-OFW3bMVX/scene.splinecode" /> */}
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div className="hero-box-container">
             <div className="hero-box">
@@ -394,7 +393,7 @@ const Home = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                   </svg>
-                  <span  href="mailto:admin@shivpatel412.com">admin@shivpatel412.com</span>
+                  <span  href="mailto:info@shivpatel.in">info@shivpatel.in</span>
                 </div>
                 <div className="contact-detail-item">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">

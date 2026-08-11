@@ -115,4 +115,6 @@ return [
         'name' => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    'lead_recipient' => env('LEAD_NOTIFICATION_EMAIL', 'info@shivpatel.in'),
+
 ];

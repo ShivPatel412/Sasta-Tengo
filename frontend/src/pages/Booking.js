@@ -63,9 +63,9 @@ const ContactPanel = () => (
       <p>You can contact me before submitting your project inquiry.</p>
 
       <div className="contact-panel-list">
-        <a href="mailto:admin@shivpatel412.com">
+        <a href="mailto:info@shivpatel.in">
           <span><Mail aria-hidden="true" /></span>
-          <div><strong>Email Me</strong><small>Send your questions anytime.</small><b>admin@shivpatel412.com →</b></div>
+          <div><strong>Email Me</strong><small>Send your questions anytime.</small><b>info@shivpatel.in →</b></div>
         </a>
         <a href="tel:+916351149722">
           <span><Phone aria-hidden="true" /></span>
@@ -227,31 +227,8 @@ const Booking = () => {
 
     setSubmitting(true);
     setMessage('');
-    const details = [
-      `Service: ${form.service}`,
-      `Other service request: ${form.otherService || 'None'}`,
-      `Project type: ${form.projectType}`,
-      `Project description: ${form.description}`,
-      `Existing website: ${form.existingUrl || 'None'}`,
-      `Inspiration URLs: ${form.inspirationUrls || 'None'}`,
-      `Features: ${form.features.join(', ') || 'None selected'}`,
-      `Already has: ${form.assets.join(', ') || 'None selected'}`,
-      `Additional requirements: ${form.requirementsNotes || 'None'}`,
-      `Budget: ${form.budget}`,
-      `Timeline: ${form.timeline}`,
-      `Company: ${form.company || 'Not provided'}`,
-      `Country: ${form.country}`,
-      `Additional message: ${form.additionalMessage || 'None'}`
-    ].join('\n');
-
     try {
-      await api.post('/v1/contacts', {
-        name: form.fullName,
-        email: form.email,
-        phone: form.phone,
-        subject: `Project inquiry: ${form.service}`,
-        message: details
-      });
+      await api.post('/v1/project-requests', form);
       setSubmitted(true);
       scrollToForm();
     } catch (error) {

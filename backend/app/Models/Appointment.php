@@ -13,11 +13,15 @@ class Appointment extends Model
         'client_phone',
         'appointment_date',
         'notes',
-        'status'
+        'status',
+        'lead_status',
+        'admin_notes',
+        'request_data',
     ];
 
     protected $casts = [
         'appointment_date' => 'datetime',
+        'request_data' => 'array',
     ];
 
     public function service()

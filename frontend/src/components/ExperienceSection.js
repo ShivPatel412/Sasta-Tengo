@@ -1,41 +1,34 @@
 import React, { useEffect, useRef, useState } from 'react';
 import '../styles/ExperienceSection.css';
 
-const experiences = [
-  {
-    company: 'Bugle Technologies', role: 'Web Developer', start: 'Jan 2023', end: 'Present', current: true,
-    website: 'https://bugle.in/',
-    logo: '/experience/bugle-technologies.png',
-    summary: 'Built 10+ business websites, custom WordPress plugins, ACF solutions, and React frontends.',
-    description: 'Developed and maintained high-performance business websites, custom WordPress solutions, and React-based frontend applications while focusing on performance, scalability, and SEO.',
-    highlights: ['Built and launched 10+ business websites across multiple industries.', 'Developed custom WordPress plugins to automate business workflows.', 'Created dynamic websites using Advanced Custom Fields (ACF).', 'Built responsive frontend interfaces using React.', 'Integrated REST APIs and third-party services.', 'Optimized website speed, SEO, and Core Web Vitals.', 'Customized Elementor themes and reusable components.', 'Maintained and improved existing client websites.'],
-    technologies: ['React', 'PHP', 'WordPress', 'ACF', 'HTML', 'CSS', 'JavaScript', 'REST API']
-  },
-  {
-    company: 'Genz Miner', role: 'Web Developer', start: 'May 2022', end: 'Dec 2022',
-    website: 'https://www.saifeeinfotech.com/',
-    logo: '/experience/genz-miner.jpg',
-    summary: 'Developed eCommerce websites, inventory management systems, and client-focused business solutions.',
-    description: 'Developed eCommerce platforms and internal business management systems while working closely with clients to deliver customized web solutions.',
-    highlights: ['Developed responsive eCommerce websites.', 'Built stock and inventory management modules.', 'Worked directly with clients to gather requirements and implement features.', 'Customized dashboards and business workflows.', 'Improved website usability and frontend performance.', 'Integrated Firebase authentication and backend services.', 'Created reusable React components.'],
-    technologies: ['React', 'Firebase', 'HTML', 'CSS', 'JavaScript', 'eCommerce Development']
-  },
-  {
-    company: 'Kalpataru Innovation', role: 'Junior Web Developer', start: 'Jan 2022', end: 'Apr 2022',
-    website: 'https://www.kalpataruinnovation.com/',
-    logo: '/experience/kalpataru-innovation.webp',
-    summary: 'Created responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms.',
-    description: 'Worked on responsive WordPress websites, WooCommerce stores, and multi-vendor eCommerce platforms while gaining experience in full website development.',
-    highlights: ['Developed responsive WordPress business websites.', 'Built WooCommerce eCommerce stores.', 'Created multi-vendor marketplace websites.', 'Customized WordPress themes and plugins.', 'Implemented responsive layouts for desktop and mobile devices.', 'Improved website performance and user experience.', 'Assisted in deployment and website maintenance.'],
-    technologies: ['WordPress', 'WooCommerce', 'PHP', 'HTML', 'CSS', 'JavaScript']
-  },
-];
-
 const ExperienceSection = () => {
+  const [experiences, setExperiences] = useState([]);
   const [active, setActive] = useState(0);
   const stepRefs = useRef([]);
   const experience = experiences[active];
   const move = direction => setActive((active + direction + experiences.length) % experiences.length);
+
+  useEffect(() => {
+    if (typeof fetch !== 'function') return;
+    fetch(`${process.env.REACT_APP_API_URL || '/api'}/v1/experience`, { headers: { Accept: 'application/json' } }).then(response => {
+      if (!response.ok) throw new Error('Could not load experience');
+      return response.json();
+    }).then(data => {
+      const formatDate = value => value ? new Date(`${value}T00:00:00`).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : '';
+      setExperiences(data.map(item => ({
+        ...item,
+        role: item.title,
+        start: formatDate(item.start_date),
+        end: item.is_current ? 'Present' : formatDate(item.end_date),
+        current: item.is_current,
+        logo: item.logo || '/favicon.ico',
+        summary: item.summary || item.description,
+        highlights: item.highlights || [],
+        technologies: item.technologies || [],
+      })));
+      setActive(0);
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(max-width: 720px)').matches) {
@@ -43,6 +36,8 @@ const ExperienceSection = () => {
       step?.parentElement?.scrollTo({ left: step.offsetLeft - (step.parentElement.clientWidth - step.offsetWidth) / 2, behavior: 'smooth' });
     }
   }, [active]);
+
+  if (!experience) return null;
 
   return (
     <section className="experience" id="experience">

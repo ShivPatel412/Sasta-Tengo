@@ -1,17 +1,26 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import ExperienceSection from './ExperienceSection';
 
-test('shows the position before the current date and a present status dot', () => {
+test('renders experience returned by the API', async () => {
   window.matchMedia = () => ({ matches: false });
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: true,
+    json: async () => [{
+      company: 'API Company',
+      title: 'Web Developer',
+      website: 'https://example.com',
+      start_date: '2023-01-01',
+      end_date: null,
+      is_current: true,
+      summary: 'API summary',
+      description: 'API description',
+      highlights: [],
+      technologies: [],
+    }],
+  });
+
   render(<ExperienceSection />);
-  const currentStep = screen.getByRole('button', { name: /Web Developer Jan 2023.*Present/i });
-  expect(currentStep.querySelector('strong')).toHaveTextContent('Web Developer');
-  expect(screen.getByLabelText('Present')).toHaveClass('experience-current-dot');
-  expect(screen.getByRole('link', { name: 'Bugle Technologies' })).toHaveAttribute('href', 'https://bugle.in/');
 
-  fireEvent.click(screen.getByRole('button', { name: /Web Developer May 2022/i }));
-  expect(screen.getByRole('link', { name: 'Genz Miner' })).toHaveAttribute('href', 'https://www.saifeeinfotech.com/');
-
-  fireEvent.click(screen.getByRole('button', { name: /Junior Web Developer Jan 2022/i }));
-  expect(screen.getByRole('link', { name: 'Kalpataru Innovation' })).toHaveAttribute('href', 'https://www.kalpataruinnovation.com/');
+  expect(await screen.findByRole('link', { name: 'API Company' })).toHaveAttribute('href', 'https://example.com');
+  expect(screen.getByText('API summary')).toBeInTheDocument();
 });

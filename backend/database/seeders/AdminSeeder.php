@@ -14,9 +14,12 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        User::updateOrCreate(['email' => 'admin@sastatengo.com'], [
+        $email = env('ADMIN_EMAIL') ?: throw new \RuntimeException('ADMIN_EMAIL is required.');
+        $password = env('ADMIN_PASSWORD') ?: throw new \RuntimeException('ADMIN_PASSWORD is required.');
+
+        User::updateOrCreate(['email' => $email], [
             'name' => 'Shiv Patel',
-            'password' => Hash::make('admin123'),
+            'password' => Hash::make($password),
             'email_verified_at' => now(),
         ]);
     }
