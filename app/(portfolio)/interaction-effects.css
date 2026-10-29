@@ -1,0 +1,17 @@
+/* Three points, one aim. Never intercept a click or cover a keyboard focus ring. */
+.aim-cursor{position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647;pointer-events:none;mix-blend-mode:difference;will-change:transform}
+.aim-cursor[hidden]{display:none}
+.aim-triangle{position:absolute;width:28px;height:28px;left:-14px;top:-14px;transform-origin:50% 50%;transition:transform .8s cubic-bezier(.2,.75,.2,1)}
+.aim-dot{position:absolute;width:4px;height:4px;border-radius:50%;background:#fff;box-shadow:0 0 7px #d4b1ff99;transition:scale .2s,box-shadow .2s}
+.aim-dot:nth-child(1){left:12px;top:2px}
+.aim-dot:nth-child(2){left:2px;top:20px}
+.aim-dot:nth-child(3){left:22px;top:20px}
+.aim-cursor--hover .aim-dot{scale:1.5;box-shadow:0 0 10px #d3adff}
+@media(hover:hover) and (pointer:fine){html.custom-aim-active,html.custom-aim-active *{cursor:none!important}}
+#about.about{isolation:isolate;position:relative;overflow:hidden;background:#130f17}
+#about.about::before,#about.about::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;opacity:0;transition:opacity .45s ease}
+#about.about::before{background:radial-gradient(380px circle at var(--spot-x,50%) var(--spot-y,50%),#c599ff55,transparent 80%)}
+#about.about::after{background-image:linear-gradient(#8b5ab221 1px,transparent 1px),linear-gradient(90deg,#8b5ab221 1px,transparent 1px);background-size:38px 38px;mask-image:radial-gradient(240px circle at var(--spot-x,50%) var(--spot-y,50%),#000,transparent)}
+#about.about>.container{position:relative;z-index:1}
+@media(hover:hover) and (pointer:fine){#about.about:hover::before,#about.about:hover::after{opacity:1}}
+@media(prefers-reduced-motion:reduce){.aim-triangle,.aim-dot,#about.about::before,#about.about::after{transition:none}#about.about::before,#about.about::after{background-position:center;mask-image:none}#about.about::before{background:radial-gradient(ellipse at center,#c599ff25,transparent 70%)}#about.about::after{display:none}}

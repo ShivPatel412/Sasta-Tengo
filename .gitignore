@@ -1,0 +1,13 @@
+node_modules/
+.next/
+.vercel/
+.env*
+!.env.example
+*.sql.gz
+*.dump
+*.sqlite*
+backups/
+private/
+coverage/
+*.log
+data-audit-*.json
