@@ -16,7 +16,8 @@ try {
   pool = database();
   connection = await pool.getConnection();
   await query('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ', [], connection);
-  await query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY', [], connection);
+  // MariaDB does not support preparing this transaction-control statement.
+  await connection.query('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
   const report = { generatedAt: new Date().toISOString(), tables: {} };
   for (const [table,fields] of Object.entries(expected)) {
     const columns = (await query(`SHOW COLUMNS FROM \`${table}\``, [], connection)).map(c => c.Field);

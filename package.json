@@ -12,7 +12,10 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
-    "audit:data": "node --env-file=.env.local scripts/audit-data.mjs"
+    "audit:data": "node --env-file=.env.local scripts/audit-data.mjs",
+    "db:init": "node --env-file=.env.local scripts/setup-database.mjs",
+    "db:admin": "node --env-file=.env.local scripts/create-admin.mjs",
+    "db:admin:sql": "node --env-file=.env.local scripts/create-admin.mjs --sql"
   },
   "dependencies": {
     "@vercel/blob": "2.8.2",

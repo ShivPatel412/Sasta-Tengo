@@ -1,4 +1,5 @@
--- Review and run on the RESTORED STAGING database first.
+-- For a fresh database, run 000-fresh-portfolio.sql first.
+-- For a migration, review and run on the RESTORED STAGING database first.
 -- Additive only: no existing Laravel table, record, password or ID is changed.
 CREATE TABLE IF NOT EXISTS next_sessions (
   token_hash CHAR(64) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,

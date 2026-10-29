@@ -4,6 +4,8 @@ This repository is a single full-stack Next.js 16.4.3 application at the reposit
 
 ## Start here
 
+**Starting fresh:** the owner selected a new database instead of importing the unrelated event/invitation backup. Follow [fresh database setup](docs/FRESH-DATABASE.md) to create the tables and initial admin safely. The migration/backup procedure below remains available when a compatible source database is recovered.
+
 For a frontend-only local preview without restored data, create an ignored `.env.local` containing `LOCAL_PREVIEW=1`, `MIGRATION_READ_ONLY=1` and `APP_ORIGIN=http://localhost:3000`, with no DB settings, then run `pnpm dev`. The page shows a preview notice and public collection APIs return empty lists so the existing interface can use its built-in defaults. No records are fabricated or saved. Login and submissions still require the database. This mode is limited to development and switches off when any DB connection setting is present; it never conceals a production/database outage.
 
 1. Read [the migration plan](docs/MIGRATION.md) and restore a private staging copy of your existing MySQL database and media.
