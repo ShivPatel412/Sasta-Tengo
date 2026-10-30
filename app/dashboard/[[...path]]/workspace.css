@@ -13,3 +13,10 @@
 @media(prefers-reduced-motion:reduce){.workspace *,.workspace-login *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
 
 .workspace-body,.workspace-sidebar,.workspace-panel{min-width:0}
+:where(.workspace) .github-import{padding:20px;border:1px solid #ded4ee;border-radius:12px;background:#faf8fd;margin-bottom:26px}
+:where(.workspace) .github-import h3{margin:0 0 7px;font-size:16px}
+:where(.workspace) .github-import p{font-size:12px;line-height:1.7;margin:0 0 15px;color:#333}
+:where(.workspace) .github-import label{display:block;margin-bottom:8px;font-size:11px;font-weight:600}
+:where(.workspace) .github-import form>div{display:flex;gap:10px}
+:where(.workspace) .github-import input{min-width:0;flex:1}
+@media(max-width:600px){:where(.workspace) .github-import form>div{flex-direction:column}}
