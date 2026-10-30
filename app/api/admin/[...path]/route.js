@@ -17,9 +17,9 @@ async function route(request, context) {
       await rateLimit(request, 'login', input.email.toLowerCase());
       await signIn(input.email, input.password); return json({ ok: true });
     }
-    await admin();
+    const owner = await admin();
     if (resource === 'logout' && path.length === 1 && request.method === 'POST') { await signOut(); return json({ ok: true }); }
-    if (resource === 'session' && path.length === 1 && request.method === 'GET') return json({ readOnly: process.env.MIGRATION_READ_ONLY !== '0' });
+    if (resource === 'session' && path.length === 1 && request.method === 'GET') return json({ readOnly: process.env.MIGRATION_READ_ONLY !== '0', uploadsEnabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN), user: { name:owner.name,email:owner.email } });
     if (resource === 'categories' && path.length === 1 && request.method === 'GET') {
       return json(await query('SELECT category,name FROM project_types UNION SELECT category,category AS name FROM projects WHERE category NOT IN (SELECT category FROM project_types WHERE category IS NOT NULL) ORDER BY name'));
     }
@@ -30,7 +30,11 @@ async function route(request, context) {
       counts.pending_requests = (await query("SELECT COUNT(*) AS total FROM appointments WHERE status='pending'"))[0].total;
       const pipeline = await query('SELECT lead_status,COUNT(*) AS total FROM (SELECT lead_status FROM contacts UNION ALL SELECT lead_status FROM appointments) t GROUP BY lead_status');
       const activity = await query('SELECT DATE(created_at) AS day,COUNT(*) AS total FROM (SELECT created_at FROM contacts UNION ALL SELECT created_at FROM appointments) t WHERE created_at>=DATE_SUB(UTC_DATE(),INTERVAL 6 DAY) GROUP BY DATE(created_at) ORDER BY day');
-      return json({ counts,pipeline,activity });
+      const recentContacts = await query('SELECT id,name,email,subject,is_read,lead_status,created_at FROM contacts ORDER BY created_at DESC,id DESC LIMIT 6');
+      const recentRequests = (await query('SELECT id,client_name,client_email,notes,request_data,status,lead_status,created_at FROM appointments ORDER BY created_at DESC,id DESC LIMIT 6')).map(row=>serialize(row,'appointments'));
+      const recentProjects = (await query('SELECT id,title,category,poster,image,gallery,technologies,is_featured,live_url,github_url,created_at FROM projects ORDER BY updated_at DESC,id DESC LIMIT 4')).map(row=>serialize(row,'projects'));
+      const recentExperience = (await query('SELECT id,title,company,logo,start_date,end_date,is_current FROM experience ORDER BY `order`,start_date DESC LIMIT 4')).map(row=>serialize(row,'experience'));
+      return json({ counts,pipeline,activity,recentContacts,recentRequests,recentProjects,recentExperience });
     }
     const table = tables[resource];
     if (!table || path.length > 2 || (id && !/^[1-9][0-9]*$/.test(id))) throw new HttpError(404, 'Not found.');
@@ -44,9 +48,13 @@ async function route(request, context) {
       if (search) { clauses.push('(' + columns.map(column => `\`${column}\` LIKE ?`).join(' OR ') + ')'); values.push(...columns.map(() => `%${search}%`)); }
       const filter = url.searchParams.get('filter');
       if (resource === 'contacts' && filter === 'unread') clauses.push('is_read=0');
+      if (resource === 'contacts' && filter === 'read') clauses.push('is_read=1');
       if (resource === 'appointments' && ['pending','confirmed','completed','cancelled'].includes(filter)) { clauses.push('status=?'); values.push(filter); }
+      if (resource === 'appointments' && url.searchParams.get('kind') === 'requests') clauses.push('request_data IS NOT NULL');
+      if (resource === 'appointments' && url.searchParams.get('kind') === 'bookings') clauses.push('request_data IS NULL');
       const where = clauses.length ? ' WHERE ' + clauses.join(' AND ') : '';
-      const rows = await query(`SELECT * FROM \`${table}\`${where} ORDER BY id DESC LIMIT 20 OFFSET ${Math.floor((page-1)*20)}`, values);
+      const selection = resource === 'appointments' ? 'appointments.*,(SELECT title FROM services WHERE services.id=appointments.service_id) AS service_title' : '*';
+      const rows = await query(`SELECT ${selection} FROM \`${table}\`${where} ORDER BY id DESC LIMIT 20 OFFSET ${Math.floor((page-1)*20)}`, values);
       if (id && !rows.length) throw new HttpError(404, 'Not found.');
       const [{ count }] = await query(`SELECT COUNT(*) AS count FROM \`${table}\`${where}`, values);
       return json({ data: rows.map(row => serialize(row, table)), count, page });
