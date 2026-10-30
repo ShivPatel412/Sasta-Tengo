@@ -1,4 +1,5 @@
 'use client';
+import CornerFrame from '../../CornerFrame';
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
@@ -118,7 +119,8 @@ const ChoiceGrid = ({ name, options, value, onChange, multiple = false, large = 
       const Icon = typeof option === 'string' ? null : option.icon;
       const checked = multiple ? value.includes(label) : value === label;
       return (
-        <label className={`booking-choice${checked ? ' selected' : ''}`} key={label}>
+        <label className={`corner-box booking-choice${checked ? ' selected' : ''}`} key={label}>
+          <CornerFrame/>
           <input
             type={multiple ? 'checkbox' : 'radio'}
             name={name}

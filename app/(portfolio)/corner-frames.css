@@ -1,0 +1,14 @@
+/* An inset frame stays visible on cards that clip images or animated backgrounds. */
+.corner-box:not(.stack-node){position:relative}
+.corner-box>.corner-frame{position:absolute;inset:5px;z-index:5;display:block;pointer-events:none;opacity:0;transform:scale(.985);transition:opacity .2s ease,transform .2s ease;--corner-color:#98ff02}
+.corner-frame>i{position:absolute;display:block;width:15px;height:15px;border:0 solid var(--corner-color);background:none;box-shadow:none;filter:drop-shadow(0 0 4px var(--corner-color));pointer-events:none}
+.corner-frame>i:nth-child(1){top:0;left:0;border-width:1px 0 0 1px;border-radius:7px 0 0 0}
+.corner-frame>i:nth-child(2){top:0;right:0;border-width:1px 1px 0 0;border-radius:0 7px 0 0}
+.corner-frame>i:nth-child(3){bottom:0;right:0;border-width:0 1px 1px 0;border-radius:0 0 7px 0}
+.corner-frame>i:nth-child(4){bottom:0;left:0;border-width:0 0 1px 1px;border-radius:0 0 0 7px}
+.corner-box:is(:focus-visible,:focus-within)>.corner-frame{opacity:1;transform:scale(1)}
+@media(hover:hover) and (pointer:fine){.corner-box:hover>.corner-frame{opacity:1;transform:scale(1)}}
+.services .corner-frame,.booking-choice>.corner-frame{--corner-color:#548d00}
+.skill-tag>.corner-frame{inset:3px}
+.skill-tag>.corner-frame>i{width:9px;height:9px}
+@media(prefers-reduced-motion:reduce){.corner-box>.corner-frame{transition:none;transform:none}}

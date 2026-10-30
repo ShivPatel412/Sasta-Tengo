@@ -1,4 +1,5 @@
 'use client';
+import CornerFrame from '../../CornerFrame';
 import StackMap from '../../../app/(portfolio)/stack-map';
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import Link from 'next/link';
@@ -201,7 +202,7 @@ const Home = () => {
         </div>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div className="hero-box-container">
-            <div className="hero-box">
+            <div className="hero-box corner-box"><CornerFrame/>
               <div className="hero-content">
                 <div className="hero-left">
                   <div className="availability-badge">
@@ -300,17 +301,17 @@ const Home = () => {
               </p>
               <h3>Skills & Technologies</h3>
               <div className="skills-grid">
-                <span className="skill-tag">HTML5</span>
-                <span className="skill-tag">CSS3</span>
-                <span className="skill-tag">JavaScript</span>
-                <span className="skill-tag">React</span>
-                <span className="skill-tag">Node.js</span>
-                <span className="skill-tag">PHP</span>
-                <span className="skill-tag">Laravel</span>
-                <span className="skill-tag">MySQL</span>
-                <span className="skill-tag">Python</span>
-                <span className="skill-tag">Git</span>
-                <span className="skill-tag">UI/UX</span>
+                <span className="skill-tag corner-box"><CornerFrame/>HTML5</span>
+                <span className="skill-tag corner-box"><CornerFrame/>CSS3</span>
+                <span className="skill-tag corner-box"><CornerFrame/>JavaScript</span>
+                <span className="skill-tag corner-box"><CornerFrame/>React</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Node.js</span>
+                <span className="skill-tag corner-box"><CornerFrame/>PHP</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Laravel</span>
+                <span className="skill-tag corner-box"><CornerFrame/>MySQL</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Python</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Git</span>
+                <span className="skill-tag corner-box"><CornerFrame/>UI/UX</span>
               </div>
               <div style={{ marginTop: '30px' }}>
                 <NeumorphicButton
@@ -320,7 +321,7 @@ const Home = () => {
               </div>
             </div>
             <div className="about-code">
-              <div className="code-block">
+              <div className="code-block corner-box"><CornerFrame/>
                 <pre><code>{`const developer = {
   name: 'Shiv Patel (Sasta Tengo)',
   role: 'Full Stack Developer',
@@ -352,7 +353,7 @@ const Home = () => {
           </header>
           <div className="services-scroll">
             {services.map((service) => (
-              <article key={service.id} className="service-card">
+              <article key={service.id} className="service-card corner-box"><CornerFrame/>
                 <div className="service-icon"><ServiceIcon title={service.title} /></div>
                 <h3>{service.title}</h3>
                 <p className="service-description">{service.description}</p>
@@ -370,7 +371,7 @@ const Home = () => {
       {/* CTA Section */}
       <section id="cta" className="cta">
         <div className="container">
-          <div className="cta-content">
+          <div className="cta-content corner-box"><CornerFrame/>
             <p className="cta-label">YOUR NEXT BIG THING</p>
             <h2>Have an idea?<br />Let’s make it real.</h2>
             <p className="cta-description">Thoughtful design. Practical code. A website built around your next move.</p>

@@ -1,4 +1,5 @@
 'use client';
+import CornerFrame from '../../../CornerFrame';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Folder, Grid2X2, List, Search, X, ExternalLink, ArrowLeft, ArrowRight } from 'lucide-react';
 
@@ -31,7 +32,7 @@ export default function PortfolioFinder({ projects }) {
         <div className="finder-body">
           <aside className="portfolio-sidebar" aria-label="Project categories"><h3>Portfolio</h3><p>Projects &amp; Case Studies</p><label className="portfolio-search"><Search /><span className="sr-only">Search projects</span><input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search projects" /></label><nav>{categories.map(name => <button key={name} className={category === name ? 'active' : ''} onClick={() => chooseCategory(name)}><Folder /><span>{name}</span><small>{counts[name]}</small></button>)}</nav></aside>
           <main className="finder-content"><div className="mobile-categories"><select aria-label="Project category" value={category} onChange={e => chooseCategory(e.target.value)}>{categories.map(name => <option key={name}>{name}</option>)}</select><label className="portfolio-search"><Search /><input aria-label="Search projects" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search projects" /></label></div>
-            {visible.length ? <div className={`project-browser ${view}`}>{visible.map(project => <button key={project.id} className="portfolio-project" onClick={() => setSelected(project)} aria-label={`Open ${project.title}`}><FolderArt /><span className="project-copy"><strong>{project.title}</strong></span></button>)}</div> : <div className="portfolio-empty"><Folder /><h3>No projects found in this category.</h3><button onClick={() => { chooseCategory('All Projects'); setQuery(''); }}>View All Projects</button></div>}
+            {visible.length ? <div className={`project-browser ${view}`}>{visible.map(project => <button key={project.id} className="portfolio-project corner-box" onClick={() => setSelected(project)} aria-label={`Open ${project.title}`}><CornerFrame/><FolderArt /><span className="project-copy"><strong>{project.title}</strong></span></button>)}</div> : <div className="portfolio-empty"><Folder /><h3>No projects found in this category.</h3><button onClick={() => { chooseCategory('All Projects'); setQuery(''); }}>View All Projects</button></div>}
           </main>
         </div>
       </div>

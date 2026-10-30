@@ -1,4 +1,5 @@
 'use client';
+import CornerFrame from '../../CornerFrame';
 import React, { useEffect, useRef, useState } from 'react';
 
 const ExperienceSection = () => {
@@ -53,7 +54,7 @@ const ExperienceSection = () => {
           ))}</div>
           <button type="button" className="experience-arrow" onClick={() => move(1)} aria-label="Next experience">→</button>
         </div>
-        <article className="experience-featured-card" key={experience.company}>
+        <article className="experience-featured-card corner-box" key={experience.company}><CornerFrame/>
           <header className="experience-card-header"><a href={experience.website} target="_blank" rel="noopener noreferrer"><img src={experience.logo} alt={`${experience.company} logo`} /></a><div><h3><a href={experience.website} target="_blank" rel="noopener noreferrer">{experience.company}</a></h3><p>{experience.role}</p></div><time>{experience.start} — {experience.end}</time></header>
           <p className="experience-summary">{experience.summary}</p>
           <section className="experience-overview"><h4>Description</h4><p className="experience-description">{experience.description}</p></section>

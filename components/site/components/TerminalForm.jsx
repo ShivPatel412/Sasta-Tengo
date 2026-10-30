@@ -1,4 +1,5 @@
 'use client';
+import CornerFrame from '../../CornerFrame';
 import React, { useState, useRef, useEffect } from 'react';
 
 const TerminalForm = ({ onSubmit }) => {
@@ -186,7 +187,7 @@ const TerminalForm = ({ onSubmit }) => {
   const isComplete = currentStep >= questions.length;
 
   return (
-    <div className="terminal-form">
+    <div className="terminal-form corner-box"><CornerFrame/>
       <div className="terminal-header">
         <div className="terminal-buttons">
           <span className="terminal-button close"></span>
