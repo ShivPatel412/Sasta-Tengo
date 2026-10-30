@@ -62,6 +62,15 @@ export default function Dashboard({section,recordId}){
   }
   function openRecord(row){setError('');setNotice('');setEditorSection(section);setDetail(row);setDraft({...row});setDirty(false);}
   function onField(key,value){setDirty(true);setDraft(current=>({...current,[key]:value,...(key==='is_current'&&value?{end_date:null}:{})}));}
+  async function importProject(url){
+    if((draft.title||draft.description)&&!window.confirm('Replace this draft’s title, description, technologies, GitHub link, live link and cover with the GitHub details? Other fields will be kept.'))return;
+    setBusy(true);setError('');setNotice('');
+    try{
+      const data=await api('github-import',jsonRequest('POST',{url}));
+      setDraft(current=>({...current,...data.project}));setDirty(true);
+      setNotice(['GitHub details imported. Check the project type and details, then save to publish.',...data.warnings].join(' '));
+    }catch(e){setError(e.message);}finally{setBusy(false);}
+  }
   function closeEditor(force=false){
     if(busy)return;
     if(!force&&dirty&&!window.confirm('Discard the unsaved changes in this editor?'))return;
@@ -114,6 +123,6 @@ export default function Dashboard({section,recordId}){
       {loaded&&section!=='overview'&&(!error||rows.length>0)&&<Collection section={section} rows={rows} total={total} page={page} setPage={setPage} searchInput={searchInput} setSearchInput={setSearchInput} onSearch={e=>{e.preventDefault();setPage(1);setSearch(searchInput.trim());}} filter={filter} setFilter={value=>{setPage(1);setFilter(value);}} kind={kind} setKind={value=>{setPage(1);setKind(value);}} loaded={loaded} busy={busy} readOnly={readOnly} onOpen={openRecord} onDelete={remove} onNew={startNew}/>}
       <footer className="workspace-footer"><span>SHIV / WORKSPACE</span><span>Your work. Your conversations. One place.</span></footer>
     </main></div>
-    {draft&&editorSection&&<RecordEditor key={editorSection+(draft.id||'new')} section={editorSection} draft={draft} detail={detail} onField={onField} onSave={save} onClose={closeEditor} onUpload={upload} onNewType={newType} categories={categories} readOnly={readOnly} uploadsEnabled={session.uploadsEnabled} busy={busy} error={error} notice={notice} dirty={dirty}/>}
+    {draft&&editorSection&&<RecordEditor key={editorSection+(draft.id||'new')} section={editorSection} draft={draft} detail={detail} onField={onField} onSave={save} onClose={closeEditor} onUpload={upload} onNewType={newType} onImport={importProject} categories={categories} readOnly={readOnly} uploadsEnabled={session.uploadsEnabled} busy={busy} error={error} notice={notice} dirty={dirty}/>}
   </div>;
 }
