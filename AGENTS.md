@@ -10,4 +10,4 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## Project workflow
 
-After completing and verifying a task, commit and push the relevant code changes to the current project branch. Never commit credentials, private configuration, or customer data. Pushing a branch does not authorize merging to main, promoting a deployment, or changing live DNS.
+After completing and verifying a task, commit and push the relevant code changes directly to `main`, as requested by the project owner. This is the default publishing workflow and triggers the live Vercel deployment; a separate pull request approval is not required. Integrate remote changes without force-pushing. Never commit credentials, private configuration, or customer data. Live DNS changes still require separate authorization.
