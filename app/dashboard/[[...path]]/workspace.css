@@ -20,3 +20,7 @@
 :where(.workspace) .github-import form>div{display:flex;gap:10px}
 :where(.workspace) .github-import input{min-width:0;flex:1}
 @media(max-width:600px){:where(.workspace) .github-import form>div{flex-direction:column}}
+
+/* Shared destinations make the two private workspaces easy to switch between. */
+.workspace .workspace-topbar-actions{display:flex;align-items:center;gap:18px}.workspace .dashboard-switcher{display:flex;align-items:center;gap:3px;padding:4px;border:1px solid var(--line);border-radius:9px;background:#ffffff70}.workspace .dashboard-switcher a{display:flex;align-items:center;padding:7px 11px;border-radius:5px;font-size:11px;color:var(--muted);white-space:nowrap}.workspace .dashboard-switcher a:hover{background:#ffffff90;color:var(--ink)}.workspace .dashboard-switcher a[aria-current=page]{background:#ffffffd9;color:var(--ink);box-shadow:0 1px 4px #0000000b}.workspace .website-preview-link{display:flex;gap:8px;align-items:center;color:var(--muted)}
+@media(max-width:600px){.workspace .workspace-topbar-actions{gap:0}.workspace .website-preview-link{display:none}.workspace .workspace-topbar>div:first-child>span,.workspace .workspace-topbar>div:first-child>svg{display:none}.workspace .dashboard-switcher a{padding:6px 9px;font-size:10px}}
