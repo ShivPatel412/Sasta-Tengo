@@ -52,6 +52,8 @@ Complete `ACCEPTANCE.md`, backup/restore rehearsal and the write-freeze procedur
 
 ## Official references
 
+Dashboard appearance: existing databases need the additive migration `node --env-file=.env.local scripts/migrate-dashboard-appearance.mjs` before deploying the Settings tab. Fresh database setup includes this table automatically. Settings saves two validated hex colors per authenticated admin account; it does not change public website colors. Production write controls also apply to saving appearance. The migration creates only `next_dashboard_preferences` and does not modify portfolio or inquiry records.
+
 - [GitHub: adding locally hosted code](https://docs.github.com/en/migrations/importing-source-code/using-the-command-line-to-import-source-code/adding-locally-hosted-code-to-github)
 - [Vercel Git deployment](https://vercel.com/docs/git) and [environment separation](https://vercel.com/docs/deployments/environments)
 - [Vercel environment variables](https://vercel.com/docs/environment-variables)

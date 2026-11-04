@@ -1,6 +1,7 @@
 import { query, insert, transaction, assertWritable, handle, body, HttpError } from '../../../../lib/db.mjs';
 import { admin, sameOrigin, rateLimit, signIn, signOut } from '../../../../lib/auth.mjs';
 import { loginSchema, contactUpdate, appointmentUpdate, projectSchema, experienceSchema, typeSchema, storageData, serialize } from '../../../../lib/validation.mjs';
+import {loadAppearance,saveAppearance} from '../../../../lib/dashboard-appearance.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const tables = { contacts: 'contacts', appointments: 'appointments', projects: 'projects', experiences: 'experience', types: 'project_types' };
@@ -18,6 +19,11 @@ async function route(request, context) {
       await signIn(input.email, input.password); return json({ ok: true });
     }
     const owner = await admin();
+    if(resource==='appearance'&&path.length===1){
+      if(request.method==='GET')return json(await loadAppearance(owner.id,query));
+      if(request.method==='PUT'){assertWritable();return json(await saveAppearance(owner.id,await body(request,2000),query));}
+      throw new HttpError(405,'Method not allowed.');
+    }
     if (resource === 'logout' && path.length === 1 && request.method === 'POST') { await signOut(); return json({ ok: true }); }
     if (resource === 'session' && path.length === 1 && request.method === 'GET') return json({ readOnly: process.env.MIGRATION_READ_ONLY !== '0', uploadsEnabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN), user: { name:owner.name,email:owner.email } });
     if (resource === 'categories' && path.length === 1 && request.method === 'GET') {
