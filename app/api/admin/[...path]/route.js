@@ -1,7 +1,8 @@
 import { query, insert, transaction, assertWritable, handle, body, HttpError } from '../../../../lib/db.mjs';
 import { admin, sameOrigin, rateLimit, signIn, signOut } from '../../../../lib/auth.mjs';
 import { loginSchema, contactUpdate, appointmentUpdate, projectSchema, experienceSchema, typeSchema, storageData, serialize } from '../../../../lib/validation.mjs';
-import {loadAppearance,saveAppearance} from '../../../../lib/dashboard-appearance.mjs';
+import {loadAppearance,saveAppearance} from '../../../../lib/dashboard-preferences.mjs';
+import {dashboardStats} from '../../../../lib/dashboard-stats.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const tables = { contacts: 'contacts', appointments: 'appointments', projects: 'projects', experiences: 'experience', types: 'project_types' };
@@ -25,23 +26,11 @@ async function route(request, context) {
       throw new HttpError(405,'Method not allowed.');
     }
     if (resource === 'logout' && path.length === 1 && request.method === 'POST') { await signOut(); return json({ ok: true }); }
-    if (resource === 'session' && path.length === 1 && request.method === 'GET') return json({ readOnly: process.env.MIGRATION_READ_ONLY !== '0', uploadsEnabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN), user: { name:owner.name,email:owner.email } });
+    if (resource === 'session' && path.length === 1 && request.method === 'GET') return json({ readOnly: process.env.MIGRATION_READ_ONLY !== '0', uploadsEnabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN), user: { name:owner.name,email:owner.email },appearance:await loadAppearance(owner.id,query) });
     if (resource === 'categories' && path.length === 1 && request.method === 'GET') {
       return json(await query('SELECT category,name FROM project_types UNION SELECT category,category AS name FROM projects WHERE category NOT IN (SELECT category FROM project_types WHERE category IS NOT NULL) ORDER BY name'));
     }
-    if (resource === 'stats' && path.length === 1 && request.method === 'GET') {
-      const counts = {};
-      for (const table of ['contacts','appointments','projects','experience']) counts[table] = (await query(`SELECT COUNT(*) AS total FROM \`${table}\``))[0].total;
-      counts.unread_contacts = (await query('SELECT COUNT(*) AS total FROM contacts WHERE is_read=0'))[0].total;
-      counts.pending_requests = (await query("SELECT COUNT(*) AS total FROM appointments WHERE status='pending'"))[0].total;
-      const pipeline = await query('SELECT lead_status,COUNT(*) AS total FROM (SELECT lead_status FROM contacts UNION ALL SELECT lead_status FROM appointments) t GROUP BY lead_status');
-      const activity = await query('SELECT DATE(created_at) AS day,COUNT(*) AS total FROM (SELECT created_at FROM contacts UNION ALL SELECT created_at FROM appointments) t WHERE created_at>=DATE_SUB(UTC_DATE(),INTERVAL 6 DAY) GROUP BY DATE(created_at) ORDER BY day');
-      const recentContacts = await query('SELECT id,name,email,subject,is_read,lead_status,created_at FROM contacts ORDER BY created_at DESC,id DESC LIMIT 6');
-      const recentRequests = (await query('SELECT id,client_name,client_email,notes,request_data,status,lead_status,created_at FROM appointments ORDER BY created_at DESC,id DESC LIMIT 6')).map(row=>serialize(row,'appointments'));
-      const recentProjects = (await query('SELECT id,title,category,poster,image,gallery,technologies,is_featured,live_url,github_url,created_at FROM projects ORDER BY updated_at DESC,id DESC LIMIT 4')).map(row=>serialize(row,'projects'));
-      const recentExperience = (await query('SELECT id,title,company,logo,start_date,end_date,is_current FROM experience ORDER BY `order`,start_date DESC LIMIT 4')).map(row=>serialize(row,'experience'));
-      return json({ counts,pipeline,activity,recentContacts,recentRequests,recentProjects,recentExperience });
-    }
+    if (resource === 'stats' && path.length === 1 && request.method === 'GET') return json(await dashboardStats(query));
     const table = tables[resource];
     if (!table || path.length > 2 || (id && !/^[1-9][0-9]*$/.test(id))) throw new HttpError(404, 'Not found.');
     if (request.method === 'GET') {
@@ -60,9 +49,12 @@ async function route(request, context) {
       if (resource === 'appointments' && url.searchParams.get('kind') === 'bookings') clauses.push('request_data IS NULL');
       const where = clauses.length ? ' WHERE ' + clauses.join(' AND ') : '';
       const selection = resource === 'appointments' ? 'appointments.*,(SELECT title FROM services WHERE services.id=appointments.service_id) AS service_title' : '*';
-      const rows = await query(`SELECT ${selection} FROM \`${table}\`${where} ORDER BY id DESC LIMIT 20 OFFSET ${Math.floor((page-1)*20)}`, values);
+      const [rows,totals] = await Promise.all([
+        query(`SELECT ${selection} FROM \`${table}\`${where} ORDER BY id DESC LIMIT 20 OFFSET ${Math.floor((page-1)*20)}`, values),
+        id?Promise.resolve(null):query(`SELECT COUNT(*) AS count FROM \`${table}\`${where}`, values)
+      ]);
       if (id && !rows.length) throw new HttpError(404, 'Not found.');
-      const [{ count }] = await query(`SELECT COUNT(*) AS count FROM \`${table}\`${where}`, values);
+      const count=id?rows.length:totals[0].count;
       return json({ data: rows.map(row => serialize(row, table)), count, page });
     }
     assertWritable();
