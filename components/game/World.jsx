@@ -120,7 +120,7 @@ function Controller({mode,active,onTarget,player,sensitivity,fov,bob,destination
       if(hit)scratch.desired.setLength(Math.max(.25,hit.timeOfImpact-.18));
       scratch.desired.add(scratch.eye);camera.position.lerp(scratch.desired,1-Math.exp(-12*delta));camera.lookAt(scratch.eye.clone().add(scratch.direction));
     }
-    if(mode==='overview'){camera.position.lerp(new Vector3(12,15,17),1-Math.exp(-5*delta));camera.lookAt(0,0,0);}
+    if(mode==='overview'){camera.position.lerp(new Vector3(9,10,12),1-Math.exp(-5*delta));camera.lookAt(0,0,0);}
     if(mode==='free')orbit.current?.update();
     tick.current+=delta;if(tick.current>.12){tick.current=0;let target=active&&(mode==='first'||mode==='third')?interactionTarget(scratch.eye.toArray(),scratch.direction.toArray()):null;
       if(target){const toward=new Vector3(...target.position).sub(scratch.eye),distance=toward.length();const hit=world.castRay(new rapier.Ray(scratch.eye,toward.normalize()),Math.max(0,distance-.65),true,undefined,undefined,undefined,body.current);if(hit)target=null;}
@@ -141,5 +141,5 @@ function AdaptiveResolution({quality}){
   return null;
 }
 export default function World(props){
-  return <Canvas shadows={props.quality!=='low'} dpr={props.quality==='low'?1:[1,props.quality==='high'?1.75:1.25]} camera={{position:[12,15,17],fov:70,near:.08,far:65}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#050807');gl.domElement.tabIndex=0;gl.domElement.setAttribute('aria-label','Playable office. Click then WASD to move. Drag to look if mouse capture is unavailable.');}}><AdaptiveResolution quality={props.quality}/><Suspense fallback={null}><Physics timeStep={1/60}><Room stats={props.stats} onOpen={item=>{if(props.active&&(props.mode==='overview'||props.mode==='free'))props.onOpen(item);}}/><Controller {...props}/></Physics></Suspense></Canvas>;
+  return <Canvas shadows={props.quality!=='low'} dpr={props.quality==='low'?1:[1,props.quality==='high'?1.75:1.25]} camera={{position:[9,10,12],fov:70,near:.08,far:65}} gl={{antialias:true,powerPreference:'high-performance'}} onCreated={({gl})=>{gl.setClearColor('#050807');gl.domElement.tabIndex=0;gl.domElement.setAttribute('aria-label','Playable office. Click then WASD to move. Drag to look if mouse capture is unavailable.');}}><AdaptiveResolution quality={props.quality}/><Suspense fallback={null}><Physics timeStep={1/60}><Room stats={props.stats} onOpen={item=>{if(props.active&&(props.mode==='overview'||props.mode==='free'))props.onOpen(item);}}/><Controller {...props}/></Physics></Suspense></Canvas>;
 }
