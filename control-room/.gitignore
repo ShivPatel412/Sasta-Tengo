@@ -1,0 +1,8 @@
+__pycache__/
+.env
+auth.json
+snapshot.json
+secrets/
+cloud-init/
+*.log
+node_modules/

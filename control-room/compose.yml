@@ -1,0 +1,81 @@
+name: shiv-cloud
+services:
+  nextcloud:
+    image: nextcloud:34.0.5-apache
+    container_name: shiv-nextcloud
+    entrypoint: ['/bin/sh', '/cloud-entrypoint.sh']
+    restart: unless-stopped
+    ports:
+      - '127.0.0.1:8788:80'
+    environment:
+      POSTGRES_HOST: postgres_shared
+      POSTGRES_DB: shiv_nextcloud
+      POSTGRES_USER: shiv_nextcloud
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-password
+      NEXTCLOUD_ADMIN_USER: shiv
+      NEXTCLOUD_ADMIN_PASSWORD_FILE: /run/cloud-init/admin-password
+      NEXTCLOUD_TRUSTED_DOMAINS: cloud.shivpatel.in localhost:8788 127.0.0.1:8788
+      TRUSTED_PROXIES: 172.19.0.1
+      OVERWRITEPROTOCOL: https
+      OVERWRITEHOST: cloud.shivpatel.in
+      OVERWRITECLIURL: https://cloud.shivpatel.in
+      APACHE_DISABLE_REWRITE_IP: '1'
+      REDIS_HOST: shiv-nextcloud-redis
+      PHP_MEMORY_LIMIT: 512M
+      PHP_UPLOAD_LIMIT: 512M
+      NEXTCLOUD_INIT_HTACCESS: 'true'
+    volumes:
+      - /opt/shiv-control/cloud-entrypoint.sh:/cloud-entrypoint.sh:ro
+      - nextcloud_html:/var/www/html
+      - nextcloud_data:/var/www/html/data
+      - type: bind
+        source: /srv/shivcloud-hdd/ShivCloud
+        target: /mnt/shivcloud-hdd
+        bind:
+          create_host_path: false
+      - /var/lib/shiv-control/secrets:/run/secrets:ro
+      - /var/lib/shiv-control/cloud-init:/run/cloud-init:ro
+    networks:
+      - db-net
+      - cloud-internal
+    depends_on:
+      - redis
+  redis:
+    image: redis:7.4-alpine
+    container_name: shiv-nextcloud-redis
+    restart: unless-stopped
+    command: redis-server --save '' --appendonly no --maxmemory 128mb --maxmemory-policy noeviction
+    networks:
+      - cloud-internal
+  cron:
+    image: nextcloud:34.0.5-apache
+    container_name: shiv-nextcloud-cron
+    restart: unless-stopped
+    entrypoint: /cron.sh
+    volumes:
+      - nextcloud_html:/var/www/html
+      - nextcloud_data:/var/www/html/data
+      - type: bind
+        source: /srv/shivcloud-hdd/ShivCloud
+        target: /mnt/shivcloud-hdd
+        bind:
+          create_host_path: false
+      - /var/lib/shiv-control/secrets:/run/secrets:ro
+      - /var/lib/shiv-control/cloud-init:/run/cloud-init:ro
+    environment:
+      POSTGRES_HOST: postgres_shared
+      POSTGRES_DB: shiv_nextcloud
+      POSTGRES_USER: shiv_nextcloud
+      POSTGRES_PASSWORD_FILE: /run/secrets/db-password
+      REDIS_HOST: shiv-nextcloud-redis
+    networks:
+      - db-net
+      - cloud-internal
+volumes:
+  nextcloud_html:
+  nextcloud_data:
+networks:
+  db-net:
+    external: true
+  cloud-internal:
+    internal: true

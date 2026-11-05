@@ -1,9 +1,10 @@
 export const stations=[
-  {id:'portfolio',name:'Portfolio workstation',position:[-3,1.55,-3.45],kind:'portfolio'},
-  {id:'automation',name:'Automation workstation',position:[3,1.55,-3.45],kind:'automation'},
-  {id:'host',name:'Office host · placeholder',position:[5.7,1.4,0],kind:'agent'},
+  {id:'workflows',name:'Workflow gaming station',position:[-3,2,-3.45],kind:'workflows'},
+  {id:'executions',name:'Execution monitor',position:[3,2,-3.45],kind:'executions'},
+  {id:'host',name:'AI workflow representative',position:[5.7,1.4,0],kind:'agent'},
   {id:'server',name:'Infrastructure rack',position:[-6.6,1.4,-3],kind:'server'},
-  {id:'hub',name:'Command table',position:[0,1.5,0],kind:'portfolio'}
+  {id:'hub',name:'Command table',position:[0,1.5,0],kind:'overview'},
+  {id:'cafe',name:'Coffee bar · activity lounge',position:[-5.5,1.6,2.8],kind:'executions'}
 ];
 export const cameraModes=['first','third','free','overview'];
 export function movement(keys,yaw){

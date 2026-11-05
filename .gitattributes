@@ -1,0 +1,2 @@
+control-room/*.sh text eol=lf
+control-room/static/hq/* -text -whitespace linguist-generated=true
