@@ -1,5 +1,6 @@
 import datetime
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -7,7 +8,8 @@ import urllib.request
 
 ROOT=Path('/opt/shiv-control')
 STATE=Path('/var/lib/shiv-control')
-TUNNEL='05c94711-11af-48c7-91c3-f338b00c7f0f'
+TUNNEL=os.environ.get('SHIV_TUNNEL_ID')
+ORIGIN_CERT=os.environ.get('CLOUDFLARED_ORIGIN_CERT')
 
 def main():
     if not (STATE/'auth.json').exists(): raise SystemExit('Dashboard account setup must be completed first.')
@@ -23,6 +25,8 @@ def main():
     previous=config.read_text()
     marker='  # Shiv personal cloud and control room\n'
     if marker not in previous:
+        if not TUNNEL or not ORIGIN_CERT:
+            raise SystemExit('Set SHIV_TUNNEL_ID and CLOUDFLARED_ORIGIN_CERT privately before publishing new DNS routes.')
         if 'dashboard.shivpatel.in' in previous or 'cloud.shivpatel.in' in previous:
             raise SystemExit('Existing hostname route requires review; no route overwritten.')
         extra='''  # Shiv personal cloud and control room
@@ -39,7 +43,7 @@ def main():
         candidate.write_text(previous.replace('  # Default\n',extra+'  # Default\n'))
         subprocess.run(['cloudflared','--config',str(candidate),'tunnel','ingress','validate'],check=True)
         for host in ['dashboard.shivpatel.in','cloud.shivpatel.in']:
-            subprocess.run(['cloudflared','--origincert','/home/patelsastatengo/.cloudflared/cert.pem','tunnel','route','dns',TUNNEL,host],check=True)
+            subprocess.run(['cloudflared','--origincert',ORIGIN_CERT,'tunnel','route','dns',TUNNEL,host],check=True)
         candidate.replace(config)
         subprocess.run(['systemctl','restart','cloudflared'],check=True)
     subprocess.run(['systemctl','start','shiv-collector.service'],check=True)
