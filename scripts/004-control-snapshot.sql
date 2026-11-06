@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS next_control_snapshot (
+  id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
+  collected_ms BIGINT UNSIGNED NOT NULL,
+  payload JSON NOT NULL
+)

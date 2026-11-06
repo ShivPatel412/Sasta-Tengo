@@ -1,5 +1,5 @@
 'use client';
-import {Check,Palette,RotateCcw,Sparkles} from 'lucide-react';
+import {Check,Palette,RotateCcw,Sparkles} from './dashboard-icons';
 import {appearancePresets,appearanceSchema,defaultAppearance,dashboardFonts} from '../../../lib/dashboard-appearance.mjs';
 
 export default function AppearanceSettings({value,onChange,onSave,busy,readOnly}){

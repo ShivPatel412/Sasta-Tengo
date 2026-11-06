@@ -1,0 +1,11 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Instagram photos · Sasta Tengo</title><link rel="stylesheet" href="/photos.css"><script defer src="/photos.js"></script></head>
+<body><main><header><a href="/">← Control room</a><p class="eyebrow">SASTA TENGO · INSTAGRAM</p><h1>Your photos, ready for a post.</h1><p>Choose the strongest moments. Review the story. Publish when you’re ready.</p></header>
+<section class="panel"><h2>Start with your folder</h2><p class="source" id="source">Local photo folder</p><p>Originals stay unchanged. This flow processes photos and skips videos.</p>
+<label for="brief">What should the post be about?</label><textarea id="brief" maxlength="500" rows="3" placeholder="A weekend trip, a celebration, a food find…"></textarea>
+<div class="fields"><div><label for="location">Confirmed place (optional)</label><input id="location" maxlength="150" placeholder="Leave blank when unknown"></div><div><label for="location-id">Instagram location ID (optional)</label><input id="location-id" inputmode="numeric" placeholder="A location name alone won’t tag a place"></div><div><label for="account-id">Professional Instagram account ID</label><input id="account-id" inputmode="numeric" placeholder="Needed only for publishing"></div></div>
+<p class="note">Analyse sends resized photos to your connected Google Gemini account and may use paid API allowance. It prepares a draft; it does not publish.</p>
+<div class="actions"><button id="scan" class="secondary">Check folder — no AI</button><button id="analyse">Analyse photos & prepare a post</button><button id="refresh" class="secondary">Refresh</button></div><p id="message" role="status" aria-live="polite"></p>
+<p id="inventory"></p><a href="https://n8n.shivpatel.in/workflow/ShivPhotoPosts01" target="_blank" rel="noopener">Open workflow and execution details ↗</a></section>
+<section><h2>Prepared posts</h2><p>Song recommendations are for adding in Instagram. Automatic music attachment to photo posts is not verified. Publishing here requires explicit approval without music.</p><div id="drafts"><p>No prepared posts yet. Check the folder first, then request analysis when ready.</p></div></section>
+</main></body></html>

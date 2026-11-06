@@ -1,0 +1,14 @@
+[Unit]
+Description=Send sanitized status to the website master dashboard
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=shivdash
+Group=shivdash
+EnvironmentFile=/var/lib/shiv-control/master-push.env
+ExecStart=/usr/bin/python3 /opt/shiv-control/push_snapshot.py
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true

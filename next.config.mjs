@@ -1,6 +1,11 @@
 export default {
   poweredByHeader: false,
+  outputFileTracingIncludes: {'/dashboard/3d':['./control-room/static/hq.html'],'/hq/*':['./control-room/static/hq/*']},
+  devIndicators: false,
   serverExternalPackages: ['mysql2', 'nodemailer', '@vercel/blob'],
+  async rewrites(){
+    return {beforeFiles:process.env.NODE_ENV==='development'&&process.env.MASTER_DASHBOARD_LOCAL==='1'?[{source:'/',destination:'/dashboard'}]:[]};
+  },
   async headers() {
     return [{ source: '/:path*', headers: [
       { key: 'X-Content-Type-Options', value: 'nosniff' },

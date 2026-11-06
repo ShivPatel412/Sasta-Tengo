@@ -1,7 +1,7 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
-import {ArrowRight,ArrowUpRight,Briefcase,CalendarDays,Check,ChevronLeft,ChevronRight,ExternalLink,FileText,Folder,Image as ImageIcon,Inbox,Mail,MapPin,Phone,Plus,Search,Star,Trash2,Upload,X} from 'lucide-react';
+import {ArrowRight,ArrowUpRight,Briefcase,CalendarDays,Check,ChevronLeft,ChevronRight,ExternalLink,FileText,Folder,Image as ImageIcon,Inbox,Mail,MapPin,Phone,Plus,Search,Star,Trash2,Upload,X} from './dashboard-icons';
 import {activitySeries,dateLabel,fields,imageSource,listValue,recentInquiries,safeLink,textValue} from '../../../lib/dashboard.mjs';
 
 export function Badge({children,tone=''}){return <span className={`badge ${tone}`}>{children}</span>;}

@@ -1,0 +1,10 @@
+[Unit]
+Description=Refresh website dashboard status every 30 seconds
+
+[Timer]
+OnBootSec=45
+OnUnitInactiveSec=30
+Unit=shiv-master-push.service
+
+[Install]
+WantedBy=timers.target
