@@ -1,158 +1,449 @@
 'use client';
-
-import { useEffect, useRef, useState } from 'react';
+import CornerFrame from '../../CornerFrame';
+import StackMap from '../../../app/(portfolio)/stack-map';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import Script from 'next/script';
-import { ArrowUpRight, ArrowDown, Code, Circuitry, Globe, GithubLogo, LinkedinLogo, EnvelopeSimple, Plus, X, List, Check } from '@phosphor-icons/react';
-import RobotStage from '../components/RobotStage';
 import api from '../services/api';
-import { safePublicUrl, projectImage } from '../../../lib/landing.mjs';
+import Header from '../components/Header';
+import AnimatedBorderButton from '../components/AnimatedBorderButton';
+import NeumorphicButton from '../components/NeumorphicButton';
+import SplitText from '../components/SplitText';
+import TextGenerateEffect from '../components/TextGenerateEffect';
+import Loader from '../components/Loader';
+import Footer from '../components/Footer';
+import LightRays from '../component/LightRays';
+import LaserFlow from '../component/LaserFlow';
+import TerminalForm from '../components/TerminalForm';
+import ExperienceSection from '../components/ExperienceSection';
+import PortfolioFinder from '../components/portfolio/PortfolioFinder';
 
-const nav = [['projects', 'Work'], ['services', 'Expertise'], ['about', 'About'], ['contact', 'Contact']];
-const skills = ['Next.js', 'React', 'WordPress', 'Three.js', 'n8n', 'Laravel', 'Supabase'];
-const services = [
-  { icon: Globe, title: 'Websites people enjoy using.', detail: 'Thoughtful layouts, clear navigation and responsive interfaces that make the next step obvious.', tags: 'WordPress / Elementor / UI design' },
-  { icon: Code, title: 'Software that fits your work.', detail: 'Custom applications, dashboards and integrations built around the way your business actually operates.', tags: 'Next.js / React / Laravel' },
-  { icon: Circuitry, title: 'Less repetition. More progress.', detail: 'Connected tools and practical AI workflows that take repetitive tasks off your plate.', tags: 'n8n / APIs / AI automation' },
+const ServiceIcon = ({ title }) => {
+  const paths = title === 'Website Design'
+    ? <><circle cx="12" cy="12" r="8" /><path d="M4 12h16M12 4c2.2 2.2 2.2 13.8 0 16M12 4c-2.2 2.2-2.2 13.8 0 16" /></>
+    : title === 'Software Development'
+      ? <><path d="m8 8-4 4 4 4M16 8l4 4-4 4M14 5l-4 14" /></>
+      : <><circle cx="12" cy="12" r="8" /><path d="m15 9-2 5-5 2 2-5 5-2Z" /></>;
+
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>;
+};
+
+const defaultServices = [
+  { id: 1, title: 'Website Design', description: 'A responsive, modern website that makes your business look professional and easy to trust.' },
+  { id: 2, title: 'Software Development', description: 'Practical web applications, dashboards, and custom tools built around your workflow.' },
+  { id: 3, title: 'Digital Strategy', description: 'A focused planning session to turn your idea into a clear website or software roadmap.' }
 ];
-const faqs = [
-  ['What can we build together?', 'I build business websites, custom web applications, dashboards, WordPress plugins and automations. Tell me the problem you want to solve and we can choose a sensible starting point.'],
-  ['Can you improve my existing website?', 'Yes. We can work with your current website, improve its design and performance, or connect it with your other tools. A rebuild is only one possible approach.'],
-  ['Do you work with WordPress and Next.js?', 'Yes. I work with WordPress, Elementor, custom plugins, React and Next.js. The choice depends on your content, integrations and how you want to manage the site.'],
-  ['Can you connect AI and automation to my business?', 'I can connect services through APIs and n8n, including workflows for content, forms, project data and internal tools. We will define the inputs, outputs and approval steps before building.'],
-  ['How do you estimate the scope and timeline?', 'We start with your goals, existing setup and priorities. I then outline the scope and milestones so you can review the approach before development begins.'],
-  ['What is the first step?', 'Use the project booking form or send me a message with your idea. Include your current website if you have one, what you want to change and any target launch date.'],
-];
 
-function ProjectArt({ project, index }) {
-  const source = projectImage(project);
-  return <div className={`work-art work-art-${index % 3}`}>
-    {source ? <img src={source} alt={`${project.title} project preview`} loading="lazy" width="720" height="500" /> : <div className="work-illustration" aria-hidden="true"><div className="mini-browser"><div className="mini-toolbar"><i /><i /><i /><span>{project.category || 'Selected project'}</span></div><div className="mini-page"><div className="mini-sidebar"><i /><i /><i /></div><div className="mini-content"><div className="mini-line" /><div className="mini-line short" /><div className="mini-blocks"><i /><i /><i /></div><div className="mini-chart"><i /><i /><i /><i /><i /><i /><i /></div></div></div></div><span className="concept-label caption-5">Project illustration</span></div>}
-    <span className="work-open" aria-hidden="true"><ArrowUpRight size={24} /></span>
-  </div>;
-}
-
-export default function Home() {
-  const root = useRef(null), dialog = useRef(null), menu = useRef(null), menuToggle = useRef(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState('hero');
-  const [gsapReady, setGsapReady] = useState(false);
+const Home = () => {
+  const [services, setServices] = useState(defaultServices);
   const [projects, setProjects] = useState([]);
-  const [projectState, setProjectState] = useState('loading');
-  const [selected, setSelected] = useState(null);
-  const [category, setCategory] = useState('All');
-  const [experiences, setExperiences] = useState([]);
-  const [formState, setFormState] = useState('idle');
-  const [formError, setFormError] = useState('');
-  const [activeImage, setActiveImage] = useState('');
+  const [loading, setLoading] = useState(true);
+  const revealImgRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    let alive = true;
-    async function loadProjects() {
-      try {
-        const response = await api.get('/v1/projects');
-        if (!Array.isArray(response.data)) throw new Error('Invalid project response');
-        if (alive) { setProjects(response.data); setProjectState('ready'); }
-      } catch { if (alive) setProjectState('error'); }
-    }
-    loadProjects();
-    api.get('/v1/experience').then(({ data }) => { if (alive && Array.isArray(data)) setExperiences(data); }).catch(() => {});
-    window.addEventListener('focus', loadProjects);
-    return () => { alive = false; window.removeEventListener('focus', loadProjects); };
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
-    const observer = new IntersectionObserver(entries => { for (const entry of entries) if (entry.isIntersecting) setActiveSection(entry.target.id); }, { rootMargin: '-15% 0px -65% 0px' });
-    root.current.querySelectorAll('section[id]').forEach(section => observer.observe(section));
-    return () => observer.disconnect();
+    fetchData();
   }, []);
 
   useEffect(() => {
-    if (!gsapReady || !window.gsap) return;
-    const gsap = window.gsap, mm = gsap.matchMedia(), observers = [];
-    mm.add('(prefers-reduced-motion: no-preference)', () => {
-      gsap.from(root.current.querySelectorAll('[data-hero]'), { y: 32, opacity: 0, duration: 0.85, stagger: 0.1, ease: 'power3.out', clearProps: 'all' });
-      root.current.querySelectorAll('[data-reveal]').forEach(element => {
-        gsap.set(element, { y: 32, opacity: 0 });
-        const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { gsap.to(element, { y: 0, opacity: 1, duration: 0.75, ease: 'power3.out', clearProps: 'all' }); observer.disconnect(); } }, { threshold: 0.08 });
-        observer.observe(element); observers.push(observer);
-      });
-      root.current.querySelectorAll('[data-word]').forEach(element => {
-        gsap.set(element, { opacity: 0.3 });
-        const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { gsap.to(element, { opacity: 1, duration: 0.6, ease: 'power3.out' }); observer.disconnect(); } }, { rootMargin: '0px 0px -28% 0px', threshold: 1 });
-        observer.observe(element); observers.push(observer);
-      });
-    }, root);
-    return () => { observers.forEach(o => o.disconnect()); mm.revert(); };
-  }, [gsapReady]);
+    const refreshProjects = () => api.get('/v1/projects')
+      .then(response => setProjects(response.data))
+      .catch(error => console.error('Error refreshing projects:', error));
 
-  useEffect(() => {
-    if (!menuOpen) return;
-    const before = document.body.style.overflow, panel = menu.current;
-    document.body.style.overflow = 'hidden'; panel.querySelector('a')?.focus();
-    function keydown(event) {
-      if (event.key === 'Escape') setMenuOpen(false);
-      if (event.key === 'Tab') {
-        const items = [...panel.querySelectorAll('a,button')], first = items[0], last = items.at(-1);
-        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-        else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-      }
+    window.addEventListener('focus', refreshProjects);
+    return () => window.removeEventListener('focus', refreshProjects);
+  }, []);
+
+  useLayoutEffect(() => {
+    // Prevent browser scroll restoration from jumping to the end
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
     }
-    document.addEventListener('keydown', keydown);
-    return () => { document.body.style.overflow = before; document.removeEventListener('keydown', keydown); menuToggle.current?.focus(); };
-  }, [menuOpen]);
 
-  useEffect(() => {
-    if (selected && dialog.current && !dialog.current.open) dialog.current.showModal();
-    if (!selected && dialog.current?.open) dialog.current.close();
-  }, [selected]);
+    // Remove any hash that might force scroll to a section
+    if (window.location.hash) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    }
 
-  const categories = ['All', ...new Set(projects.map(p => p.category || 'Other'))];
-  const visible = category === 'All' ? projects : projects.filter(p => (p.category || 'Other') === category);
-  const chooseProject = project => { setSelected(project); setActiveImage(projectImage(project) || ''); };
+    const scrollToTop = () => {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    };
 
-  async function sendMessage(event) {
-    event.preventDefault(); if (formState === 'sending') return;
-    const form = event.currentTarget, data = Object.fromEntries(new FormData(form));
-    setFormState('sending'); setFormError('');
+    scrollToTop();
+    requestAnimationFrame(scrollToTop);
+    setTimeout(scrollToTop, 50);
+    window.addEventListener("load", scrollToTop);
+    window.addEventListener("pageshow", scrollToTop);
+
+    return () => {
+      window.removeEventListener("load", scrollToTop);
+      window.removeEventListener("pageshow", scrollToTop);
+    };
+  }, []);
+
+  const fetchData = async () => {
+    // Set a maximum loading time of 5000ms (5 seconds)
+    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 2500));
+    
+    const [servicesRes, projectsRes] = await Promise.allSettled([api.get('/v1/services'), api.get('/v1/projects')]);
+
+    if (servicesRes.status === 'fulfilled' && servicesRes.value.data.length) setServices(servicesRes.value.data);
+    if (projectsRes.status === 'fulfilled') setProjects(projectsRes.value.data);
+    if (servicesRes.status === 'rejected') console.error('Error fetching services:', servicesRes.reason);
+    if (projectsRes.status === 'rejected') console.error('Error fetching projects:', projectsRes.reason);
+
+    await minLoadingTime;
+    setLoading(false);
+  };
+
+  const handleContactSubmit = async (formData) => {
     try {
-      await api.post('/v1/contacts', { name: data.name.trim(), email: data.email.trim(), phone: data.phone.trim(), subject: 'Website project inquiry', message: data.message.trim() });
-      setFormState('sent'); form.reset();
-    } catch { setFormState('error'); setFormError('Your message could not be sent. Please retry or email info@shivpatel.in.'); }
+      const payload = {
+        name: formData.name?.trim() || '',
+        email: formData.email?.trim() || '',
+        phone: formData.mobile?.trim() || '',
+        subject: formData.subject?.trim() || 'General Inquiry',
+        message: formData.message?.trim() || ''
+      };
+
+      await api.post('/v1/contacts', payload);
+
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      throw error;
+    }
+  };
+
+  if (loading) {
+    return <Loader />;
   }
 
-  return <div className="studio" ref={root}>
-    <Script src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/gsap.min.js" strategy="afterInteractive" onReady={() => setGsapReady(true)} />
-    <a href="#main" className="studio-skip button-md">Skip to content</a>
-    <header className="studio-header">
-      <a className="studio-brand title-3" href="#hero" aria-label="Shiv Patel home"><span className="brand-symbol">s<span>p</span><i /></span><span>Shiv Patel<span className="brand-role caption-5">Developer & creative thinker</span></span></a>
-      <nav className="studio-nav" aria-label="Primary navigation">{nav.map(([id, label]) => <a className="title-4" key={id} href={`#${id}`} aria-current={activeSection === id ? 'location' : undefined}>{label}</a>)}</nav>
-      <Link href="/booking" className="studio-button studio-header-cta button-sm">Start a project <ArrowUpRight size={18} /></Link>
-      <button ref={menuToggle} type="button" className="studio-menu-toggle" aria-expanded={menuOpen} aria-controls="studio-mobile-menu" aria-label="Open navigation" onClick={() => setMenuOpen(true)}><List size={24} /></button>
-    </header>
-    {menuOpen && <div ref={menu} id="studio-mobile-menu" className="studio-mobile-menu" role="dialog" aria-modal="true" aria-label="Navigation"><a href="#hero" className="title-1" onClick={() => setMenuOpen(false)}>Shiv Patel</a><button type="button" className="studio-menu-close" onClick={() => setMenuOpen(false)} aria-label="Close navigation"><X size={24} /></button><nav>{nav.map(([id, label], i) => <a key={id} href={`#${id}`} className="heading-3" onClick={() => setMenuOpen(false)} style={{ '--menu-delay': `${i * 60}ms` }}>{label}<ArrowUpRight /></a>)}</nav><Link href="/booking" className="studio-button button-md">Start a project <ArrowUpRight /></Link></div>}
-    <main id="main">
-      <section id="hero" className="studio-hero studio-container">
-        <div className="studio-hero-copy"><p className="studio-eyebrow caption-4" data-hero><span className="status-dot" />Open to projects & collaborations</p><h1 className="heading-1" data-hero>From a spark.<br />To something<br /><span>people use.</span></h1><p className="body-3 hero-summary" data-hero>I’m Shiv, a web developer turning ideas into thoughtful websites, useful software and connected automations.</p><div className="hero-actions" data-hero><Link href="/booking" className="studio-button button-md">Let’s build your idea <ArrowUpRight size={20} /></Link><span className="caption-5">Based in Gujarat. Building for the web.</span></div><div className="hero-proof caption-4" data-hero><span>WordPress & custom development</span><span className="proof-divider" /><span>Design → code → launch</span></div></div>
-        <div className="hero-visual" data-hero><span className="visual-index caption-5">THE STUDIO / 001</span><RobotStage /><span className="visual-coordinate caption-5">A human behind the code.</span></div>
-        <div className="hero-bottom caption-5"><span>Independent developer. Connected thinking.</span><a href="#projects">Scroll to explore <ArrowDown size={16} /></a></div>
+  return (
+    <>
+      <Header />
+      <div className="home">
+        {/* Hero Section */}
+        <section id="hero" className="hero">
+        <div 
+          style={{ 
+            position: 'absolute',
+            top: isMobile ? -200 : -340,
+            left: isMobile ? -50 : -100,
+            width: '100%',
+            height: '100%',
+            overflow: 'hidden',
+            zIndex: 0
+          }}
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const el = revealImgRef.current;
+            if (el) {
+              el.style.setProperty('--mx', `${x}px`);
+              el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
+            }
+          }}
+          onMouseLeave={() => {
+            const el = revealImgRef.current;
+            if (el) {
+              el.style.setProperty('--mx', '-9999px');
+              el.style.setProperty('--my', '-9999px');
+            }
+          }}
+        >
+          <LaserFlow 
+            selectedExample="basic"
+            horizontalSizing={isMobile ? 0.3 : 0.6}
+            verticalSizing={isMobile ? 15 : 25}
+            wispDensity={isMobile ? 2 : 5}
+            wispSpeed={isMobile ? 10 : 20}
+            wispIntensity={isMobile ? 5 : 10}
+            flowSpeed={1.32}
+            flowStrength={0.07}
+            fogIntensity={isMobile ? 0.05 : 0.01}
+            fogScale={1}
+            fogFallSpeed={0.57}
+            decay={1.34}
+            falloffStart={0.9}
+            mouseTiltStrength={isMobile ? 5 : 10.02}
+            mouseSmoothTime={10.1}
+          />
+          
+          <img
+            ref={revealImgRef}
+            src="/Boy.jpg"
+            alt="Reveal effect"
+            style={{
+              position: 'absolute',
+              width: '100%',
+              top: '-50%',
+              zIndex: 5,
+              mixBlendMode: 'lighten',
+              opacity: 0.3,
+              pointerEvents: 'none',
+              '--mx': '-9999px',
+              '--my': '-9999px',
+              WebkitMaskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
+              maskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
+              WebkitMaskRepeat: 'no-repeat',
+              maskRepeat: 'no-repeat'
+            }}
+          />
+        </div>
+        <div className="container" style={{ position: 'relative', zIndex: 10 }}>
+          <div className="hero-box-container">
+            <div className="hero-box corner-box"><CornerFrame/>
+              <div className="hero-content">
+                <div className="hero-left">
+                  <div className="availability-badge">
+                    <span className="availability-dot"></span>
+                    Available for freelance work
+                  </div>
+                  <h1>
+                    <TextGenerateEffect
+                      words="Hi, I'm Shiv Patel"
+                      className="gradient-text"
+                    />
+                  </h1>
+                  <h2 className="hero-subtitle">
+                    <SplitText
+                      text="Full Stack Developer"
+                      animationType="slide"
+                    />
+                  </h2>
+                  <p className="hero-description">
+                    I create beautiful, functional, and user-centered digital experiences. With 3+ years of experience in web development, I bring ideas to life through clean code and thoughtful design.
+                  </p>
+                  <div className="hero-info">
+                    <div className="hero-info-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                      </svg>
+                      <span>Ahmedabad, India</span>
+                    </div>
+                    <div className="hero-info-item">
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                      </svg>
+                      <span>Available Now</span>
+                    </div>
+                  </div>
+                  <div className="hero-buttons">
+                    <AnimatedBorderButton
+                      text="Hire Me"
+                      href="#contact"
+                      variant="light"
+                    />
+                    <AnimatedBorderButton
+                      text="Download CV"
+                      href="/cv.pdf"
+                      variant="light"
+                    />
+                  </div>
+                  <div className="hero-social">
+                    <span className="follow-text">Follow me:</span>
+                    <div className="hero-social-links">
+                      <a href="https://github.com/ShivPatel412" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                        </svg>
+                      </a>
+                      <a href="https://discord.com" target="_blank" rel="noopener noreferrer" aria-label="Discord">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M20.317 4.492c-1.53-.69-3.17-1.2-4.885-1.49a.075.075 0 0 0-.079.036c-.21.369-.444.85-.608 1.23a18.566 18.566 0 0 0-5.487 0 12.36 12.36 0 0 0-.617-1.23A.077.077 0 0 0 8.562 3c-1.714.29-3.354.8-4.885 1.491a.07.07 0 0 0-.032.027C.533 9.093-.32 13.555.099 17.961a.08.08 0 0 0 .031.055 20.03 20.03 0 0 0 5.993 2.98.078.078 0 0 0 .084-.026 13.83 13.83 0 0 0 1.226-1.963.074.074 0 0 0-.041-.104 13.201 13.201 0 0 1-1.872-.878.075.075 0 0 1-.008-.125c.126-.093.252-.19.372-.287a.075.075 0 0 1 .078-.01c3.927 1.764 8.18 1.764 12.061 0a.075.075 0 0 1 .079.009c.12.098.245.195.372.288a.075.075 0 0 1-.006.125c-.598.344-1.22.635-1.873.877a.075.075 0 0 0-.041.105c.36.687.772 1.341 1.225 1.962a.077.077 0 0 0 .084.028 19.963 19.963 0 0 0 6.002-2.981.076.076 0 0 0 .032-.054c.5-5.094-.838-9.52-3.549-13.442a.06.06 0 0 0-.031-.028zM8.02 15.278c-1.182 0-2.157-1.069-2.157-2.38 0-1.312.956-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.956 2.38-2.157 2.38zm7.975 0c-1.183 0-2.157-1.069-2.157-2.38 0-1.312.955-2.38 2.157-2.38 1.21 0 2.176 1.077 2.157 2.38 0 1.312-.946 2.38-2.157 2.38z"/>
+                        </svg>
+                      </a>
+                      <a href="https://linkedin.com/in/shivpatel412" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                        </svg>
+                      </a>
+                      <a href="https://instagram.com/shiv_patel_412" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                      </a>
+                    </div>
+                  </div>
+                </div>
+                <div className="hero-right">
+                  <div className="hero-image-wrapper">
+                    <img src="/Boy.jpg" alt="Shiv Patel" className="hero-image" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
-      <div className="studio-stack studio-container"><span className="caption-5">A few tools in my toolkit</span><div>{skills.map(skill => <span key={skill} className="title-3">{skill}</span>)}</div></div>
 
-      <section id="projects" className="studio-section studio-container"><header className="section-heading" data-reveal><div><p className="studio-eyebrow caption-4">01 / Selected work</p><h2 className="heading-2">Built with intent.</h2></div><p className="body-3">Websites, applications and experiments.<br />Different challenges. The same care.</p></header><div className="work-filters" aria-label="Filter projects">{categories.map(name => <button type="button" className="button-sm" key={name} aria-pressed={category === name} onClick={() => setCategory(name)}>{name}</button>)}</div>{projectState === 'loading' ? <div className="work-grid" aria-label="Loading projects" aria-busy="true"><div className="work-skeleton" /><div className="work-skeleton" /></div> : <div className="work-grid">{visible.map((project, index) => <article key={project.id} className="work-card"><button type="button" onClick={() => chooseProject(project)} aria-label={`Explore ${project.title}`}><ProjectArt project={project} index={index} /><div className="work-card-copy"><div><p className="caption-4">{project.category || 'Selected project'}</p><h3 className="heading-5">{project.title}</h3></div><span className="caption-5">{String(index + 1).padStart(2, '0')}</span></div></button><p className="body-6 work-description">{project.description}</p><div className="work-tags caption-5">{(project.technologies || []).slice(0, 4).map(tag => <span key={tag}>{tag}</span>)}</div></article>)}</div>}{projectState === 'error' && <p className="studio-empty body-3" role="status">The project collection could not load. You can explore my work on GitHub below.</p>}{projectState === 'ready' && !visible.length && <p className="studio-empty body-3">New projects are on the way. Explore my GitHub in the meantime.</p>}<a href="https://github.com/ShivPatel412" target="_blank" rel="noreferrer" className="studio-text-link button-sm">More experiments on GitHub <ArrowUpRight size={18} /></a></section>
+      {/* About Section */}
+      <section id="about" className="about">
+        <LightRays />
+        <div className="container">
+          <h2>About Me</h2>
+          <div className="about-content">
+            <div className="about-text">
+              <p>
+                I am Shiv Patel, popularly known as Sasta Tengo, a computer science student exploring diverse fields of technology - from software and web development to building innovative solutions. My goal is to continuously grow my skills and expand my horizons.
+              </p>
+              <h3>Skills & Technologies</h3>
+              <div className="skills-grid">
+                <span className="skill-tag corner-box"><CornerFrame/>HTML5</span>
+                <span className="skill-tag corner-box"><CornerFrame/>CSS3</span>
+                <span className="skill-tag corner-box"><CornerFrame/>JavaScript</span>
+                <span className="skill-tag corner-box"><CornerFrame/>React</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Node.js</span>
+                <span className="skill-tag corner-box"><CornerFrame/>PHP</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Laravel</span>
+                <span className="skill-tag corner-box"><CornerFrame/>MySQL</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Python</span>
+                <span className="skill-tag corner-box"><CornerFrame/>Git</span>
+                <span className="skill-tag corner-box"><CornerFrame/>UI/UX</span>
+              </div>
+              <div style={{ marginTop: '30px' }}>
+                <NeumorphicButton
+                  text="View My GitHub"
+                  onClick={() => window.open('https://github.com/ShivPatel412', '_blank')}
+                />
+              </div>
+            </div>
+            <div className="about-code">
+              <div className="code-block corner-box"><CornerFrame/>
+                <pre><code>{`const developer = {
+  name: 'Shiv Patel (Sasta Tengo)',
+  role: 'Full Stack Developer',
+  location: 'Ahmedabad, India',
+  passion: 'Creating innovative
+            web solutions and
+            exploring new tech'
+};`}</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-      <section id="services" className="studio-section studio-container"><header className="section-heading" data-reveal><div><p className="studio-eyebrow caption-4">02 / What I bring</p><h2 className="heading-2">Your next move,<br />made possible.</h2></div><p className="body-3">From your first website to the tools<br />that keep your business moving.</p></header><div className="expertise-grid">{services.map(({ icon: Icon, title, detail, tags }, index) => <article className="expertise-card" key={title} data-reveal><div className="expertise-top"><Icon size={32} weight="light" /><span className="caption-5">0{index + 1}</span></div><h3 className="heading-5">{title}</h3><p className="body-3">{detail}</p><p className="caption-5 expertise-tools">{tags}</p></article>)}</div></section>
-      <section className="studio-manifesto studio-container" aria-label="My approach"><p className="studio-eyebrow caption-4">A simple philosophy</p><h2 className="heading-1">{'Good technology should feel simple. Even when the thinking behind it isn’t.'.split(' ').map((word, index) => <span data-word key={index}>{word} </span>)}</h2><span className="manifesto-mark" aria-hidden="true">↗</span></section>
+      <StackMap />
+      {/* Experience Section */}
+     
+      <ExperienceSection />
 
-      <section id="about" className="studio-section studio-container studio-about"><div className="about-portrait" data-reveal><img src="/Boy.jpg" alt="Shiv Patel" width="520" height="620" loading="lazy" /><div className="portrait-caption"><span className="title-3">Shiv Patel</span><span className="caption-5">Developer. Builder. Always learning.</span></div></div><div className="about-copy" data-reveal><p className="studio-eyebrow caption-4">03 / The person behind the pixels</p><h2 className="heading-2">Curious by nature.<br />A builder by choice.</h2><p className="body-3">I work at the intersection of design and development, bringing together clear interfaces, practical code and the tools that make them useful.</p><p className="body-3">My work spans WordPress websites, custom plugins, React applications and API integrations. Lately, I’ve been exploring 3D experiences and AI automation to connect more of the pieces.</p><div className="about-links"><a href="https://github.com/ShivPatel412" target="_blank" rel="noreferrer" className="studio-text-link button-sm"><GithubLogo size={20} /> GitHub <ArrowUpRight size={16} /></a><a href="https://linkedin.com/in/shivpatel412" target="_blank" rel="noreferrer" className="studio-text-link button-sm"><LinkedinLogo size={20} /> LinkedIn <ArrowUpRight size={16} /></a></div></div></section>
-      {experiences.length > 0 && <section id="experience" className="studio-section studio-container"><header className="section-heading" data-reveal><div><p className="studio-eyebrow caption-4">Experience</p><h2 className="heading-2">Learning through building.</h2></div></header><div className="studio-experience">{experiences.map(item => <article key={item.id || item.company} className="experience-row"><span className="caption-4">{item.start_date?.slice(0, 4)} — {item.is_current ? 'Present' : item.end_date?.slice(0, 4)}</span><div><h3 className="heading-5">{item.company}</h3><p className="body-6">{item.title}</p></div><p className="body-6">{item.summary || item.description}</p></article>)}</div></section>}
-      <section className="studio-section studio-container"><header className="section-heading" data-reveal><div><p className="studio-eyebrow caption-4">04 / Working together</p><h2 className="heading-2">A clear path from here.</h2></div></header><div className="process-grid">{[['Talk it through', 'Your goals, the problem and the people we’re building for. We define what matters first.'], ['Make it tangible', 'A focused design and working implementation, with room for feedback along the way.'], ['Launch with care', 'Responsive checks, connected integrations and a handover so you can keep moving.']].map(([title, copy], index) => <article key={title} data-reveal><span className="process-number heading-3">0{index + 1}<ArrowUpRight size={24} /></span><h3 className="heading-5">{title}</h3><p className="body-3">{copy}</p></article>)}</div></section>
-      <section className="studio-section studio-container faq-section"><div data-reveal><p className="studio-eyebrow caption-4">A little clarity</p><h2 className="heading-2">Before we<br />get started.</h2></div><div className="studio-faq">{faqs.map(([question, answer]) => <details key={question}><summary className="title-3">{question}<Plus size={20} /></summary><p className="body-3">{answer}</p></details>)}</div></section>
+      <PortfolioFinder projects={projects} />
 
-      <section id="cta" className="studio-container studio-cta" aria-labelledby="cta-title"><div className="cta-copy" data-reveal><p className="studio-eyebrow caption-4">Small spark. Big possibilities.</p><h2 id="cta-title" className="heading-1">Have an idea?<br />Let’s give it<br /><span>a life online.</span></h2><p className="body-3">Bring the idea. We’ll figure out the right next step together.</p><Link href="/booking" className="studio-button button-md">Let’s build your idea <ArrowUpRight size={20} /></Link><span className="caption-5 cta-note">We’ll discuss the scope before you commit.</span></div><div className="cta-robot"><RobotStage compact /></div></section>
-      <section id="contact" className="studio-section studio-container studio-contact"><div data-reveal><p className="studio-eyebrow caption-4">05 / Say hello</p><h2 className="heading-2">Let’s start with<br />a conversation.</h2><a href="mailto:info@shivpatel.in" className="contact-email title-1">info@shivpatel.in <ArrowUpRight size={24} /></a><p className="body-6">Gujarat, India · Open to remote collaboration</p></div><form className="studio-contact-form" onSubmit={sendMessage}><div className="form-row"><label className="title-4">Your name<input name="name" required maxLength={100} autoComplete="name" placeholder="Your name" /></label><label className="title-4">Email address<input name="email" type="email" required maxLength={200} autoComplete="email" placeholder="you@example.com" /></label></div><label className="title-4">Phone number <span className="caption-5">(optional)</span><input name="phone" type="tel" maxLength={20} autoComplete="tel" placeholder="Your contact number" /></label><label className="title-4">What are you thinking?<textarea name="message" required minLength={10} maxLength={5000} rows={4} placeholder="A little about your idea, your goals and what you need." /></label><div aria-live="polite" aria-atomic="true">{formState === 'sent' && <p className="form-success body-6"><Check size={18} /> Your message has been sent. Thank you for reaching out.</p>}{formError && <p className="form-error body-6" role="alert">{formError}</p>}</div><button className="studio-button button-md" disabled={formState === 'sending'} type="submit">{formState === 'sending' ? 'Sending your message…' : 'Send your message'}<ArrowUpRight size={20} /></button></form></section>
-    </main>
-    <footer className="studio-footer studio-container"><a href="#hero" className="footer-name heading-2">Shiv Patel<span aria-hidden="true">↗</span></a><div className="footer-bottom caption-5"><span>© {new Date().getFullYear()} Shiv Patel</span><span>Made with intention. And a little curiosity.</span><div><a href="https://github.com/ShivPatel412" target="_blank" rel="noreferrer" aria-label="GitHub"><GithubLogo size={20} /></a><a href="https://linkedin.com/in/shivpatel412" target="_blank" rel="noreferrer" aria-label="LinkedIn"><LinkedinLogo size={20} /></a><a href="mailto:info@shivpatel.in" aria-label="Email Shiv"><EnvelopeSimple size={20} /></a></div></div></footer>
-    <dialog ref={dialog} className="studio-project-dialog" onCancel={() => setSelected(null)} onClose={() => setSelected(null)} onClick={event => { if (event.target === event.currentTarget) setSelected(null); }} aria-labelledby="project-dialog-title">{selected && <article><button type="button" className="dialog-close" onClick={() => setSelected(null)} aria-label="Close project"><X size={24} /></button>{safePublicUrl(activeImage) && <img className="dialog-image" src={safePublicUrl(activeImage)} alt={`${selected.title} preview`} />}<div className="dialog-copy"><p className="studio-eyebrow caption-4">{selected.category || 'Selected project'}</p><h2 id="project-dialog-title" className="heading-3">{selected.title}</h2><p className="body-3">{selected.description}</p><div className="work-tags caption-5">{(selected.technologies || []).map(tag => <span key={tag}>{tag}</span>)}</div>{selected.gallery_urls?.length > 0 && <div className="dialog-gallery">{selected.gallery_urls.map((url, index) => safePublicUrl(url) && <button type="button" key={url} onClick={() => setActiveImage(url)} aria-label={`Show project image ${index + 1}`}><img src={safePublicUrl(url)} alt="" loading="lazy" /></button>)}</div>}<div className="dialog-actions">{safePublicUrl(selected.live_url) && <a href={safePublicUrl(selected.live_url)} target="_blank" rel="noreferrer" className="studio-button button-sm">Visit website <ArrowUpRight /></a>}{safePublicUrl(selected.github_url) && <a href={safePublicUrl(selected.github_url)} target="_blank" rel="noreferrer" className="studio-text-link button-sm">View source <GithubLogo size={20} /></a>}</div></div></article>}</dialog>
-  </div>;
-}
+      {/* Services Section */}
+      <section id="services" className="services">
+        <div className="container">
+          <header className="services-intro">
+          
+            <h2>Services</h2>
+           
+          </header>
+          <div className="services-scroll">
+            {services.map((service) => (
+              <article key={service.id} className="service-card corner-box"><CornerFrame/>
+                <div className="service-icon"><ServiceIcon title={service.title} /></div>
+                <h3>{service.title}</h3>
+                <p className="service-description">{service.description}</p>
+                <div className="service-meta">
+                  <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h10M7 12h6M7 17h10M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" /></svg>₹{service.price}</span>
+                  <span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" /><path d="M12 8v4l3 2" /></svg>{service.duration} min</span>
+                </div>
+                <Link className="service-book-button" href={`/booking?service=${service.id}`}>Book Now <span aria-hidden="true">→</span></Link>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section id="cta" className="cta">
+        <div className="container">
+          <div className="cta-content corner-box"><CornerFrame/>
+            <p className="cta-label">YOUR NEXT BIG THING</p>
+            <h2>Have an idea?<br />Let’s make it real.</h2>
+            <p className="cta-description">Thoughtful design. Practical code. A website built around your next move.</p>
+            <Link href="/booking" className="btn btn-cta">Start a project <span aria-hidden="true">↗</span></Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
+      <section id="contact" className="contact">
+        <div className="container">
+          <p className="contact-label">CONTACT</p>
+          <h2>Get in Touch with Us</h2>
+          <div className="contact-wrapper">
+            <div className="contact-left">
+              <p className="contact-description">
+                I'm always open to discuss exciting projects and new opportunities. Let's collaborate!
+              </p>
+              <div className="contact-details">
+                <div className="contact-detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                  <span  href="mailto:info@shivpatel.in">info@shivpatel.in</span>
+                </div>
+                <div className="contact-detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+                  </svg>
+                  <span href="tel:+916351149722">+91 6351149722</span>
+                </div>
+                <div className="contact-detail-item">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+                  </svg>
+                  <span>Gujarat, India</span>
+                </div>
+              </div>
+              <div className="contact-social">
+                <a href="https://instagram.com/shiv_patel_412" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </a>
+                <a href="https://github.com/ShivPatel412" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
+                </a>
+                <a href="https://linkedin.com/in/shivpatel412" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </a>
+                <a href="https://wa.me/916351149722" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
+            <div className="contact-right">
+              <TerminalForm onSubmit={handleContactSubmit} />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+      </div>
+    </>
+  );
+};
+
+export default Home;
