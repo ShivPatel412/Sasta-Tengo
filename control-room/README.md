@@ -1,5 +1,13 @@
 # Shiv Control Room and Nextcloud
 
+## Instagram photo review
+
+`/photos` provides an authenticated review page for the separate local photo automation workflow. It can request a local folder scan or Gemini analysis, show prepared photo selections, captions, hashtags and song suggestions, and download a post pack. Sending photos to Gemini is an explicit user action. Direct publishing requires an explicit approval without music and a connected Instagram credential; automatic photo-post music attachment is not verified.
+
+`photo_routes.py` proxies only bounded routes to a private loopback photo service. Inventories, thumbnails, ZIP packs and approvals require the existing session. Write requests retain the existing origin/JSON checks. Future approved image copies can be fetched through signed, expiring `/instagram-media/…` URLs; unsigned paths and arbitrary file paths are rejected. Source folders are never served directly.
+
+Installed on 5 November 2026 with explicit user approval and AI testing off. The companion service and 37-node workflow source is in `photo-automation/`. Deployment preserved a rollback copy and restarted only `shiv-dashboard.service`; sign in again if your dashboard session expired. Five route tests cover the new security boundaries; existing dashboard authentication tests also pass. Live checks passed: exact read-only folder mount, loopback-only service port, private API rejection, invalid media-signature rejection, and a real n8n local scan reporting six photos and two skipped videos. No Gemini generation or Instagram publishing was tested. The Instagram credential still needs connecting.
+
 ## 3D gaming café
 
 Open **https://dashboard.shivpatel.in/3d**, or choose **Enter 3D gaming café** in

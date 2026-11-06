@@ -1,0 +1,138 @@
+{
+  "id": "ShivProjectGemini01",
+  "name": "Shiv Portfolio | Gemini generation bridge",
+  "active": false,
+  "nodes": [
+    {
+      "id": "92339830-d1f9-5354-899c-7fe6eea5d6be",
+      "name": "Project generation request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shiv-project-gemini",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "position": [
+        0,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ShivProjectGeminiAuth01",
+          "name": "Shiv Project Gemini Bridge"
+        }
+      },
+      "webhookId": "shiv-project-gemini-v1"
+    },
+    {
+      "id": "d186c416-4eff-59da-9080-b77cb44806f8",
+      "name": "Validate generation request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const input=$input.first().json.body;\nif(!input||!['models','text','image'].includes(input.action))throw new Error('Invalid project generation action');\nif(input.action==='models')return [{json:{action:'models',request:{}}}];\nif(typeof input.model!=='string'||!/^gemini-[a-zA-Z0-9.-]{1,90}$/.test(input.model))throw new Error('Invalid Gemini model');\nif(typeof input.prompt!=='string'||!input.prompt.trim()||input.prompt.length>60000)throw new Error('Invalid generation prompt');\nreturn [{json:{action:input.action,model:input.model,request:{contents:[{role:'user',parts:[{text:input.prompt}]}],generationConfig:input.action==='image'?{responseModalities:['TEXT','IMAGE']}:{responseMimeType:'application/json',maxOutputTokens:4000}}}}];"
+      },
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "id": "338bf315-e04b-5069-a41e-0d5c683e3c03",
+      "name": "Generate with existing Gemini account",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "parameters": {
+        "method": "={{ $json.action === \"models\" ? \"GET\" : \"POST\" }}",
+        "url": "={{ \"https://generativelanguage.googleapis.com/v1beta/models\" + ($json.action === \"models\" ? \"?pageSize=1000\" : \"/\" + $json.model + \":generateContent\") }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify($json.request) }}",
+        "options": {
+          "timeout": 180000,
+          "response": {
+            "response": {
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          }
+        }
+      },
+      "position": [
+        480,
+        300
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "queV87aVXtPFRaYE",
+          "name": "Xstream - Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "id": "befb2650-d481-59d3-be96-d5956a271a40",
+      "name": "Return generation result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "position": [
+        720,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Project generation request": {
+      "main": [
+        [
+          {
+            "node": "Validate generation request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate generation request": {
+      "main": [
+        [
+          {
+            "node": "Generate with existing Gemini account",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate with existing Gemini account": {
+      "main": [
+        [
+          {
+            "node": "Return generation result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "none",
+    "saveDataErrorExecution": "none",
+    "saveManualExecutions": false
+  },
+  "versionId": "fa89992c-ae1f-4723-acc1-a4a2df31150a",
+  "tags": []
+}

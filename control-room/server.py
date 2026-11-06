@@ -12,6 +12,8 @@ import threading
 import time
 from urllib.parse import urlsplit
 import website_auth
+import photo_routes
+import project_routes
 
 ROOT=Path(__file__).resolve().parent
 STATE=Path(os.environ.get('SHIV_STATE','/var/lib/shiv-control'))
@@ -43,7 +45,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Frame-Options','DENY')
         self.send_header('Referrer-Policy','no-referrer')
         wasm=" 'wasm-unsafe-eval'" if urlsplit(self.path).path=='/3d' else ''
-        self.send_header('Content-Security-Policy',f"default-src 'self'; script-src 'self'{wasm}; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+        media=" https:" if urlsplit(self.path).path=='/projects' else ''
+        self.send_header('Content-Security-Policy',f"default-src 'self'; script-src 'self'{wasm}; style-src 'self'; img-src 'self' data:{media}; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
         if cookie: self.send_header('Set-Cookie',cookie)
         self.end_headers();self.wfile.write(data)
     def host(self): return self.headers.get('Host','').lower()
@@ -65,6 +68,8 @@ class Handler(BaseHTTPRequestHandler):
         except (KeyError,http.cookies.CookieError): return False
     def do_GET(self):
         path=urlsplit(self.path).path
+        if photo_routes.get(self,path,ROOT): return
+        if project_routes.get(self,path,ROOT): return
         if path=='/healthz': return self.reply(200,{'ok':True})
         if path=='/api/session': return self.reply(200,{'authenticated':self.session(),'setup_available':not website_login_enabled() and not AUTH.exists() and self.local(),'auth_provider':'website' if website_login_enabled() else 'local'})
         if path=='/api/overview':
@@ -94,10 +99,13 @@ class Handler(BaseHTTPRequestHandler):
         if self.headers.get('Content-Type','').split(';')[0]!='application/json': return self.reply(415,{'error':'JSON required.'})
         try:
             length=int(self.headers.get('Content-Length','0'))
-            if length<1 or length>8192: raise ValueError()
+            limit=64000 if re.fullmatch(r'/api/project-drafts/[1-9]\d*',path) else 8192
+            if length<1 or length>limit: raise ValueError()
             body=json.loads(self.rfile.read(length))
             if not isinstance(body,dict): raise ValueError()
         except (ValueError,UnicodeError): return self.reply(400,{'error':'Invalid request.'})
+        if photo_routes.post(self,path,body): return
+        if project_routes.post(self,path,body): return
         if path=='/api/setup':
             if website_login_enabled(): return self.reply(403,{'error':'Both dashboards use your website account. Local account setup is disabled.'})
             if not self.local(): return self.reply(403,{'error':'First setup is available only on this PC at localhost:8787.'})

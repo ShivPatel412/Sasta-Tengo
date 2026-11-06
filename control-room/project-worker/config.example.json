@@ -1,0 +1,18 @@
+{
+  "token": "",
+  "portfolio_key": "",
+  "portfolio_origin": "https://www.shivpatel.in",
+  "github_owner": "ShivPatel412",
+  "github_token": "",
+  "gemini_key": "",
+  "text_model": "",
+  "image_model": "",
+  "category": "",
+  "screenshot_hosts": ["shivpatel.in", "www.shivpatel.in"],
+  "exclude_repositories": [],
+  "max_per_scan": 3,
+  "schedule_enabled": false,
+  "interval_seconds": 3600,
+  "auto_publish": false,
+  "capture_repository_homepages": true
+}
