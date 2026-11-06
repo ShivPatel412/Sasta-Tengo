@@ -18,6 +18,7 @@
     "db:admin:sql": "node --env-file=.env.local scripts/create-admin.mjs --sql"
   },
   "dependencies": {
+    "@phosphor-icons/react": "2.1.10",
     "@vercel/blob": "2.8.2",
     "bcryptjs": "3.0.3",
     "lucide-react": "1.28.0",
