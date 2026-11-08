@@ -22,7 +22,7 @@ def main():
     request = urllib.request.Request(
         'https://www.shivpatel.in/api/control-room/snapshot',
         data=payload, method='POST',
-        headers={'Content-Type':'application/json', 'Authorization':'Bearer '+key})
+        headers={'Content-Type':'application/json', 'Authorization':'Bearer '+key, 'User-Agent':'ShivControlRoom/1.0'})
     with urllib.request.build_opener(NoRedirect).open(request, timeout=20) as response:
         if response.status != 200:
             raise RuntimeError('Status upload was rejected')

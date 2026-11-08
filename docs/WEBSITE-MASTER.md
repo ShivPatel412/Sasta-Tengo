@@ -42,6 +42,12 @@ or credentials should ever be added to the collector feed.
 
 ## Remaining cutover requirements
 
+The production status connection was activated on 8 November 2026: the snapshot
+table, production upload key and master flag, and PC upload timer are configured.
+The uploader identifies itself as `ShivControlRoom/1.0`; Cloudflare rejected
+Python's default user agent with HTTP 403 / error 1010. Updates run every 30
+seconds while the PC, WSL collector and internet connection are available.
+
 The Instagram photo tool still runs on the PC. Its existing localhost worker
 API is not remotely accessible from Vercel; it must be integrated separately
 before retiring the old interface. Keep that link available during migration.
