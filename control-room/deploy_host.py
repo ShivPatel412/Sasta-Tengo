@@ -78,6 +78,7 @@ Description=Refresh Shiv workspace metadata
 [Timer]
 OnBootSec=30
 OnUnitInactiveSec=30
+AccuracySec=1s
 Unit=shiv-collector.service
 [Install]
 WantedBy=timers.target

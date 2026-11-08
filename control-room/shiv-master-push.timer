@@ -2,6 +2,7 @@
 Description=Refresh website dashboard status every 30 seconds
 
 [Timer]
+AccuracySec=1s
 OnBootSec=45
 OnUnitInactiveSec=30
 Unit=shiv-master-push.service
