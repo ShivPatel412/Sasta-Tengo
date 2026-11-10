@@ -13,7 +13,8 @@ const result={photos:findings,order:[ids[2],ids[1],ids[0]],captions:['Short','Ca
 
 test('Studio storage selects its private store and never inherits public project storage',()=>{
  assert(!studioStorageReady({BLOB_STORE_ID:'store_public',VERCEL_OIDC_TOKEN:'test'}));
- assert(!studioStorageReady({STUDIO_BLOB_STORE_ID:'store_private'}));
+ assert(studioStorageReady({STUDIO_BLOB_STORE_ID:'store_private'}));
+ assert.deepEqual(studioStorageOptions({STUDIO_BLOB_STORE_ID:'store_private',BLOB_READ_WRITE_TOKEN:'unrelated-public-token'}),{storeId:'store_private'});
  assert.throws(()=>studioStorageOptions({}),/not configured/);
  assert.deepEqual(studioStorageOptions({STUDIO_BLOB_STORE_ID:'store_private',VERCEL_OIDC_TOKEN:'test'}),{storeId:'store_private'});
  assert.deepEqual(studioStorageOptions({STUDIO_BLOB_READ_WRITE_TOKEN:'private-test-token'}),{token:'private-test-token'});
