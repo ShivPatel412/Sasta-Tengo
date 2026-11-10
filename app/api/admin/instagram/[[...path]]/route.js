@@ -5,7 +5,7 @@ import {body,handle,HttpError,assertWritable,query,transaction} from '../../../.
 import {isLocalMaster} from '../../../../../lib/master-dashboard.mjs';
 import {idSchema,settingsSchema,categories,similar,defaultWeights} from '../../../../../lib/instagram-core.mjs';
 import {decode,photoView,ownedPhoto,ownedDraft,savePhoto,saveDraft,approveDraft,settings,checkPhotos} from '../../../../../lib/instagram-store.mjs';
-import {uploadLimit,boundedBytes,photoBytes} from '../../../../../lib/instagram-media.mjs';
+import {uploadLimit,boundedBytes,photoBytes,studioStorageReady} from '../../../../../lib/instagram-media.mjs';
 import {createJob,retryJob,cancelJob,jobView,processingReady} from '../../../../../lib/instagram-jobs.mjs';
 import {randomUUID} from 'node:crypto';
 export const runtime='nodejs';
@@ -31,7 +31,7 @@ export async function GET(request,context){return handle(async()=>{
  const grouped=Object.values(albums.reduce((all,r)=>{all[r.id]??={id:r.id,name:r.name,photo_ids:[]};if(r.photo_id)all[r.id].photo_ids.push(r.photo_id);return all;},{}));
  const photoUsage=photos.map(row=>{const used=drafts.find(d=>decode(d.payload).selected.includes(row.id));return {...photoView(row),last_used_at:used?.updated_at||null,previously_posted:history.some(h=>decode(h.photo_ids).includes(row.id))};});
  return json({photos:photoUsage,photos_total:Number(total),page,albums:grouped,drafts:drafts.map(r=>({...r,payload:decode(r.payload)})),jobs:jobs.map(jobView),history,settings:await settings(owner.id),categories,
-  providers:{storage:isLocalMaster()?'private local storage':process.env.STUDIO_BLOB_READ_WRITE_TOKEN?'private Blob storage':'not configured',processing:!!processingReady(),
+  providers:{storage:isLocalMaster()?'private local storage':studioStorageReady()?'private Blob storage':'not configured',processing:!!processingReady(),
    drive:!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_CLIENT_ID&&!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_PICKER_KEY&&!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_APP_ID,cloud:false},limits:{batch:30,carousel:10,upload_bytes:uploadLimit()},publishing_enabled:false});
 });}
 export async function POST(request,context){return handle(async()=>{

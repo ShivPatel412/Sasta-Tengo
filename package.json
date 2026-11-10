@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:master": "node scripts/dev-master.mjs",
-    "build": "next build",
+    "build": "node -e \"if(process.env.STUDIO_ALLOW_MIGRATION==='1') import('./scripts/migrate-instagram-studio.mjs')\" && next build",
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
     "audit:data": "node --env-file=.env.local scripts/audit-data.mjs",

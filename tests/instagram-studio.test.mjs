@@ -4,12 +4,20 @@ import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 import {draftSchema,mergeAnalysis,similar,weightedScore,defaultWeights,matches} from '../lib/instagram-core.mjs';
 import {newStudioDraft,choosePhoto,movePhoto,restoreRecommendations,exportStudioImages} from '../lib/instagram-editor.mjs';
-import {normalizePhoto,boundedBytes} from '../lib/instagram-media.mjs';
+import {normalizePhoto,boundedBytes,studioStorageReady,studioStorageOptions} from '../lib/instagram-media.mjs';
 import {webhookURL,callbackOrigin} from '../lib/instagram-jobs.mjs';
 import {readFile} from 'node:fs/promises';
 const ids=[randomUUID(),randomUUID(),randomUUID()];
 const findings=ids.map((id,i)=>({id,...Object.fromEntries(Object.keys(defaultWeights).map(k=>[k,60+i*10])),description:'Synthetic photo',explanation:'Synthetic analysis fixture',category:'Nature',cover_suitability:75,suggested_crop:'original',alt_text:'Synthetic pattern',tags:['test']}));
 const result={photos:findings,order:[ids[2],ids[1],ids[0]],captions:['Short','Casual','Story'],hashtags:['#Nature'],music:['Cinematic']};
+
+test('Studio storage selects its private store and never inherits public project storage',()=>{
+ assert(!studioStorageReady({BLOB_STORE_ID:'store_public',VERCEL_OIDC_TOKEN:'test'}));
+ assert(!studioStorageReady({STUDIO_BLOB_STORE_ID:'store_private'}));
+ assert.throws(()=>studioStorageOptions({}),/not configured/);
+ assert.deepEqual(studioStorageOptions({STUDIO_BLOB_STORE_ID:'store_private',VERCEL_OIDC_TOKEN:'test'}),{storeId:'store_private'});
+ assert.deepEqual(studioStorageOptions({STUDIO_BLOB_READ_WRITE_TOKEN:'private-test-token'}),{token:'private-test-token'});
+});
 test('Studio validates batch identity, limits and explicit manual choices',()=>{
  const draft=newStudioDraft(ids);assert(draftSchema.safeParse(draft).success);
  assert(!draftSchema.safeParse({...draft,selected:[randomUUID()]}).success);
@@ -63,4 +71,14 @@ test('prepared n8n workflow stays inactive, immediately acknowledges and never p
  const run=new Function('$json',code);assert.equal(run({body:job})[0].json.gemini_request.contents[0].parts.length,3);
  assert.throws(()=>run({body:{...job,callback_url:'https://evil.example/callback'}}),/not allowed/);
  assert(!JSON.stringify(workflow).includes('graph.facebook.com'));
+});
+
+test('Studio callbacks report provider failures and never parse private model thoughts',async()=>{
+ const workflow=JSON.parse(await readFile(new URL('../control-room/instagram-studio/workflow.json',import.meta.url),'utf8'));
+ const source=workflow.nodes.find(n=>n.name==='Build protected callback').parameters.jsCode;
+ const job={job_id:ids[0],attempt:1,callback_url:'https://www.shivpatel.in/api/jobs/instagram/callback',callback_token:'a'.repeat(64)};
+ const run=response=>new Function('$json','$',source)(response,()=>({first:()=>({json:job})}))[0].json.body;
+ assert(run({error:'private error'}).error);
+ assert(run({candidates:[{finishReason:'MAX_TOKENS',content:{parts:[{text:'{}'}]}}]}).error);
+ assert.deepEqual(run({candidates:[{finishReason:'STOP',content:{parts:[{thought:true,text:'private reasoning'},{text:'{"ok":true}'}]}}]}).result,{ok:true});
 });
