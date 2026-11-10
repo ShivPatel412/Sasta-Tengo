@@ -1,7 +1,7 @@
 import {query,database,transaction} from '../lib/db.mjs';
 import {decode} from '../lib/instagram-store.mjs';
-import {removePhotoBytes} from '../lib/instagram-media.mjs';
-// Only normalized Studio copies are eligible. Originals are never stored here.
+import {removePhotoBytes,cleanupStagedPhotos} from '../lib/instagram-media.mjs';
+// Abandoned private uploads become eligible after one day; library copies follow retention settings.
 const apply=process.argv.includes('--apply');let eligible=0;
 try{
  const photos=await query('SELECT p.*,s.payload AS settings FROM studio_photos p LEFT JOIN studio_settings s ON s.owner_id=p.owner_id ORDER BY p.created_at LIMIT 1000');
@@ -19,5 +19,6 @@ try{
    await removePhotoBytes(photo.storage_key);await query('DELETE FROM studio_photos WHERE id=?',[photo.id],c);
   });
  }
- console.log({eligible,removed:apply?eligible:0,dryRun:!apply});
+ const staged=await cleanupStagedPhotos(apply);
+ console.log({eligible,removed:apply?eligible:0,stagedEligible:staged,stagedRemoved:apply?staged:0,dryRun:!apply});
 }finally{await database().end();}

@@ -4,7 +4,7 @@ import {randomUUID} from 'node:crypto';
 import sharp from 'sharp';
 import {draftSchema,mergeAnalysis,similar,weightedScore,defaultWeights,matches} from '../lib/instagram-core.mjs';
 import {newStudioDraft,choosePhoto,movePhoto,restoreRecommendations,exportStudioImages} from '../lib/instagram-editor.mjs';
-import {normalizePhoto,boundedBytes,studioStorageReady,studioStorageOptions} from '../lib/instagram-media.mjs';
+import {normalizePhoto,boundedBytes,studioStorageReady,studioStorageOptions,uploadLimit,stagedPhotoPath} from '../lib/instagram-media.mjs';
 import {webhookURL,callbackOrigin} from '../lib/instagram-jobs.mjs';
 import {readFile} from 'node:fs/promises';
 const ids=[randomUUID(),randomUUID(),randomUUID()];
@@ -54,6 +54,21 @@ test('normalization decodes safely, strips metadata, validates dimensions and re
  await assert.rejects(normalizePhoto(Buffer.from('<svg>not a photo</svg>')),/valid, single/);
  await assert.rejects(normalizePhoto(await sharp({create:{width:100,height:100,channels:3,background:'#fff'}}).png().toBuffer()),/320 pixels/);
  const stream=new ReadableStream({start(c){c.enqueue(new Uint8Array(12));c.close();}});await assert.rejects(boundedBytes(stream,5),/under/);
+});
+test('50 MB uploads normalize privately and reject larger input and other owners staging paths',async()=>{
+ const previous=process.env.STUDIO_UPLOAD_BYTES;delete process.env.STUDIO_UPLOAD_BYTES;
+ try{
+  assert.equal(uploadLimit(),50_000_000);
+  process.env.STUDIO_UPLOAD_BYTES='99000000';assert.equal(uploadLimit(),50_000_000);delete process.env.STUDIO_UPLOAD_BYTES;
+  const jpeg=await sharp({create:{width:640,height:480,channels:3,background:'#467830'}}).jpeg().toBuffer();
+  const chunks=[jpeg.subarray(0,2)];let remaining=50_000_000-jpeg.length;
+  while(remaining>=4){const size=Math.min(remaining,65537),segment=Buffer.alloc(size);segment[0]=255;segment[1]=239;segment.writeUInt16BE(size-2,2);chunks.push(segment);remaining-=size;}
+  chunks.push(jpeg.subarray(2),Buffer.alloc(remaining));const source=Buffer.concat(chunks);
+  assert.equal(source.length,50_000_000);const image=await normalizePhoto(source);assert(image.bytes.length<4_000_000);assert.equal(image.width,640);assert.equal((await sharp(image.bytes).metadata()).exif,undefined);
+  await assert.rejects(normalizePhoto(Buffer.alloc(50_000_001)),/upload limit/);
+  const path=`instagram-staging/12/${Date.now()}-${randomUUID()}`;assert.equal(stagedPhotoPath(12,path),path);
+  for(const key of [path.replace('/12/','/13/'),path+'/../photo.jpg','instagram/12/photo.jpg','https://evil.example/'+path])assert.throws(()=>stagedPhotoPath(12,key),/Invalid upload path/);
+ }finally{previous===undefined?delete process.env.STUDIO_UPLOAD_BYTES:process.env.STUDIO_UPLOAD_BYTES=previous;}
 });
 test('webhook and callback destinations reject arbitrary hosts and embedded credentials',()=>{
  const keys=['STUDIO_N8N_WEBHOOK_URL','APP_ORIGIN','NODE_ENV'],old=Object.fromEntries(keys.map(k=>[k,process.env[k]]));

@@ -14,7 +14,7 @@ import {Sparkle as SparkleIcon} from '@phosphor-icons/react/dist/csr/Sparkle';
 import {pickDrivePhotos,disconnectDrive} from './instagram-google';
 import './instagram-studio.css';
 const tabs=['Overview','Create Post','Photo Library','Smart Albums','AI Analysis','Drafts','Post History','Settings'];
-const empty={photos:[],albums:[],drafts:[],jobs:[],history:[],categories:[],settings:{weights:{},retention_days:30},providers:{},limits:{batch:30,carousel:10,upload_bytes:4000000}};
+const empty={photos:[],albums:[],drafts:[],jobs:[],history:[],categories:[],settings:{weights:{},retention_days:30},providers:{},limits:{batch:30,carousel:10,upload_bytes:50000000}};
 export default function InstagramStudio({readOnly}){
  const [data,setData]=useState(empty),[loaded,setLoaded]=useState(false),[tab,setTab]=useState('Overview'),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false);
  const [picked,setPicked]=useState([]),[draft,setDraft]=useState(null),[search,setSearch]=useState(''),[filter,setFilter]=useState('All'),[albumName,setAlbumName]=useState(''),[albumId,setAlbumId]=useState(''),[uploads,setUploads]=useState([]),[previewAt,setPreviewAt]=useState(0),[phonePreview,setPhonePreview]=useState(true),[weightSettings,setWeightSettings]=useState(null),[drag,setDrag]=useState(null),[version,setVersion]=useState(0);
@@ -37,18 +37,23 @@ export default function InstagramStudio({readOnly}){
   setUploads(files.map(file=>({name:file.name,file,status:'queued',progress:0})));cancelBatch.current=false;setError('');setBusy(true);const imported=[];
   for(let i=0;i<files.length;i++){
    if(cancelBatch.current)break;
-   const file=files[i];
+   const file=files[i];let staged;
    try{
     if(file.size>data.limits.upload_bytes)throw Error('Photo exceeds the configured upload limit.');
     if(!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name))throw Error('Choose JPEG, PNG, WebP or supported HEIC photos.');
-    const response=await new Promise((resolve,reject)=>{
-     const xhr=new XMLHttpRequest();uploadRef.current=xhr;xhr.open('POST','/api/admin/instagram/photos?source='+(/Android|iPhone|iPad/.test(navigator.userAgent)?'phone':'local'));xhr.setRequestHeader('Content-Type','application/octet-stream');xhr.setRequestHeader('X-Photo-Name',encodeURIComponent(file.name));
+    const source=/Android|iPhone|iPad/.test(navigator.userAgent)?'phone':'local';
+    if(data.providers.direct_upload)staged=await api('instagram/upload-url',jsonRequest('POST',{size:file.size}));
+    if(cancelBatch.current)throw Error('Cancelled');
+    let response=await new Promise((resolve,reject)=>{
+     const xhr=new XMLHttpRequest();uploadRef.current=xhr;xhr.open(staged?'PUT':'POST',staged?.url||'/api/admin/instagram/photos?source='+source);xhr.setRequestHeader('Content-Type','application/octet-stream');if(!staged)xhr.setRequestHeader('X-Photo-Name',encodeURIComponent(file.name));
      xhr.upload.onprogress=e=>setUploads(rows=>rows.map((r,j)=>j===i?{...r,status:'uploading',progress:e.lengthComputable?Math.round(e.loaded/e.total*100):0}:r));
-     xhr.timeout=120000;xhr.ontimeout=()=>reject(Error('Upload timed out. Retry when your connection is stable.'));xhr.onerror=()=>reject(Error('Upload failed. Check your connection and retry.'));xhr.onabort=()=>reject(Error('Cancelled'));
-     xhr.onload=()=>{let result;try{result=JSON.parse(xhr.responseText);}catch{return reject(Error('Upload could not be processed.'));}xhr.status<300?resolve(result):reject(Error(result.message||'Upload failed.'));};xhr.send(file);
+     xhr.timeout=300000;xhr.ontimeout=()=>reject(Error('Upload timed out. Retry when your connection is stable.'));xhr.onerror=()=>reject(Error('Upload failed. Check your connection and retry.'));xhr.onabort=()=>reject(Error('Cancelled'));
+     xhr.onload=()=>{if(staged)return xhr.status>=200&&xhr.status<300?resolve({}):reject(Error('Private upload failed. Retry this photo.'));let result;try{result=JSON.parse(xhr.responseText);}catch{return reject(Error('Upload could not be processed.'));}xhr.status<300?resolve(result):reject(Error(result.message||'Upload failed.'));};xhr.send(file);
     });
+    if(staged){if(cancelBatch.current)throw Error('Cancelled');setUploads(rows=>rows.map((r,j)=>j===i?{...r,status:'processing'}:r));response=await api('instagram/finish-upload',jsonRequest('POST',{pathname:staged.pathname,name:file.name.slice(0,200),source}));staged=null;}
     imported.push(response.photo.id);setUploads(rows=>rows.map((r,j)=>j===i?{...r,status:response.duplicate?'exact duplicate · reused':'uploaded',progress:100}:r));
    }catch(e){setUploads(rows=>rows.map((r,j)=>j===i?{...r,status:e.message}:r));}
+   finally{if(staged)await api('instagram/discard-upload',jsonRequest('POST',{pathname:staged.pathname})).catch(()=>{});}
   }
   uploadRef.current=null;setPicked(ids=>[...new Set([...ids,...imported])].slice(0,30));
   try{await load();}catch(e){setError(e.message);}setBusy(false);setTab('Photo Library');

@@ -5,7 +5,7 @@ import {body,handle,HttpError,assertWritable,query,transaction} from '../../../.
 import {isLocalMaster} from '../../../../../lib/master-dashboard.mjs';
 import {idSchema,settingsSchema,categories,similar,defaultWeights} from '../../../../../lib/instagram-core.mjs';
 import {decode,photoView,ownedPhoto,ownedDraft,savePhoto,saveDraft,approveDraft,settings,checkPhotos} from '../../../../../lib/instagram-store.mjs';
-import {uploadLimit,boundedBytes,photoBytes,studioStorageReady} from '../../../../../lib/instagram-media.mjs';
+import {uploadLimit,boundedBytes,photoBytes,studioStorageReady,photoUploadURL,stagedPhotoBytes,discardStagedPhoto} from '../../../../../lib/instagram-media.mjs';
 import {createJob,retryJob,cancelJob,jobView,processingReady} from '../../../../../lib/instagram-jobs.mjs';
 import {randomUUID} from 'node:crypto';
 export const runtime='nodejs';
@@ -31,18 +31,32 @@ export async function GET(request,context){return handle(async()=>{
  const grouped=Object.values(albums.reduce((all,r)=>{all[r.id]??={id:r.id,name:r.name,photo_ids:[]};if(r.photo_id)all[r.id].photo_ids.push(r.photo_id);return all;},{}));
  const photoUsage=photos.map(row=>{const used=drafts.find(d=>decode(d.payload).selected.includes(row.id));return {...photoView(row),last_used_at:used?.updated_at||null,previously_posted:history.some(h=>decode(h.photo_ids).includes(row.id))};});
  return json({photos:photoUsage,photos_total:Number(total),page,albums:grouped,drafts:drafts.map(r=>({...r,payload:decode(r.payload)})),jobs:jobs.map(jobView),history,settings:await settings(owner.id),categories,
-  providers:{storage:isLocalMaster()?'private local storage':studioStorageReady()?'private Blob storage':'not configured',processing:!!processingReady(),
+  providers:{storage:isLocalMaster()?'private local storage':studioStorageReady()?'private Blob storage':'not configured',direct_upload:!isLocalMaster(),processing:!!processingReady(),
    drive:!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_CLIENT_ID&&!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_PICKER_KEY&&!!process.env.NEXT_PUBLIC_STUDIO_GOOGLE_APP_ID,cloud:false},limits:{batch:30,carousel:10,upload_bytes:uploadLimit()},publishing_enabled:false});
 });}
 export async function POST(request,context){return handle(async()=>{
  sameOrigin(request);const owner=await admin();assertWritable();const {path=[]}=await context.params,route=path.join('/');
- await limit(owner.id,route==='photos'||route==='import-drive'?'upload':'edit',route==='photos'||route==='import-drive'?90:120);
+ const uploading=['photos','import-drive','upload-url','finish-upload','discard-upload'].includes(route);
+ await limit(owner.id,uploading?'upload':'edit',uploading?90:120);
  if(route==='photos'){
   const source=z.enum(['local','phone']).parse(new URL(request.url).searchParams.get('source')||'local');
   let name='Photo';try{name=decodeURIComponent(request.headers.get('x-photo-name')||'Photo').slice(0,200);}catch{throw new HttpError(422,'Invalid photo name.');}
   return json(await savePhoto(owner.id,await boundedBytes(request.body),{name,source}));
  }
  const input=await body(request,120000);
+ if(route==='upload-url'){
+  z.object({size:z.number().int().positive().max(uploadLimit())}).strict().parse(input);
+  return json(await photoUploadURL(owner.id));
+ }
+ if(route==='finish-upload'){
+  const {pathname,name,source}=z.object({pathname:z.string().max(200),name:z.string().max(200),source:z.enum(['local','phone'])}).strict().parse(input);
+  try{return json(await savePhoto(owner.id,await stagedPhotoBytes(owner.id,pathname),{name,source}));}
+  finally{await discardStagedPhoto(owner.id,pathname);}
+ }
+ if(route==='discard-upload'){
+  const {pathname}=z.object({pathname:z.string().max(200)}).strict().parse(input);
+  await discardStagedPhoto(owner.id,pathname);return json({ok:true});
+ }
  if(route==='import-drive'){
   const {id}=z.object({id:z.string().regex(/^[\w-]{1,200}$/)}).strict().parse(input);
   const token=request.headers.get('x-google-access-token');if(!token||token.length>4096)throw new HttpError(422,'Connect Google Drive again.');
