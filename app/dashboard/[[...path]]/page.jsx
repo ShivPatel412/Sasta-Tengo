@@ -1,7 +1,7 @@
 import Dashboard from './workspace';
-import {isMasterDashboard} from '../../../lib/master-dashboard.mjs';
+import {isMasterDashboard,isLocalMaster} from '../../../lib/master-dashboard.mjs';
 export const metadata = { title: 'Dashboard | Shiv Patel', robots: { index: false, follow: false } };
 export default async function DashboardPage({ params }) {
   const { path = [] } = await params;
-  return <Dashboard key={path.join('/')} section={path[0] || 'overview'} recordId={path[1]} master={isMasterDashboard()} />;
+  return <Dashboard key={path.join('/')} section={path[0] || 'overview'} recordId={path[1]} master={isMasterDashboard()} local={isLocalMaster()} />;
 }
