@@ -14,3 +14,10 @@ test('GitHub draft workflow uses credentials and never disguises preview covers 
  const payload=new Function('$json','$',node('Build draft without live screenshot').parameters.jsCode)(preview,()=>({first:()=>({json:{config:{...config,category:'Web Development'}}})})).json;
  assert.equal(payload.provenance.cover_status,'unavailable');assert.equal(payload.provenance.screenshot_url,null);assert.equal(payload.project.gallery.length,0);assert.equal(payload.provenance.warnings.length,2);
 });
+test('GitHub homepage validation works in n8n without the browser URL global',()=>{
+ const config=new Function(node('Configuration').parameters.jsCode)()[0].json;
+ config.liveUrls={};
+ const run=homepage=>new Function('$','$input','URL',node('Prepare repository metadata').parameters.jsCode)(name=>({first:()=>({json:name==='Resolve website settings'?{config,existingProjects:[]}:{data:[]}})}),{all:()=>[{json:{id:1,name:'Sasta-Tengo',full_name:'ShivPatel412/Sasta-Tengo',owner:{login:'ShivPatel412'},size:1,homepage}}]},undefined);
+ assert.equal(run('https://www.shivpatel.in/')[0].json.live_url,'https://www.shivpatel.in/');
+ for(const url of ['http://example.com','https://user:password@example.com','https://127.0.0.1/','https://example.local/','https://example.com:5678/','https://example..com/','https://example.com\\@localhost/'])assert.throws(()=>run(url),/homepage|public HTTPS/);
+});

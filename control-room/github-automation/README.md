@@ -6,4 +6,6 @@ Current mode uses public GitHub metadata and repository preview images. `generat
 
 The four website nodes share the scoped `Shiv GitHub website automation` Header Auth credential, matching production `PROJECT_AUTOMATION_KEY`. Secret values stay in n8n and Vercel. The exported workflow remains inactive for safe import.
 
+Verified live: execution `8637` saved the Sasta-Tengo review draft; repeat execution `8638` returned zero changed repositories; normal execution `8639` saved three more pending drafts. The installed workflow is published with one hourly schedule. The production draft table was created with the existing additive migration, preserving existing project, form and account counts.
+
 Before enabling artwork, provide Gemini image quota and configure a separate **public** cover-image store. The private Instagram store must never host public project covers. Before enabling screenshots, assign Browserless Query Auth (`token`) to the capture node. Change `pipelineVersion` when enabling these features so previously imported repository revisions are reconsidered. Test manually before publishing the workflow. Keep one scheduler active.
