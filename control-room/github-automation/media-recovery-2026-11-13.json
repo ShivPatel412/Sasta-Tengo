@@ -1,0 +1,81 @@
+{
+  "date": "2026-11-13",
+  "generator": "OpenAI ImageGen built-in tool; no exact provider model ID was exposed",
+  "sharedPrompt": "Premium conceptual portfolio cover, wide landscape 16:9, black background, precise neon lime #98FF02 accents, refined soft studio lighting, sophisticated minimal 3D render. Coherent software portfolio series with distinct subjects. No text, letters, logos, metrics, browser frames or interface screenshots. Conceptual artwork, never evidence of a working interface.",
+  "media": [
+    {
+      "slug": "sasta-tengo",
+      "cover": "sasta-tengo-cover-dfed25058f92.webp",
+      "generated_at": "2026-11-13T16:28:42.067Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": "sasta-tengo-screenshot-dbd1d2c6b3a1.jpg",
+      "live_url": "https://www.shivpatel.in/",
+      "captured_at": "2026-11-13T16:31:21.939Z",
+      "promptSubject": "Modular dark-glass project folders orbiting a luminous central cube, suggesting a connected developer workspace.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "appointment-booking-plugin",
+      "cover": "appointment-booking-plugin-cover-e965321b3b12.webp",
+      "generated_at": "2026-11-13T16:29:25.466Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": null,
+      "warning": "No live website URL is configured; a website screenshot is unavailable.",
+      "promptSubject": "Black-glass calendar with glowing appointment slots and a clock ring.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "ask-her-for-date",
+      "cover": "ask-her-for-date-cover-b07858ceeb46.webp",
+      "generated_at": "2026-11-13T16:29:42.374Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": "ask-her-for-date-screenshot-f34e259cfe9b.jpg",
+      "live_url": "https://ask-her-for-date-henna.vercel.app",
+      "captured_at": "2026-11-13T16:30:35.274Z",
+      "promptSubject": "Two translucent sculptural hearts connected by a delicate luminous thread.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "ask-for-date",
+      "cover": "ask-for-date-cover-8a9f661c846d.webp",
+      "generated_at": "2026-11-13T16:29:59.814Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": null,
+      "warning": "Screenshot unavailable: the configured website returned HTTP 500. Repair the live website before retrying.",
+      "promptSubject": "Folded black-glass envelope containing a luminous heart with orbital curves.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "hotel-management-sysytem",
+      "cover": "hotel-management-sysytem-cover-4ea9a0831721.webp",
+      "generated_at": "2026-11-13T16:30:19.971Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": null,
+      "warning": "No live website URL is configured; a website screenshot is unavailable.",
+      "promptSubject": "Miniature architectural hotel with glowing windows and a floating keycard.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "library-management-system",
+      "cover": "library-management-system-cover-e0b7b07f9b7e.webp",
+      "generated_at": "2026-11-13T16:30:38.884Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": null,
+      "warning": "No live website URL is configured; a website screenshot is unavailable.",
+      "promptSubject": "Dark-glass books and a luminous catalog index.",
+      "publicPath": "/projects/automation/"
+    },
+    {
+      "slug": "automatic-highlight-generation",
+      "cover": "automatic-highlight-generation-cover-09b229b76fe3.webp",
+      "generated_at": "2026-11-13T16:30:59.025Z",
+      "image_model": "OpenAI ImageGen (built-in)",
+      "screenshot": null,
+      "warning": "No live website URL is configured; a website screenshot is unavailable.",
+      "promptSubject": "Black-glass film ribbon with one highlighted segment and waveform arcs.",
+      "publicPath": "/projects/automation/"
+    }
+  ],
+  "approval": "Draft media recovery only. Publication requires manual approval.",
+  "screenshotMethod": "Real anonymous Chrome browser capture, visually verified. Failed HTTP responses are not used as project screenshots."
+}
