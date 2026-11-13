@@ -1,0 +1,14 @@
+# Apache 2.4 only. Next.js/Vercel do not read .htaccess.
+# Preserve the host's existing Node proxy/Passenger routing; there is no index.php.
+# Public HTML caching is configured in app/(portfolio)/layout.jsx.
+<IfModule mod_headers.c>
+  # Next.js fingerprints these assets; only successful responses are immutable.
+  <If "%{REQUEST_URI} =~ m#^/_next/static/#">
+    Header set Cache-Control "public, max-age=31536000, immutable" "expr=%{REQUEST_STATUS} == 200"
+  </If>
+  # Never apply shared page caching to authenticated content or API responses.
+  <If "%{REQUEST_URI} =~ m#^/(api|dashboard|hq|master-assets)(/|$)#">
+    Header onsuccess unset Cache-Control
+    Header always set Cache-Control "private, no-store, max-age=0"
+  </If>
+</IfModule>

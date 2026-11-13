@@ -1,3 +1,8 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /hq/
+Disallow: /master-assets/
+
+Sitemap: https://www.shivpatel.in/sitemap.xml
