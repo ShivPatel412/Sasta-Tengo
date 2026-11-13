@@ -419,7 +419,7 @@
         "method": "POST",
         "url": "={{ $('Configuration').first().json.screenshotEndpoint }}",
         "authentication": "genericCredentialType",
-        "genericAuthType": "httpQueryAuth",
+        "genericAuthType": "httpTemplatedCustomAuth",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({url:$json.live_url,options:{type:'jpeg',quality:80,fullPage:false},viewport:{width:1440,height:1000,deviceScaleFactor:1},gotoOptions:{waitUntil:'networkidle2',timeout:30000},waitForFunction:{fn:\"() => {const text=(document.body?.innerText||'').trim(); const title=document.title.toLowerCase(); const errors=['just a moment','access denied','sign in','log in','404','not found']; const loading=[...document.querySelectorAll('.loader-container,.preloader,[data-loading-screen]')].some(el=>el.getClientRects().length && getComputedStyle(el).visibility!=='hidden' && getComputedStyle(el).opacity!=='0'); return text.length>=80 && !!document.querySelector('main,h1') && !errors.some(e=>title.includes(e)) && !loading;}\",timeout:20000}}) }}",
@@ -608,7 +608,7 @@
     },
     {
       "parameters": {
-        "content": "# Media recovery with manual approval\n\nPending drafts use their saved revision and edited project fields. Recovery only adds missing media; it never publishes. Covers are saved before screenshots, and retries reuse generated covers. Media failures return to the batch loop and remain visible in execution results. Candidate order rotates hourly to prevent failed projects starving the queue.\n\nDeploy the media recovery API first. Configure Gemini quota, Browserless Query Auth (token), and public Blob storage before enabling image switches. No pipelineVersion change is needed when enabling media.\n\nKeep one scheduler active; avoid overlapping manual runs.",
+        "content": "# Media recovery with manual approval\n\nPending drafts use their saved revision and edited project fields. Recovery only adds missing media; it never publishes. Covers are saved before screenshots, and retries reuse generated covers. Media failures return to the batch loop and remain visible in execution results. Candidate order rotates hourly to prevent failed projects starving the queue.\n\nDeploy the media recovery API first. Configure Gemini quota, Browserless Custom Auth (query token), and public Blob storage before enabling image switches. No pipelineVersion change is needed when enabling media.\n\nKeep one scheduler active; avoid overlapping manual runs.",
         "height": 780,
         "width": 1100,
         "color": 4
@@ -1203,7 +1203,51 @@
   },
   "staticData": null,
   "meta": null,
-  "nodeGroups": [],
+  "nodeGroups": [
+    {
+      "id": "read-repository-drafts",
+      "name": "Read repositories and saved drafts",
+      "description": "Read saved dashboard edits, compare repository revisions and select missing media to retry.",
+      "nodeNames": [
+        "Configuration",
+        "Read website projects",
+        "Resolve website settings",
+        "Read existing dashboard projects",
+        "Check website automation access",
+        "Fetch public GitHub repositories",
+        "Prepare repository metadata",
+        "Hash repository revision",
+        "Only changed projects"
+      ]
+    },
+    {
+      "id": "recover-review-media",
+      "name": "Recover media for manual review",
+      "description": "Save covers before screenshots, reuse completed media and keep every project pending manual approval.",
+      "nodeNames": [
+        "One project at a time",
+        "Prepare cover and project details",
+        "Generate Gemini cover",
+        "Extract cover image",
+        "Upload cover to website",
+        "Keep project and cover URL",
+        "Has a live website",
+        "Capture real website screenshot",
+        "Validate screenshot file",
+        "Upload screenshot to website",
+        "Build project with screenshot",
+        "Build draft without live screenshot",
+        "Upload project to dashboard",
+        "Confirm dashboard upload",
+        "Completed projects",
+        "AI artwork enabled",
+        "Use repository preview",
+        "Save screenshot to draft",
+        "Confirm screenshot update",
+        "Record media retry"
+      ]
+    }
+  ],
   "pinData": {},
   "versionId": "f870f43c-c714-49ac-b945-fd6cfe78c9b6",
   "activeVersionId": null,
