@@ -195,10 +195,10 @@ const Home = () => {
                 <div className="hero-left">
                   <div className="availability-badge">
                     <span className="availability-dot"></span>
-                    Freelance developer · Gujarat
+                    Available for freelance projects
                   </div>
                   <h1>
-                    <span className="gradient-text">Freelance Web Developer in Gujarat</span>
+                    <span className="gradient-text">Freelance Web & Software Developer</span>
                   </h1>
                   <h2 className="hero-subtitle">
                     <SplitText
@@ -207,7 +207,7 @@ const Home = () => {
                     />
                   </h2>
                   <p className="hero-description">
-                    I'm Shiv Patel, a freelance website and software developer based in Ahmedabad. I help businesses across Gujarat build responsive websites, web applications, and custom software that fits their work.
+                    I’m Shiv Patel. I build websites, web applications, and custom software that help businesses turn ideas into useful digital products.
                   </p>
                   <div className="hero-info">
                     <div className="hero-info-item">
@@ -215,7 +215,7 @@ const Home = () => {
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                         <circle cx="12" cy="10" r="3"></circle>
                       </svg>
-                      <span>Ahmedabad, Gujarat, India</span>
+                      <span>Working with clients worldwide</span>
                     </div>
                     <div className="hero-info-item">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -265,7 +265,7 @@ const Home = () => {
                 </div>
                 <div className="hero-right">
                   <div className="hero-image-wrapper">
-                    <img src="/Boy.jpg" alt="Shiv Patel, freelance website and software developer in Ahmedabad, Gujarat" className="hero-image" />
+                    <img src="/Boy.jpg" alt="Shiv Patel, freelance web and software developer" className="hero-image" />
                   </div>
                 </div>
               </div>
@@ -278,14 +278,14 @@ const Home = () => {
       <section id="about" className="about">
         <LightRays />
         <div className="container">
-          <h2>Your Freelance Developer in Gujarat</h2>
+          <h2>Your Freelance Web & Software Developer</h2>
           <div className="about-content">
             <div className="about-text">
               <p>
                 I'm Shiv Patel, also known as Sasta Tengo. I work directly with business owners and founders to turn their ideas into useful websites and software. From a business website to a custom dashboard, I focus on clear design, mobile usability, and features that solve a real problem.
               </p>
               <p>
-                Based in Ahmedabad, I welcome projects from across Gujarat, including Surat, Vadodara, Rajkot, and Gandhinagar. Tell me what your business needs, who will use it, and your budget so we can plan the right solution together.
+                I welcome remote projects from businesses and founders worldwide. Tell me what your business needs, who will use it, and your budget so we can plan the right solution together.
               </p>
               <h3>Skills & Technologies</h3>
               <div className="skills-grid">
@@ -313,7 +313,7 @@ const Home = () => {
                 <pre><code>{`const developer = {
   name: 'Shiv Patel (Sasta Tengo)',
   role: 'Freelance Web & Software Developer',
-  location: 'Ahmedabad, Gujarat, India',
+  availability: 'Remote projects worldwide',
   passion: 'Creating innovative
             web solutions and
             exploring new tech'
@@ -337,7 +337,7 @@ const Home = () => {
           <header className="services-intro">
           
             <h2>Website & Software Services</h2>
-            <p>Website design, web development, and custom software for businesses in Gujarat. Work directly with me to plan a new project or improve an existing website.</p>
+            <p>Website design, web development, and custom software for businesses worldwide. Work directly with me to plan a new project or improve an existing website.</p>
            
           </header>
           <div className="services-scroll">
@@ -377,7 +377,7 @@ const Home = () => {
           <div className="contact-wrapper">
             <div className="contact-left">
               <p className="contact-description">
-                Looking for a freelance developer in Gujarat? Share your website or software idea, the features you need, and your timeline. I’ll help you define a practical scope for your project.
+                Looking for a freelance web or software developer? Share your website or software idea, the features you need, and your timeline. I’ll help you define a practical scope for your project.
               </p>
               <div className="contact-details">
                 <div className="contact-detail-item">
@@ -396,7 +396,7 @@ const Home = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
                   </svg>
-                  <span>Gujarat, India</span>
+                  <span>Ahmedabad, Gujarat, India</span>
                 </div>
               </div>
               <div className="contact-social">
