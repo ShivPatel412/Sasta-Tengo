@@ -9,7 +9,14 @@ export const runtime='nodejs';
 export async function GET(request) {
   return handle(async()=>{
     automationAuth(request);
-    const rows=await query("SELECT repository,revision,status,JSON_UNQUOTE(JSON_EXTRACT(provenance,'$.cover_status')) AS cover_status FROM project_automation_drafts");
+    const rows=await query("SELECT repository,revision,status,payload,provenance,JSON_UNQUOTE(JSON_EXTRACT(provenance,'$.cover_status')) AS cover_status FROM project_automation_drafts");
+    for(const row of rows){
+      if(row.status==='pending'){
+        row.project=typeof row.payload==='string'?JSON.parse(row.payload):row.payload;
+        row.provenance=typeof row.provenance==='string'?JSON.parse(row.provenance):row.provenance;
+      }else delete row.provenance;
+      delete row.payload;
+    }
     return Response.json({data:rows},{headers:{'Cache-Control':'no-store'}});
   });
 }

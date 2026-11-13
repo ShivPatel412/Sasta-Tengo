@@ -105,3 +105,53 @@ test('a recovered AI cover upgrades a pending draft without a live website',asyn
   assert.equal(JSON.parse(update.values[0]).poster,project.poster);
   assert.equal(JSON.parse(update.values[1]).cover_status,'generated');
 });
+
+test('media recovery rejects stale revisions, reviewed drafts and concurrent live URL edits',async()=>{
+  for(const row of [
+    {status:'pending',revision:'b'.repeat(64)},
+    {status:'published',revision:input.revision},
+    {status:'rejected',revision:input.revision},
+    {status:'pending',revision:input.revision,payload:{...project,live_url:'https://changed.example'},provenance:{cover_status:'unavailable'}}
+  ]){
+    const store=db(sql=>sql.startsWith('SELECT')?[row]:{});
+    await assert.rejects(ingestDraft({...input,recovery:true,manual_approval:true},store.run),/draft changed|live URL changed/);
+    assert(!store.calls.some(c=>c.sql.startsWith('UPDATE')));
+  }
+});
+
+test('screenshot retries preserve edited fields, gallery and cover without downgrading evidence',async()=>{
+  const edited={...project,title:'Edited title',description:'Edited description',category:'Edited category',technologies:['Edited'],live_url:'https://example.com',poster:'https://media.example/edited.jpg',gallery:['https://media.example/manual.jpg'],is_featured:true,order:9};
+  const provenance={...input.provenance,cover_status:'generated',image_model:'original-model'};
+  const captured={...input,recovery:true,manual_approval:true,project:{...project,live_url:edited.live_url,gallery:['https://media.example/new.jpg']},provenance:{...input.provenance,cover_status:'unavailable',screenshot_url:edited.live_url,captured_at:input.provenance.generated_at}};
+  const store=db(sql=>sql.startsWith('SELECT')?[{id:2,status:'pending',revision:input.revision,payload:JSON.stringify(edited),provenance}]:{});
+  await ingestDraft(captured,store.run);
+  const update=store.calls.find(c=>c.sql.startsWith('UPDATE'));
+  assert.deepEqual(JSON.parse(update.values[0]),{...edited,gallery:[...edited.gallery,...captured.project.gallery]});
+  assert.equal(JSON.parse(update.values[1]).cover_status,'generated');
+  assert.equal(JSON.parse(update.values[1]).image_model,'original-model');
+  assert.equal(JSON.parse(update.values[1]).screenshot_url,edited.live_url);
+});
+
+test('recovering a cover preserves existing screenshots and does not restore removed gallery items',async()=>{
+  const prior={...input.provenance,cover_status:'unavailable',screenshot_url:'https://example.com',captured_at:input.provenance.generated_at};
+  const edited={...project,live_url:prior.screenshot_url,gallery:['https://media.example/kept.jpg']};
+  const store=db(sql=>sql.startsWith('SELECT')?[{id:2,status:'pending',revision:input.revision,payload:edited,provenance:prior}]:{});
+  await ingestDraft({...input,recovery:true,project:{...edited,gallery:['https://media.example/removed.jpg']}},store.run);
+  const update=store.calls.find(c=>c.sql.startsWith('UPDATE'));
+  assert.deepEqual(JSON.parse(update.values[0]).gallery,edited.gallery);
+  assert.equal(JSON.parse(update.values[1]).screenshot_url,prior.screenshot_url);
+});
+
+test('manual workflow approval overrides automatic publishing configuration',async()=>{
+  let reviews=0;
+  const result=await ingestAutomation({...input,manual_approval:true},{ingest:async()=>({id:'2',status:'pending'}),review:async()=>{reviews++;},env:{PROJECT_AUTOMATION_AUTO_PUBLISH:'1'}});
+  assert.equal(result.status,'pending');assert.equal(reviews,0);
+});
+
+test('a full gallery rejects screenshot recovery without discarding edited media',async()=>{
+  const live_url='https://example.com';
+  const saved={...project,live_url,gallery:Array.from({length:20},(_,i)=>`https://media.example/${i}.jpg`)};
+  const store=db(sql=>sql.startsWith('SELECT')?[{id:2,status:'pending',revision:input.revision,payload:JSON.stringify(saved),provenance:input.provenance}]:{});
+  await assert.rejects(ingestDraft({...input,recovery:true,project:{...project,live_url,gallery:['https://media.example/new.jpg']},provenance:{...input.provenance,screenshot_url:live_url,captured_at:input.provenance.generated_at}},store.run),/gallery is full/);
+  assert(!store.calls.some(c=>c.sql.startsWith('UPDATE')));
+});
