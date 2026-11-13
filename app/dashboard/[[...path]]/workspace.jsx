@@ -27,9 +27,9 @@ function Login({credentials,setCredentials,busy,error,onSubmit,appearance,master
 }
 export default function Dashboard({section,recordId,master=false,local=false}){
   const studio=section==='instagram';
-  const sections=master?{instagram:{label:'Instagram Studio',description:'Your private photo library, AI recommendations and Instagram drafts.'},...websiteSections,...controlSections,approvals:{label:'Project approvals',description:'Review GitHub projects, generated covers and real website captures.'}}:websiteSections;
+  const sections=master?{instagram:{label:'Instagram Studio',description:'Your private photo library, AI recommendations and Instagram drafts.'},...websiteSections,...controlSections}:websiteSections;
   const control=master&&Boolean(controlSections[section]);
-  const approvals=master&&section==='approvals';
+  const approvals=section==='approvals';
   const router=useRouter();
   const [menuOpen,setMenuOpen]=useState(false);
   const sidebarRef=useRef(null),menuRef=useRef(null);
