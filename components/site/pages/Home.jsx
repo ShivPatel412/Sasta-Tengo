@@ -42,6 +42,7 @@ const Home = () => {
       setIsMobile(window.innerWidth < 768);
     };
 
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -121,75 +122,68 @@ const Home = () => {
       <div className="home">
         {/* Hero Section */}
         <section id="hero" className="hero">
-        <div 
-          style={{ 
-            position: 'absolute',
-            top: isMobile ? -200 : -340,
-            left: isMobile ? -50 : -100,
-            width: '100%',
-            height: '100%',
-            overflow: 'hidden',
-            zIndex: 0
-          }}
-          onMouseMove={(e) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const el = revealImgRef.current;
-            if (el) {
-              el.style.setProperty('--mx', `${x}px`);
-              el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
-            }
-          }}
-          onMouseLeave={() => {
-            const el = revealImgRef.current;
-            if (el) {
-              el.style.setProperty('--mx', '-9999px');
-              el.style.setProperty('--my', '-9999px');
-            }
-          }}
-        >
-          <LaserFlow 
-            selectedExample="basic"
-            horizontalSizing={isMobile ? 0.3 : 0.6}
-            verticalSizing={isMobile ? 15 : 25}
-            wispDensity={isMobile ? 2 : 5}
-            wispSpeed={isMobile ? 10 : 20}
-            wispIntensity={isMobile ? 5 : 10}
-            flowSpeed={1.32}
-            flowStrength={0.07}
-            fogIntensity={isMobile ? 0.05 : 0.01}
-            fogScale={1}
-            fogFallSpeed={0.57}
-            decay={1.34}
-            falloffStart={0.9}
-            mouseTiltStrength={isMobile ? 5 : 10.02}
-            mouseSmoothTime={10.1}
-          />
-          
-          <img
-            ref={revealImgRef}
-            src="/Boy.jpg"
-            alt=""
-            style={{
-              position: 'absolute',
-              width: '100%',
-              top: '-50%',
-              zIndex: 5,
-              mixBlendMode: 'lighten',
-              opacity: 0.3,
-              pointerEvents: 'none',
-              '--mx': '-9999px',
-              '--my': '-9999px',
-              WebkitMaskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
-              maskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
-              WebkitMaskRepeat: 'no-repeat',
-              maskRepeat: 'no-repeat'
-            }}
-          />
-        </div>
         <div className="container" style={{ position: 'relative', zIndex: 10 }}>
           <div className="hero-box-container">
+            <div
+              className="hero-laser"
+              aria-hidden="true"
+              onMouseMove={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const el = revealImgRef.current;
+                if (el) {
+                  el.style.setProperty('--mx', `${x}px`);
+                  el.style.setProperty('--my', `${y + rect.height * 0.5}px`);
+                }
+              }}
+              onMouseLeave={() => {
+                const el = revealImgRef.current;
+                if (el) {
+                  el.style.setProperty('--mx', '-9999px');
+                  el.style.setProperty('--my', '-9999px');
+                }
+              }}
+            >
+              <LaserFlow
+                selectedExample="basic"
+                horizontalSizing={isMobile ? 0.3 : 0.6}
+                verticalSizing={isMobile ? 15 : 25}
+                wispDensity={isMobile ? 2 : 5}
+                wispSpeed={isMobile ? 10 : 20}
+                wispIntensity={isMobile ? 5 : 10}
+                flowSpeed={1.32}
+                flowStrength={0.07}
+                fogIntensity={isMobile ? 0.05 : 0.01}
+                fogScale={1}
+                fogFallSpeed={0.57}
+                decay={1.34}
+                falloffStart={0.9}
+                mouseTiltStrength={isMobile ? 5 : 10.02}
+                mouseSmoothTime={10.1}
+              />
+
+              <img
+                ref={revealImgRef}
+                src="/Boy.jpg"
+                alt=""
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  top: '-50%',
+                  zIndex: 5,
+                  mixBlendMode: 'lighten',
+                  opacity: 0.3,
+                  pointerEvents: 'none',
+                  '--mx': '-9999px',
+                  '--my': '-9999px',
+                  WebkitMaskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
+                  maskImage: 'radial-gradient(circle at var(--mx) var(--my), rgba(255,255,255,1) 0px, rgba(255,255,255,0.95) 60px, rgba(255,255,255,0.6) 120px, rgba(255,255,255,0.25) 180px, rgba(255,255,255,0) 240px)',
+                  WebkitMaskRepeat: 'no-repeat',
+                  maskRepeat: 'no-repeat'
+                }}
+              />
+            </div>
             <div className="hero-box corner-box"><CornerFrame/>
               <div className="hero-content">
                 <div className="hero-left">

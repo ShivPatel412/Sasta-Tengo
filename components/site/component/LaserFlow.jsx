@@ -300,6 +300,8 @@ export const LaserFlow = ({
       logarithmicDepthBuffer: false
     });
     rendererRef.current = renderer;
+    // A fresh renderer needs sizing even when React remounts the effect at the same dimensions.
+    lastSizeRef.current = { width: 0, height: 0, dpr: 0 };
 
     baseDprRef.current = Math.min(dpr ?? (window.devicePixelRatio || 1), 2);
     currentDprRef.current = baseDprRef.current;
