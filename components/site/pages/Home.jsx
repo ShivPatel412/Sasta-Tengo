@@ -8,8 +8,6 @@ import Header from '../components/Header';
 import AnimatedBorderButton from '../components/AnimatedBorderButton';
 import NeumorphicButton from '../components/NeumorphicButton';
 import SplitText from '../components/SplitText';
-import TextGenerateEffect from '../components/TextGenerateEffect';
-import Loader from '../components/Loader';
 import Footer from '../components/Footer';
 import LightRays from '../component/LightRays';
 import LaserFlow from '../component/LaserFlow';
@@ -28,15 +26,14 @@ const ServiceIcon = ({ title }) => {
 };
 
 const defaultServices = [
-  { id: 1, title: 'Website Design', description: 'A responsive, modern website that makes your business look professional and easy to trust.' },
-  { id: 2, title: 'Software Development', description: 'Practical web applications, dashboards, and custom tools built around your workflow.' },
-  { id: 3, title: 'Digital Strategy', description: 'A focused planning session to turn your idea into a clear website or software roadmap.' }
+  { id: 1, title: 'Website Design', description: 'Responsive business websites that explain your services clearly and make it easy for customers to contact you.' },
+  { id: 2, title: 'Software Development', description: 'Custom web applications, dashboards, and business tools built around the way you work.' },
+  { id: 3, title: 'Digital Strategy', description: 'Plan your website or software project with a clear scope, practical features, and priorities for your business.' }
 ];
 
 const Home = () => {
   const [services, setServices] = useState(defaultServices);
   const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
   const revealImgRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -90,9 +87,6 @@ const Home = () => {
   }, []);
 
   const fetchData = async () => {
-    // Set a maximum loading time of 5000ms (5 seconds)
-    const minLoadingTime = new Promise(resolve => setTimeout(resolve, 2500));
-    
     const [servicesRes, projectsRes] = await Promise.allSettled([api.get('/v1/services'), api.get('/v1/projects')]);
 
     if (servicesRes.status === 'fulfilled' && servicesRes.value.data.length) setServices(servicesRes.value.data);
@@ -100,8 +94,6 @@ const Home = () => {
     if (servicesRes.status === 'rejected') console.error('Error fetching services:', servicesRes.reason);
     if (projectsRes.status === 'rejected') console.error('Error fetching projects:', projectsRes.reason);
 
-    await minLoadingTime;
-    setLoading(false);
   };
 
   const handleContactSubmit = async (formData) => {
@@ -122,10 +114,6 @@ const Home = () => {
       throw error;
     }
   };
-
-  if (loading) {
-    return <Loader />;
-  }
 
   return (
     <>
@@ -182,7 +170,7 @@ const Home = () => {
           <img
             ref={revealImgRef}
             src="/Boy.jpg"
-            alt="Reveal effect"
+            alt=""
             style={{
               position: 'absolute',
               width: '100%',
@@ -207,22 +195,19 @@ const Home = () => {
                 <div className="hero-left">
                   <div className="availability-badge">
                     <span className="availability-dot"></span>
-                    Available for freelance work
+                    Freelance developer · Gujarat
                   </div>
                   <h1>
-                    <TextGenerateEffect
-                      words="Hi, I'm Shiv Patel"
-                      className="gradient-text"
-                    />
+                    <span className="gradient-text">Freelance Web Developer in Gujarat</span>
                   </h1>
                   <h2 className="hero-subtitle">
                     <SplitText
-                      text="Full Stack Developer"
+                      text="Websites & Custom Software"
                       animationType="slide"
                     />
                   </h2>
                   <p className="hero-description">
-                    I create beautiful, functional, and user-centered digital experiences. With 3+ years of experience in web development, I bring ideas to life through clean code and thoughtful design.
+                    I'm Shiv Patel, a freelance website and software developer based in Ahmedabad. I help businesses across Gujarat build responsive websites, web applications, and custom software that fits their work.
                   </p>
                   <div className="hero-info">
                     <div className="hero-info-item">
@@ -230,7 +215,7 @@ const Home = () => {
                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                         <circle cx="12" cy="10" r="3"></circle>
                       </svg>
-                      <span>Ahmedabad, India</span>
+                      <span>Ahmedabad, Gujarat, India</span>
                     </div>
                     <div className="hero-info-item">
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -242,7 +227,7 @@ const Home = () => {
                   </div>
                   <div className="hero-buttons">
                     <AnimatedBorderButton
-                      text="Hire Me"
+                      text="Discuss Your Project"
                       href="#contact"
                       variant="light"
                     />
@@ -280,7 +265,7 @@ const Home = () => {
                 </div>
                 <div className="hero-right">
                   <div className="hero-image-wrapper">
-                    <img src="/Boy.jpg" alt="Shiv Patel" className="hero-image" />
+                    <img src="/Boy.jpg" alt="Shiv Patel, freelance website and software developer in Ahmedabad, Gujarat" className="hero-image" />
                   </div>
                 </div>
               </div>
@@ -293,11 +278,14 @@ const Home = () => {
       <section id="about" className="about">
         <LightRays />
         <div className="container">
-          <h2>About Me</h2>
+          <h2>Your Freelance Developer in Gujarat</h2>
           <div className="about-content">
             <div className="about-text">
               <p>
-                I am Shiv Patel, popularly known as Sasta Tengo, a computer science student exploring diverse fields of technology - from software and web development to building innovative solutions. My goal is to continuously grow my skills and expand my horizons.
+                I'm Shiv Patel, also known as Sasta Tengo. I work directly with business owners and founders to turn their ideas into useful websites and software. From a business website to a custom dashboard, I focus on clear design, mobile usability, and features that solve a real problem.
+              </p>
+              <p>
+                Based in Ahmedabad, I welcome projects from across Gujarat, including Surat, Vadodara, Rajkot, and Gandhinagar. Tell me what your business needs, who will use it, and your budget so we can plan the right solution together.
               </p>
               <h3>Skills & Technologies</h3>
               <div className="skills-grid">
@@ -324,8 +312,8 @@ const Home = () => {
               <div className="code-block corner-box"><CornerFrame/>
                 <pre><code>{`const developer = {
   name: 'Shiv Patel (Sasta Tengo)',
-  role: 'Full Stack Developer',
-  location: 'Ahmedabad, India',
+  role: 'Freelance Web & Software Developer',
+  location: 'Ahmedabad, Gujarat, India',
   passion: 'Creating innovative
             web solutions and
             exploring new tech'
@@ -348,7 +336,8 @@ const Home = () => {
         <div className="container">
           <header className="services-intro">
           
-            <h2>Services</h2>
+            <h2>Website & Software Services</h2>
+            <p>Website design, web development, and custom software for businesses in Gujarat. Work directly with me to plan a new project or improve an existing website.</p>
            
           </header>
           <div className="services-scroll">
@@ -372,9 +361,9 @@ const Home = () => {
       <section id="cta" className="cta">
         <div className="container">
           <div className="cta-content corner-box"><CornerFrame/>
-            <p className="cta-label">YOUR NEXT BIG THING</p>
-            <h2>Have an idea?<br />Let’s make it real.</h2>
-            <p className="cta-description">Thoughtful design. Practical code. A website built around your next move.</p>
+            <p className="cta-label">LET’S BUILD YOUR BUSINESS ONLINE</p>
+            <h2>Need a website?<br />Let’s build it together.</h2>
+            <p className="cta-description">From your first business website to custom software, tell me what you need and we’ll plan the next step.</p>
             <Link href="/booking" className="btn btn-cta">Start a project <span aria-hidden="true">↗</span></Link>
           </div>
         </div>
@@ -384,24 +373,24 @@ const Home = () => {
       <section id="contact" className="contact">
         <div className="container">
           <p className="contact-label">CONTACT</p>
-          <h2>Get in Touch with Us</h2>
+          <h2>Discuss Your Website or Software Project</h2>
           <div className="contact-wrapper">
             <div className="contact-left">
               <p className="contact-description">
-                I'm always open to discuss exciting projects and new opportunities. Let's collaborate!
+                Looking for a freelance developer in Gujarat? Share your website or software idea, the features you need, and your timeline. I’ll help you define a practical scope for your project.
               </p>
               <div className="contact-details">
                 <div className="contact-detail-item">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
                   </svg>
-                  <span  href="mailto:info@shivpatel.in">info@shivpatel.in</span>
+                  <a href="mailto:info@shivpatel.in">info@shivpatel.in</a>
                 </div>
                 <div className="contact-detail-item">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
                   </svg>
-                  <span href="tel:+916351149722">+91 6351149722</span>
+                  <a href="tel:+916351149722">+91 6351149722</a>
                 </div>
                 <div className="contact-detail-item">
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">

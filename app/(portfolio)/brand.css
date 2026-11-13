@@ -71,3 +71,5 @@
 ::selection{background:#d9c2ff;color:#000}
 :where(input[type=checkbox],input[type=radio]){accent-color:#111}
 @media(prefers-reduced-motion:reduce){#about .skill-tag{transition:none}}
+
+.hero h1 .gradient-text { font-size: inherit; }
