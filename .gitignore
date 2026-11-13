@@ -12,3 +12,4 @@ private/
 coverage/
 *.log
 data-audit-*.json
+.pnpm-store/
