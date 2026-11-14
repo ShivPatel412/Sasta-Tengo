@@ -5,13 +5,16 @@ import { automationAuth, ingestAutomation } from '../../../../lib/project-automa
 import { imageExtension } from '../../../../lib/media.mjs';
 import {isLocalMaster} from '../../../../lib/master-dashboard.mjs';
 import {saveLocalProjectImage} from '../../../../lib/project-media.mjs';
+import {z} from 'zod';
+import {githubRepository} from '../../../../lib/github-import.mjs';
+import {inspectGithub} from '../../../../lib/github-inspection.mjs';
 export const runtime='nodejs';
 export async function GET(request) {
   return handle(async()=>{
     automationAuth(request);
     const rows=await query("SELECT repository,revision,status,payload,provenance,JSON_UNQUOTE(JSON_EXTRACT(provenance,'$.cover_status')) AS cover_status FROM project_automation_drafts");
     for(const row of rows){
-      if(row.status==='pending'){
+      if(['pending','published'].includes(row.status)){
         row.project=typeof row.payload==='string'?JSON.parse(row.payload):row.payload;
         row.provenance=typeof row.provenance==='string'?JSON.parse(row.provenance):row.provenance;
       }else delete row.provenance;
@@ -34,6 +37,12 @@ export async function POST(request) {
       const blob=await put(`projects/automation/${createHash('sha256').update(bytes).digest('hex')}.${extension}`,bytes,{access:'public',contentType:`image/${extension==='jpg'?'jpeg':extension}`,addRandomSuffix:false,allowOverwrite:true});
       return Response.json({url:blob.url});
     }
-    return Response.json(await ingestAutomation(await body(request)));
+    const input=await body(request);
+    if(input?.action==='inspect'){
+      const {url}=z.object({action:z.literal('inspect'),url:z.string().max(2048)}).strict().parse(input);
+      if(githubRepository(url).owner.toLowerCase()!==process.env.PROJECT_GITHUB_OWNER?.toLowerCase())throw new HttpError(403,'Repository owner is not allowed.');
+      return Response.json(await inspectGithub(url),{headers:{'Cache-Control':'no-store'}});
+    }
+    return Response.json(await ingestAutomation(input));
   });
 }

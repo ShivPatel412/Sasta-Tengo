@@ -20,7 +20,7 @@ test('media recovery preserves the saved revision and skips completed pending dr
  assert.equal(run({...base,status:'rejected',revision:'b'.repeat(64)}).length,0);
 });
 
-test('screenshot retries reuse covers, checkpoint first, and retain manual approval',()=>{
+test('screenshot retries reuse covers and checkpoint before automatic publication',()=>{
  const config={generateCover:true,captureScreenshots:true,imageModel:'configured',category:'web'};
  const savedProject={title:'Edited title',description:'Edited description',technologies:['Edited'],category:'Edited category',live_url:'https://example.com',poster:'https://media.example/kept.jpg',gallery:['https://media.example/manual.jpg'],is_featured:true,order:4,github_url:'https://github.com/ShivPatel412/Sasta-Tengo'};
  const repo={repository:'ShivPatel412/Sasta-Tengo',revision:'a'.repeat(64),generated_at:'2026-11-13T00:00:00Z',recovery:true,savedProject,savedProvenance:{cover_status:'generated',warnings:[],image_model:'original',generated_at:'2026-11-12T00:00:00Z',text_model:'original'}};
@@ -34,10 +34,22 @@ test('screenshot retries reuse covers, checkpoint first, and retain manual appro
  assert.equal(w.connections['Build draft without live screenshot'].main[0][0].node,'Upload project to dashboard');
  assert.equal(w.connections['Confirm dashboard upload'].main[0][0].node,'Has a live website');
  for(const name of ['Generate Gemini cover','Capture real website screenshot','Validate screenshot file','Save screenshot to draft']){
-   assert.equal(node(name).onError,'continueErrorOutput');assert.equal(w.connections[name].main[1][0].node,'Record media retry');
+   assert.equal(node(name).onError,'continueErrorOutput');assert.equal(w.connections[name].main[1][0].node,name==='Generate Gemini cover'?'Record media retry':'Keep cover after screenshot failure');
  }
  assert.equal(w.connections['Record media retry'].main[0][0].node,'One project at a time');
  for(const n of w.nodes.filter(n=>n.type==='n8n-nodes-base.code'))new (Object.getPrototypeOf(async function(){}).constructor)(n.parameters.jsCode);
+});
+
+test('automatic publishing follows repository inspection and removes the checkpoint approval flag',()=>{
+ const config=new Function(node('Configuration').parameters.jsCode)()[0].json;assert.equal(config.autoPublish,true);
+ assert.equal(w.connections['One project at a time'].main[1][0].node,'Needs repository inspection');
+ assert.equal(w.connections['Needs repository inspection'].main[0][0].node,'Inspect GitHub project');
+ assert.equal(w.connections['Inspect GitHub project'].main[0][0].node,'Use inspected project details');
+ const original={repository:'ShivPatel412/example',revision:'a'.repeat(64),manual_approval:true,project:{title:'Edited'},provenance:{cover_status:'generated'}};
+ const publish=new Function('$json','$',node('Prepare automatic publication').parameters.jsCode)({},()=>({item:{json:original}})).json;
+ assert.equal(publish.auto_publish,true);assert.equal(publish.recovery,true);assert(!('manual_approval'in publish));assert.equal(publish.project.title,'Edited');
+ assert.equal(w.connections['Has a live website'].main[1][0].node,'Prepare automatic publication');
+ assert.equal(w.connections['Keep cover after screenshot failure'].main[0][0].node,'Prepare automatic publication');
 });
 
 test('media switches do not change repository revisions',()=>{

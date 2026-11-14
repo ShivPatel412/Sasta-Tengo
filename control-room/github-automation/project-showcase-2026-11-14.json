@@ -1,0 +1,295 @@
+{
+  "date": "2026-11-14",
+  "direction": "Project case-study covers with clear titles, relevant software presentation, warm off-white, lavender, charcoal and violet; full-bleed portrait 4:5.",
+  "generator": "Built-in OpenAI ImageGen; illustrative interface concepts are not real screenshots.",
+  "projects": [
+    {
+      "slug": "sasta-tengo",
+      "title": "Sasta Tengo",
+      "subtitle": "Developer Portfolio",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Sasta Tengo\". Exact small subtitle: \"Developer Portfolio\". Main composition: A polished laptop with the supplied real website screenshot on its display, paired with a small phone showing a cropped part of that same screenshot. Preserve the real screen content. Communicate custom websites, software and a connected developer workspace. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The supplied image is the real website screenshot: integrate it faithfully into the screen, do not invent a different website. No watermarks or unrelated logos.",
+      "file": "sasta-tengo-showcase-08f662790d61.webp",
+      "url": "https://www.shivpatel.in/projects/automation/sasta-tengo-showcase-08f662790d61.webp",
+      "generated_at": "2026-11-14T04:07:32.919Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "Sasta Tengo is a web application for account sign-in and session-based access.\n\nFeatures\n• Account sign-in and session-based access\n• GitHub project imports and portfolio publishing automation\n• Service inquiries and project request forms\n• A searchable portfolio and project management workspace\n\nTechnology stack\nJavaScript, CSS, Python, HTML, Swift, React, Node.js, Vercel Blob, bcrypt, MySQL, Next.js, Nodemailer, Zod\n\nProject details\nShiv Patel — Next.js migration candidate\r\nThis repository is a single full-stack Next.js 16.4.3 application at the repository root. Public pages are editable components using Next.js App Router and Link; the dashboard and backend use Next.js route handlers. The separate Laravel backend, React/Vite application, compiled JavaScript loader, Apache deployment files and old archive have been removed from this branch. Earlier versions remain in Git history. React remains a required Next.js dependency. Production cutover is on hold until database and media restoration is verified.\rStart here\r\nStarting fresh: the owner selected a new database instead of importing the unrelated event/invitation backup. Follow fresh database setup to create the tables and initial admin safely. The migration/backup procedure below remains available when a compatible source database is recovered.\r\nFor a frontend-only local preview without restored data, create an ignored .env.local containing LOCALPREVIEW=1, MIGRATIONREADONLY=1 and APPORIGIN=http://localhost:3000, with no DB settings, then run pnpm dev. The page shows a preview notice and public collection APIs return empty lists so the existing interface can use its built-in defaults. No records are fabricated or saved. Login and submissions still require the database. This mode is limited to development and switches off when any DB connection setting is present; it never conceals a production/database outage.\r\n1. Read the migration plan and restore a private staging copy of your existing MySQL database and media.\r\n2. Use Node.js 22 or newer and pnpm 11.13.1. Run pnpm install --frozen-lockfile.\r\n3. Copy .env.example to .env.local. Fill values privately. Start with MIGRATIONREADONLY=1; use DBSSL=false only for a local non-networked development database. The live database credentials must never be used for a preview.\r\n4. Review and apply scripts/001-next-support.sql to staging using a database administrator account. Grant the app only the runtime privileges it needs; it does not need CREATE/DROP privileges.\r\n5. Run pnpm audit:data and compare its counts/hashes with the source snapshot. This script reads data; it does not import or modify leg",
+        "technologies": [
+          "JavaScript",
+          "CSS",
+          "Python",
+          "HTML",
+          "Swift",
+          "React",
+          "Node.js",
+          "Vercel Blob",
+          "bcrypt",
+          "MySQL",
+          "Next.js",
+          "Nodemailer",
+          "Zod"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "control-room/package.json",
+          "package.json",
+          "app/(portfolio)/booking/page.jsx",
+          "app/(portfolio)/interactions.jsx",
+          "app/(portfolio)/layout.jsx",
+          "app/(portfolio)/magnetic-grid.jsx",
+          "app/(portfolio)/page.jsx",
+          "app/(portfolio)/stack-map.jsx"
+        ],
+        "languages": [
+          "JavaScript",
+          "CSS",
+          "Python",
+          "HTML",
+          "Swift"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "appointment-booking-plugin",
+      "title": "Appointment Booking",
+      "subtitle": "WordPress Plugin",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Appointment Booking\". Exact small subtitle: \"WordPress Plugin\". Main composition: A sophisticated desktop scheduling interface concept: weekly calendar, service selection and a compact appointment details panel. One subtle calendar tile layered beside the screen. Show appointment management, not payments or medical records. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The device screen is an illustrative interface concept, not a claimed screenshot of the deployed software. No watermarks or unrelated logos.",
+      "file": "appointment-booking-plugin-showcase-c64c726026da.webp",
+      "url": "https://www.shivpatel.in/projects/automation/appointment-booking-plugin-showcase-c64c726026da.webp",
+      "generated_at": "2026-11-14T04:07:33.060Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "Appointment Booking Plugin is a WordPress plugin for appointment scheduling, availability checks and booking management.\n\nFeatures\n• Appointment scheduling, availability checks and booking management\n• Email notifications and delivery tracking\n• Service inquiries and project request forms\n\nTechnology stack\nPHP, CSS, JavaScript, Node.js, MySQL, WordPress, React\n\nProject details\nAppointment — Phase 1\r\nA WordPress appointment-management plugin with a React-powered admin workspace and a server-authoritative scheduling engine.\rPhase 1 scope\r\nThe current implementation provides:\r\n- Versioned custom database tables and non-destructive activation migrations\r\n- Administrator capabilities, REST permissions, input validation, and prepared queries\r\n- Categories, services, doctors, doctor-service pricing, working hours, breaks, schedule exceptions, and patients\r\n- Deterministic availability calculation with appointment-conflict exclusion\r\n- Appointment creation, editing, rescheduling, cancellation, filtering, and calendar drag/drop\r\n- Dashboard metrics and date-range activity\r\n- Transactional email provider, template renderer, and delivery log\r\n- Business and scheduling settings\r\nExcluded by design: patient/doctor portals, prescriptions, payments, SMS, external calendar synchronization, events, locations, finance, waiting lists, buffers, capacity, deposits, and service extras.",
+        "technologies": [
+          "PHP",
+          "CSS",
+          "JavaScript",
+          "Node.js",
+          "MySQL",
+          "WordPress",
+          "React"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "package.json",
+          "appointment-booking-plugin.php",
+          "assets/admin.js",
+          "src/Infrastructure/Database.php",
+          "src/Plugin.php",
+          "src/Admin/Admin.php",
+          "src/Autoloader.php",
+          "src/Domain/AppointmentService.php"
+        ],
+        "languages": [
+          "PHP",
+          "CSS",
+          "JavaScript"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "ask-her-for-date",
+      "title": "Ask Her For Date",
+      "subtitle": "Invitation Builder",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Ask Her For Date\". Exact small subtitle: \"Invitation Builder\". Main composition: A laptop and slim phone showing the supplied real invitation website screenshot, preserving the real screen content. Add a small tasteful invitation card and subtle rose accent; make it feel like a premium interactive web product. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The supplied image is the real website screenshot: integrate it faithfully into the screen, do not invent a different website. No watermarks or unrelated logos.",
+      "file": "ask-her-for-date-showcase-9fab451d0d7a.webp",
+      "url": "https://www.shivpatel.in/projects/automation/ask-her-for-date-showcase-9fab451d0d7a.webp",
+      "generated_at": "2026-11-14T04:07:33.201Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "A private, playful date invitation builder.\n\nFeatures\n• Personalized invitations, themes and interactive recipient journeys\n• First-party interaction analytics and response tracking\n• Account sign-in and session-based access\n\nTechnology stack\nJavaScript, CSS, bcrypt, SQLite, Express, Express sessions, MySQL, Next.js, Nodemailer, React, Node.js\n\nProject details\nAsk Her Out 💌 — Interactive Date Invitation Platform\r\nAsk Her Out is a modern, full-stack web application designed for creating and sharing personalized, interactive, and playful date invitations. Built with a rich suite of romantic proposals, Hinglish date invitations, best-friend-to-date flows, and milestones timelines, it combines visual customization, live previewing, interactive recipient journeys, first-party analytics, and an integrated Admin Control Panel.\r\n---\r🌟 Key Features & Capabilities\r1. Visual Invitation Studio & Curated Templates\r\n 9 Curated Occasion Templates: Classic Date ❤️, Candlelight Dinner 🍷✨, Cozy Coffee ☕🌿, Best Friends Day Out 🍕🎈, Anniversary Celebration 💍🥂, Long Distance Love 🌎, and more.\r\n Curated Themes & WCAG 2.1 AA Contrast: HSL color palettes, romantic display fonts, and automated contrast audit protection.\r\n Custom Cover Photos: Polaroid frames with handwritten captions, hero banners, circular avatars, and contrast-protected full backgrounds.\r\n Live Device Preview: Real-time interactive mockup with mobile, tablet, and desktop viewport toggles.\r2. 🎵 Music Player 2.0 & Soundscapes\r\n Multi-Track Audio Engine: Reorderable playlists supporting custom uploaded audio (MP3, WAV, M4A, OGG), synthesized preset soundscapes, and Spotify tracks.\r\n Audio Trimming & Start/End Scrubber: Custom start and end time formatting (MM:SS) with server-side validation (0 <= startTime < endTime <= duration) and inline preview playback ([▶ Preview Selection]).\r\n Interactive Draggable Player: Desktop pointer drag and mobile touch drag with 60fps physics and safe-margin clamping (16px desktop / 12px mobile).\r\n 6 Themed Player Designs:\r\n  1. 💿 Romantic Vinyl: Spinning vinyl record with animated equalizers.\r\n  2. 💎 Glassmorphism: Frosted glass floating player bar.\r\n  3. 💊 Minimal Pill: Rounded capsule containing play/pause and marquee title.\r\n  4. 💖 Floating Bubble: Corner floating action button (FAB) with heart pulse.\r\n  5. 🏷️ Compact Badge: Sleek single-line card.\r\n  6. 🌌 Hidden Label / Icon Only: Minimalist floating music note button.\r\n Spotify Integration: Official responsive Spotify Embed player with fallback action links.\r\n Voice Note Duck",
+        "technologies": [
+          "JavaScript",
+          "CSS",
+          "bcrypt",
+          "SQLite",
+          "Express",
+          "Express sessions",
+          "MySQL",
+          "Next.js",
+          "Nodemailer",
+          "React",
+          "Node.js"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "package.json",
+          "src/database.js",
+          "lib/config/env.js",
+          "lib/db.js",
+          "lib/session.js",
+          "next.config.js",
+          "pages/api/express/[[...path]].js",
+          "public/assets/js/analytics.js"
+        ],
+        "languages": [
+          "JavaScript",
+          "CSS"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "ask-for-date",
+      "title": "Ask For Date",
+      "subtitle": "Interactive Invitations",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Ask For Date\". Exact small subtitle: \"Interactive Invitations\". Main composition: A sleek desktop invitation builder interface concept with a live mobile preview, theme swatches and a heartfelt invitation card. A small envelope accent. Refined, playful and respectful; avoid loud romance clichés. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The device screen is an illustrative interface concept, not a claimed screenshot of the deployed software. No watermarks or unrelated logos.",
+      "file": "ask-for-date-showcase-8bf08fd35227.webp",
+      "url": "https://www.shivpatel.in/projects/automation/ask-for-date-showcase-8bf08fd35227.webp",
+      "generated_at": "2026-11-14T04:07:33.350Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "A private, playful date invitation builder.\n\nFeatures\n• Personalized invitations, themes and interactive recipient journeys\n• First-party interaction analytics and response tracking\n• Account sign-in and session-based access\n\nTechnology stack\nJavaScript, CSS, bcrypt, SQLite, Express, Express sessions, Node.js\n\nProject details\nAsk Her Out 💌\r\nAsk Her Out is a full-stack web application for building and sharing a personalized, playful date invitation. It is designed for a best-friend-to-date style proposal: cute, funny, respectful, mobile-friendly, and easy to customize without editing code.\r\nThe creator gets a private dashboard and visual editor. The recipient opens a unique public link, moves through an interactive question flow, chooses a nickname and date mood, and can answer either yes or best friends without pressure. The creator can then review first-party interaction analytics.\r\n- Account registration, login, logout, and owner-isolated dashboards\r\n- Quick Setup for creating an invitation in under a minute\r\n- Visual editor with live preview and automatic saving\r\n- Editable names, title, screen copy, button labels, nickname choices, date moods, and availability choices\r\n- Curated theme colors and font combinations\r\n- Responsive layouts for desktop, laptop, tablet, and mobile\r\n- Cute mascots, collectibles, confetti, tiny mode, and playful interactions\r\n- A respectful alternative Best Friend outcome with no forced answer\r\n- Draft, published, and disabled invitation states\r\n- Random public URLs that do not expose the recipient's name\r\n- Invitation duplication and deletion\r\n- Private creator previews that do not write analytics\r\n- Visitor sessions, ordered event journeys, outcomes, revisits, and completion analytics\r\n- Optional favorite-song upload with a responsive glass music player\r\n- Privacy explanation inside the public invitation\r\n- Superadmin aggregate overview\rMusic player\r\nEach invitation can include one favorite song.\r\n- Supported formats: MP3, M4A, OGG, and WAV\r\n- Maximum file size: 10 MB\r\n- Playback starts only after the recipient presses Open it, because browsers block unprompted audio\r\n- Play and pause controls\r\n- Mute and unmute control\r\n- Volume slider\r\n- Song progress and duration\r\n- Jump backward or forward by 10 seconds\r\n- Expand and minimize controls\r\n- Responsive bottom-right glass layout\r\n- Optional cat artwork attached to the expanded player\r\nUploaded audio is stored in data/uploads/ using a randomly generated filename. The database stores only its internal URL",
+        "technologies": [
+          "JavaScript",
+          "CSS",
+          "bcrypt",
+          "SQLite",
+          "Express",
+          "Express sessions",
+          "Node.js"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "package.json",
+          "src/database.js",
+          "api/index.js",
+          "index.js",
+          "public/js/analytics.js",
+          "public/js/auth.js",
+          "public/js/builder.js",
+          "public/js/dashboard.js"
+        ],
+        "languages": [
+          "JavaScript",
+          "CSS"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "hotel-management-sysytem",
+      "title": "Hotel Management",
+      "subtitle": "Desktop Application",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Hotel Management\". Exact small subtitle: \"Desktop Application\". Main composition: A premium laptop showing a conceptual hotel administration application: room availability grid, customer check-in form and navigation for rooms, guests and staff. A small hotel keycard accent. No fictional revenue or occupancy statistics. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The device screen is an illustrative interface concept, not a claimed screenshot of the deployed software. No watermarks or unrelated logos.",
+      "file": "hotel-management-sysytem-showcase-3a77e7d79150.webp",
+      "url": "https://www.shivpatel.in/projects/automation/hotel-management-sysytem-showcase-3a77e7d79150.webp",
+      "generated_at": "2026-11-14T04:07:33.489Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "Hotel Management Sysytem is a Java desktop application for room inventory, availability search and room updates.\n\nFeatures\n• Room inventory, availability search and room updates: help reception staff find rooms and maintain their current condition and availability.\n• Guest registration, check-in and check-out workflows: connect guest records to the operational steps of a hotel stay.\n• Employee, manager and transport records: provide separate administration screens for the people and services supporting the hotel.\n• Account sign-in and session-based access\n\nTechnology stack\nJava, MySQL, Java Swing, Java AWT, JDBC, NetBeans, Apache Ant",
+        "technologies": [
+          "Java",
+          "MySQL",
+          "Java Swing",
+          "Java AWT",
+          "JDBC",
+          "NetBeans",
+          "Apache Ant"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "src/hotel/management/system/conn.java",
+          "src/hotel/management/system/AddCustomer.java",
+          "src/hotel/management/system/AddDriver.java",
+          "src/hotel/management/system/AddEmployee.java",
+          "src/hotel/management/system/AddRooms.java",
+          "src/hotel/management/system/CheckOut.java",
+          "src/hotel/management/system/CustomerInfo.java",
+          "src/hotel/management/system/Dashboard.java"
+        ],
+        "languages": [
+          "Java"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "library-management-system",
+      "title": "Library Management",
+      "subtitle": "Catalog & Lending",
+      "prompt": "Design a polished, engaging software-project portfolio cover that attracts potential web and software clients. Portrait 4:5 full-bleed composition for a website project preview. It must feel like a bespoke product case-study cover, visually rich enough to communicate the actual project, not a plain still-life and not a sparse stock photo. Exact headline: \"Library Management\". Exact small subtitle: \"Catalog & Lending\". Main composition: A desktop interface concept with a searchable book catalog, book cover thumbnails, member records and issued-book list, presented on a refined laptop. Add a small stack of two books at the lower corner. No made-up performance metrics. Art direction: premium editorial product showcase, realistic device materials, beautifully composed screen presentation, warm off-white and soft lavender environment with deep charcoal typography and restrained violet accents, with a tiny lime accent where appropriate. Match an elegant portfolio website with white content cards, purple accents and dark headings. Confident typography, intentional overlapping elements, clean hierarchy, soft realistic shadows and subtle depth. Keep title and main subject inside the central 80% for responsive cropping. Fill the canvas with the composition; no empty padded border around it. Avoid neon green glass sculptures, excessive empty space, floating random objects, clutter, invented testimonials or fabricated success numbers. The device screen is an illustrative interface concept, not a claimed screenshot of the deployed software. No watermarks or unrelated logos.",
+      "file": "library-management-system-showcase-ee65518e6992.webp",
+      "url": "https://www.shivpatel.in/projects/automation/library-management-system-showcase-ee65518e6992.webp",
+      "generated_at": "2026-11-14T04:07:33.626Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "Library Management System is a web application for book catalog management and searchable records.\n\nFeatures\n• Book catalog management and searchable records: maintain the library collection and find the information needed for daily administration.\n• Book issuing, returns and lending records: track circulation through dedicated lending workflows rather than separate manual lists.\n• Member accounts and self-service dashboards: keep personal account details and library access in a dedicated user workspace.\n• Account sign-in and session-based access\n\nTechnology stack\nPHP, CSS, HTML, MySQL, Bootstrap, jQuery, JavaScript",
+        "technologies": [
+          "PHP",
+          "CSS",
+          "HTML",
+          "MySQL",
+          "Bootstrap",
+          "jQuery",
+          "JavaScript"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "Admin/admin_dashboard.php",
+          "Admin/admin.php",
+          "Admin/Author/add_author.php",
+          "Admin/Author/delete_author.php",
+          "Admin/Author/edit_author.php",
+          "Admin/Author/manage_author.php",
+          "Admin/Author/regauth.php",
+          "Admin/Book/add_book.php"
+        ],
+        "languages": [
+          "PHP",
+          "CSS",
+          "HTML",
+          "JavaScript"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    },
+    {
+      "slug": "automatic-highlight-generation",
+      "title": "Automatic Highlights",
+      "subtitle": "Video Analysis",
+      "prompt": "Action-based video analysis portfolio cover; TensorFlow/OpenCV/MediaPipe human pose detection, not football goal detection.",
+      "file": "automatic-highlight-generation-showcase-2e7196da365b.webp",
+      "url": "https://www.shivpatel.in/projects/automation/automatic-highlight-generation-showcase-2e7196da365b.webp",
+      "generated_at": "2026-11-14T04:07:33.759Z",
+      "image_model": "OpenAI ImageGen (built-in): project showcase",
+      "project": {
+        "description": "Automatic Highlight Generation is a Python video-analysis project for action-based video analysis and generation of selected highlight clips.\n\nFeatures\n• Action-based video analysis and generation of selected highlight clips\n• Pose and hand landmark extraction: convert visible body, face and hand positions into numerical keypoints for action analysis.\n• Sequence-based action classification: evaluate a moving window of 30 frames and select footage matching the requested action.\n• Video summary export and frame comparison: write selected footage to video and compare frame histograms to identify visual differences.\n\nTechnology stack\nPython, Jupyter Notebook, TensorFlow, Keras, MediaPipe, OpenCV, NumPy",
+        "technologies": [
+          "Python",
+          "Jupyter Notebook",
+          "TensorFlow",
+          "Keras",
+          "MediaPipe",
+          "OpenCV",
+          "NumPy"
+        ]
+      },
+      "evidence": {
+        "branch": "main",
+        "files": [
+          "video_summary.ipynb"
+        ],
+        "languages": [
+          "Jupyter Notebook"
+        ]
+      },
+      "text_model": "github-repository-inspection-v1"
+    }
+  ],
+  "publishing": "Repository evidence is inspected before automatic publication. A generated cover is required; screenshots are optional."
+}

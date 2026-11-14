@@ -148,6 +148,17 @@ test('manual workflow approval overrides automatic publishing configuration',asy
   assert.equal(result.status,'pending');assert.equal(reviews,0);
 });
 
+test('explicit automatic publication works without a live URL, but still requires a generated cover',async()=>{
+ let reviews=0;
+ const deps={ingest:async()=>({id:'2',status:'pending'}),review:async()=>{reviews++;return {project_id:'7'};},lookup:async()=>[{id:1}],env:{ADMIN_EMAIL:'owner@example.com'}};
+ assert.equal((await ingestAutomation({...input,auto_publish:true},deps)).status,'published');
+ assert.equal(reviews,1);
+ assert.equal((await ingestAutomation({...input,auto_publish:true,provenance:{...input.provenance,cover_status:'unavailable'}},deps)).waiting_for_cover,true);
+ assert.equal(reviews,1);
+ assert.equal((await ingestAutomation({...input,auto_publish:true,manual_approval:true},deps)).status,'pending');
+ assert.equal(reviews,1);
+});
+
 test('a full gallery rejects screenshot recovery without discarding edited media',async()=>{
   const live_url='https://example.com';
   const saved={...project,live_url,gallery:Array.from({length:20},(_,i)=>`https://media.example/${i}.jpg`)};

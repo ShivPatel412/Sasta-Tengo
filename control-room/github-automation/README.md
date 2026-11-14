@@ -1,30 +1,31 @@
-# GitHub review drafts
+# GitHub project publishing
 
-Workflow `znWH2q245LqTt8kK` imports changed public repositories owned by `ShivPatel412` into website review drafts, at most three per hourly run. Unchanged revisions are skipped.
+Workflow `znWH2q245LqTt8kK` checks owned public repositories hourly and processes at most three changes per run. The exported workflow remains inactive for safe import; the installed workflow has one active scheduler.
 
-Current mode uses public GitHub metadata and repository preview images. `generateCover` and `captureScreenshots` are false because Gemini image generation returned HTTP 429 with quota 0 and no Browserless credential exists. Missing artwork is recorded as `cover_status: unavailable`; the website blocks publication of these drafts. Missing screenshots are explicitly disclosed. No generated artwork or screenshots are fabricated.
+## Source inspection
 
-The four website nodes share the scoped `Shiv GitHub website automation` Header Auth credential, matching production `PROJECT_AUTOMATION_KEY`. Secret values stay in n8n and Vercel. The exported workflow remains inactive for safe import.
+New revisions read repository metadata, README, languages, the source tree and up to eight bounded implementation or dependency files. The shared website inspector identifies frameworks and libraries from actual manifests and imports, and extracts supported project capabilities. It never executes repository code, reads backups or environment files, or invents business results. A failed inspection leaves the project unchanged and returns to the batch loop.
 
-Verified live: execution `8637` saved the Sasta-Tengo review draft; repeat execution `8638` returned zero changed repositories; normal execution `8639` saved three more pending drafts. The installed workflow is published with one hourly schedule. The production draft table was created with the existing additive migration, preserving existing project, form and account counts.
+Inspection uses four GitHub API requests per project; source text comes from public raw file URLs. Production can optionally use `GITHUB_TOKEN` to increase API limits. If GitHub throttles inspection, the project retries on a later run.
 
-Before enabling artwork, provide Gemini image quota and configure a separate **public** cover-image store. The private Instagram store must never host public project covers. Before enabling screenshots, assign Browserless Custom Auth with the API token in query parameter `token`. Test one project before enabling either switch. Keep one scheduler active.
+## Covers and layout
 
-## Media recovery
+Covers use a portrait 4:5 product-showcase composition: project title, relevant software presentation, realistic devices, warm off-white, lavender, charcoal and restrained violet. Covers fill the preview panel using `object-fit: cover`. Descriptions scroll independently on desktop; the mobile dialog scrolls normally.
 
-Deploy the updated website API first. Authenticated pending rows now include their saved project and provenance; the workflow fails closed if the old API is deployed. Pending drafts retain their revision, edited fields and live URL until review. New repository metadata waits until that review is complete. Media switches no longer affect revision hashes, and no pipeline version bump is needed to retry missing media.
+Generated interface concepts are illustrative cover artwork. The gallery contains real browser captures only. Existing covers and galleries are reused across repository revisions. Missing covers still block publishing; provider access is never fabricated.
 
-Generated covers are saved to the draft before screenshot capture. Later screenshot retries reuse that cover. Recovery adds media to the current database row without replacing edited text, category, technologies, placement or existing gallery images. Stale revisions, reviewed drafts, changed live URLs and full galleries are rejected. Screenshot retries cannot downgrade generated cover evidence or replace an edited cover. Removed gallery items are not restored from stale snapshots.
+## Automatic publishing
 
-Missing media is retried only when its feature switch is enabled; screenshots also need a live URL. Candidate order rotates hourly to prevent failed projects starving the rest. Media failures go to `Record media retry` and return to the batch loop. Inspect execution results for `retry_pending`: an execution can succeed while individual media steps fail. Failures before the cover checkpoint can still repeat generation charges.
+Automatic publication is explicitly enabled by the workflow's `autoPublish` configuration. The cover checkpoint still uses `manual_approval: true` so a partial media save cannot publish. After optional screenshot capture, the final request removes that checkpoint flag and sends `auto_publish: true`. A generated cover is required; a screenshot and a live URL are optional. Missing covers stay pending, and rejected revisions remain rejected.
 
-Every draft request sends `manual_approval: true`, preventing automatic publication even if `PROJECT_AUTOMATION_AUTO_PUBLISH` is enabled for another client. AI covers remain required for manual approval; screenshots are optional.
+Media-only recovery uses the saved revision and preserves dashboard edits. New repository revisions refresh descriptions and technologies from inspected evidence. Existing project IDs, featured placement and manually added gallery images are retained. Stale revisions and conflicting live edits fail rather than silently overwrite data.
 
-## Required credentials
+## Provider configuration
 
-- Website: reuse `Shiv GitHub website automation` Header Auth on all website nodes, including `Save screenshot to draft`: `Authorization: Bearer <PROJECT_AUTOMATION_KEY>`. Production also needs the matching key and `PROJECT_GITHUB_OWNER=ShivPatel412`.
-- Gemini: the assigned `Xstream - Google Gemini(PaLM) Api account` needs billing/image quota for `gemini-3.1-flash-image`. The prior zero-quota result is historical, not a live check.
-- Browserless: assign templated Custom Auth to `Capture real website screenshot`, injecting your Browserless API token as query parameter `token`. It is currently unassigned. This uses n8n's supported credential setup for new generic authentication credentials.
-- Storage: production `BLOB_READ_WRITE_TOKEN` must belong to a public Blob store. Both image types must be under 4 MB.
+- Website API nodes reuse `Shiv GitHub website automation` Header Auth: `Authorization: Bearer <PROJECT_AUTOMATION_KEY>`.
+- Production requires the matching automation key, `PROJECT_GITHUB_OWNER=ShivPatel412` and an existing administrator identified by `ADMIN_EMAIL`.
+- Gemini generation uses the assigned Google credential and requires working image quota. Its prompt now matches the product-showcase art direction.
+- Browserless capture uses templated Custom Auth with query parameter `token`.
+- Provider uploads require a public Blob store; do not use the private Instagram store.
 
-The image switches remain off until credentials and storage are ready. Only Sasta-Tengo, Ask-Her-For-Date and Ask-For-Date currently have live URLs; Ask-For-Date returned HTTP 500 during inspection. The other four drafts can receive covers and be manually approved without screenshots.
+The Gemini and Browserless switches remain off until their access is ready. Existing generated covers support automatic publication now. New repositories without a generated cover remain pending until generation is configured. Keep one scheduler active and avoid overlapping manual runs.
