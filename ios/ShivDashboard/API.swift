@@ -43,6 +43,7 @@ enum JSON: Codable, Equatable, Sendable {
 struct Record: Identifiable, Equatable {
     var fields: [String: JSON]
     var id: String { text("id") }
+    var boardKey: String { text("resource") + "/" + id }
     func text(_ key: String) -> String { fields[key]?.text ?? "" }
     func flag(_ key: String) -> Bool { fields[key]?.flag ?? false }
 }
@@ -66,7 +67,8 @@ enum Resource: String, CaseIterable, Identifiable {
         case .experiences: return "briefcase"
         }
     }
-    var editable: Bool { self == .projects || self == .experiences }
+    var editable: Bool { true }
+    var isLead: Bool { self == .contacts || self == .appointments }
     func name(_ record: Record) -> String {
         record.text(self == .contacts ? "name" : self == .appointments ? "client_name" : "title")
     }
@@ -158,6 +160,15 @@ struct EditDraft {
     }
 
     func payload() -> [String: JSON] {
+        if resource.isLead {
+            let keys = resource == .contacts ? ["admin_notes", "is_read", "lead_status"] : ["admin_notes", "status", "lead_status"]
+            var data = fields.filter { keys.contains($0.key) }
+            data["admin_notes"] = data["admin_notes"] ?? .null
+            data["lead_status"] = .string(fields["lead_status"]?.text.isEmpty == false ? fields["lead_status"]!.text : "new")
+            if resource == .contacts { data["is_read"] = .bool(fields["is_read"]?.flag ?? false) }
+            else { data["status"] = .string(fields["status"]?.text.isEmpty == false ? fields["status"]!.text : "pending") }
+            return data
+        }
         let keys = resource == .projects
             ? ["title", "description", "image", "poster", "gallery", "technologies", "github_url", "live_url", "category", "is_featured", "order"]
             : ["title", "company", "logo", "website", "location", "start_date", "end_date", "is_current", "description", "summary", "highlights", "technologies", "order"]
@@ -179,6 +190,7 @@ struct EditDraft {
 
     var hasChanges: Bool { payload() != EditDraft(record: Record(fields: original), resource: resource).payload() }
     var validation: String? {
+        if resource.isLead { return nil }
         let required = resource == .projects ? ["title", "description", "category"] : ["title", "company", "start_date", "description"]
         if required.contains(where: { fields[$0]?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false }) {
             return "Complete the required fields."
@@ -196,6 +208,36 @@ struct EditDraft {
                 guard end.count == 10, formatter.date(from: end) != nil else { return "Use YYYY-MM-DD for the end date." }
                 if end < start { return "End date must be on or after start date." }
             }
+        }
+        return nil
+    }
+}
+
+let taskColumns = [("todo", "To do"), ("in_progress", "In progress"), ("review", "Review"), ("done", "Done")]
+let leadColumns = [("new", "New"), ("contacted", "Contacted"), ("qualified", "Qualified"), ("closed", "Closed")]
+
+struct TaskDraft {
+    var fields: [String: JSON]
+    init(record: Record?) {
+        fields = record?.fields ?? ["title": .string(""), "description": .string(""), "project_name": .string(""), "status": .string("todo"), "priority": .string("normal"), "due_date": .null]
+        if let value = fields["due_date"], value != .null { fields["due_date"] = .string(String(value.text.prefix(10))) }
+    }
+    func payload() -> [String: JSON] {
+        var data = fields.filter { ["title", "description", "project_name", "status", "priority", "due_date"].contains($0.key) }
+        data["due_date"] = fields["due_date"]?.text.isEmpty == false ? fields["due_date"] : .null
+        if fields["id"] != nil { data["version"] = .number(Double(fields["version"]?.integer ?? 0)) }
+        return data
+    }
+    var validation: String? {
+        if fields["title"]?.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false { return "Enter a task title." }
+        let due = fields["due_date"]?.text ?? ""
+        if !due.isEmpty {
+            let formatter = DateFormatter()
+            formatter.locale = Locale(identifier: "en_US_POSIX")
+            formatter.calendar = Calendar(identifier: .gregorian)
+            formatter.dateFormat = "yyyy-MM-dd"
+            formatter.isLenient = false
+            if due.count != 10 || formatter.date(from: due) == nil { return "Use YYYY-MM-DD for the due date." }
         }
         return nil
     }

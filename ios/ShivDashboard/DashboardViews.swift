@@ -89,6 +89,10 @@ struct ResourceSwitcher: View {
     let resources: [Resource]
     let title: String
     @State private var selection = Resource.contacts
+    init(resources: [Resource], title: String) {
+        self.resources = resources; self.title = title
+        _selection = State(initialValue: resources.first ?? .contacts)
+    }
     var body: some View {
         RecordList(resource: selection, picker: AnyView(
             Picker(title, selection: $selection) {
@@ -96,6 +100,271 @@ struct ResourceSwitcher: View {
             }.pickerStyle(.segmented)
         ))
         .id(selection)
+    }
+}
+
+enum BoardKind: String {
+    case tasks, crm
+    var columns: [(String, String)] { self == .tasks ? taskColumns : leadColumns }
+    var statusKey: String { self == .tasks ? "status" : "lead_status" }
+    var title: String { self == .tasks ? "Project tasks" : "Lead CRM" }
+}
+
+struct TaskBoardView: View { var body: some View { KanbanBoardView(kind: .tasks) } }
+struct CRMView: View { var body: some View { KanbanBoardView(kind: .crm) } }
+
+struct KanbanBoardView: View {
+    @EnvironmentObject private var session: DashboardSession
+    let kind: BoardKind
+    @State private var records: [Record] = []
+    @State private var total = 0
+    @State private var page = 0
+    @State private var search = ""
+    @State private var loading = false
+    @State private var saving = false
+    @State private var error: String?
+    @State private var editing: Record?
+    @State private var requestID = UUID()
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    if session.readOnly { ReadOnlyNotice() }
+                    if let error { ErrorNotice(message: error); Button("Refresh board") { Task { await load(reset: true) } } }
+                    if loading && records.isEmpty { ProgressView("Loading board…") }
+                    Text(kind == .tasks ? "Drag tasks between columns or use Move to. Tap a card to edit." : "Both lead sources, one pipeline. Tap a card for details and CRM editing.")
+                        .font(.footnote).foregroundStyle(.secondary)
+                    ScrollView(.horizontal) {
+                        HStack(alignment: .top, spacing: 16) {
+                            ForEach(kind.columns, id: \.0) { status, title in
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Text(title).font(.headline)
+                                        Spacer()
+                                        Text(String(records.filter { stage($0) == status }.count)).foregroundStyle(.secondary)
+                                    }
+                                    ForEach(records.filter { stage($0) == status }, id: \.boardKey) { record in
+                                        card(record)
+                                    }
+                                    if !records.contains(where: { stage($0) == status }) {
+                                        Text("No loaded cards").font(.footnote).foregroundStyle(.secondary).padding(.vertical, 28)
+                                    }
+                                    Spacer(minLength: 8)
+                                }
+                                .padding(16).frame(width: 300, alignment: .topLeading)
+                                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+                                .dropDestination(for: String.self) { items, _ in
+                                    guard !session.readOnly, !saving, let key = items.first,
+                                          let record = records.first(where: { $0.boardKey == key }), stage(record) != status else { return false }
+                                    Task { await move(record, to: status) }
+                                    return true
+                                }
+                            }
+                        }.padding(.bottom, 6)
+                    }
+                    Text("Showing \(records.count) of \(total). Column counts reflect loaded cards.").font(.caption).foregroundStyle(.secondary)
+                    if records.count < total {
+                        Button("Load more cards") { Task { await load(reset: false) } }.disabled(loading || saving)
+                    }
+                }.padding()
+            }
+            .navigationTitle(kind.title)
+            .searchable(text: $search, prompt: kind == .tasks ? "Search tasks or project names" : "Search leads")
+            .toolbar {
+                if kind == .tasks {
+                    Button { editing = Record(fields: [:]) } label: { Label("Add task", systemImage: "plus") }
+                        .disabled(session.readOnly || saving)
+                }
+            }
+            .refreshable { await load(reset: true) }
+            .task(id: search) {
+                do { try await Task.sleep(for: .milliseconds(300)); await load(reset: true) } catch { }
+            }
+            .sheet(item: $editing) { record in
+                if kind == .tasks {
+                    TaskForm(record: record.id.isEmpty ? nil : record) { Task { await load(reset: true) } }
+                } else {
+                    NavigationStack {
+                        RecordDetail(resource: Resource(rawValue: record.text("resource")) ?? .contacts, initial: record,
+                                     onSave: { Task { await load(reset: true) } })
+                    }
+                }
+            }
+        }
+    }
+
+    private func stage(_ record: Record) -> String {
+        record.text(kind.statusKey).isEmpty ? kind.columns[0].0 : record.text(kind.statusKey)
+    }
+    private func card(_ record: Record) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button { editing = record } label: {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(kind == .tasks ? record.text("title") : record.text("name")).font(.headline).foregroundStyle(.primary)
+                    if kind == .tasks {
+                        if !record.text("project_name").isEmpty { Text(record.text("project_name")).font(.subheadline) }
+                        if !record.text("description").isEmpty { Text(record.text("description")).lineLimit(3).font(.footnote).foregroundStyle(.secondary) }
+                        Label(record.text("priority").capitalized + " priority", systemImage: "flag")
+                            .font(.caption).foregroundStyle(record.text("priority") == "high" ? .red : .secondary)
+                        if !record.text("due_date").isEmpty { Text("Due " + String(record.text("due_date").prefix(10))).font(.caption) }
+                    } else {
+                        Text(record.text("email")).font(.subheadline).foregroundStyle(.secondary)
+                        Text(record.text("resource") == "contacts" ? "Contact form" : "Service inquiry / booking").font(.caption)
+                        if !record.text("summary").isEmpty { Text(record.text("summary")).lineLimit(3).font(.footnote).foregroundStyle(.secondary) }
+                    }
+                }.frame(maxWidth: .infinity, alignment: .leading)
+            }.buttonStyle(.plain)
+            Menu {
+                ForEach(kind.columns, id: \.0) { key, title in
+                    Button(title) { Task { await move(record, to: key) } }.disabled(stage(record) == key)
+                }
+            } label: { Label("Move to", systemImage: "arrow.right") }.font(.footnote).disabled(session.readOnly || saving || loading)
+        }
+        .padding(14).background(Color(.systemBackground), in: RoundedRectangle(cornerRadius: 12))
+        .draggable(session.readOnly || saving ? "" : record.boardKey)
+    }
+    private func move(_ record: Record, to stage: String) async {
+        guard !saving, !session.readOnly else { return }
+        saving = true; error = nil
+        defer { saving = false }
+        do {
+            let path = kind == .tasks ? "tasks/\(record.id)" : "crm/\(record.text("resource"))/\(record.id)"
+            let payload: [String: JSON] = kind == .tasks
+                ? ["status": .string(stage), "version": .number(Double(record.fields["version"]?.integer ?? 0))]
+                : ["lead_status": .string(stage)]
+            _ = try await session.api.request(path, method: "PATCH", payload: payload)
+            await load(reset: true)
+        } catch { self.error = error.localizedDescription }
+    }
+    private func load(reset: Bool) async {
+        if !reset && loading { return }
+        let token = UUID(); requestID = token
+        loading = true; error = nil
+        defer { if requestID == token { loading = false } }
+        let next = reset ? 1 : page + 1
+        if reset { records = []; page = 0; total = 0 }
+        do {
+            let result = try await session.api.request(kind.rawValue, query: [URLQueryItem(name: "page", value: String(next)), URLQueryItem(name: "search", value: search)]).object
+            guard token == requestID, !Task.isCancelled else { return }
+            let incoming = (result["data"]?.array ?? []).map { Record(fields: $0.object) }
+            let keys = Set(records.map(\.boardKey))
+            records += incoming.filter { !keys.contains($0.boardKey) }
+            total = result["count"]?.integer ?? records.count
+            page = next
+        } catch { if token == requestID && !Task.isCancelled { self.error = error.localizedDescription } }
+    }
+}
+
+struct WorkflowView: View {
+    @EnvironmentObject private var session: DashboardSession
+    @AppStorage("hiddenWorkflowIDs") private var hiddenIDs = "[]"
+    @State private var workflows: [Record] = []
+    @State private var runs: [JSON] = []
+    @State private var loading = false
+    @State private var busy = false
+    @State private var error: String?
+    @State private var notice: String?
+    @State private var confirmation: Record?
+    @State private var pending: (workflow: Record, requestId: String)?
+    @State private var managing = false
+    @State private var monitoringAvailable = false
+    private var hidden: Set<String> { Set((try? JSONDecoder().decode([String].self, from: Data(hiddenIDs.utf8))) ?? []) }
+    private var visible: [Record] { workflows.filter { !hidden.contains($0.id) } }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if session.readOnly { ReadOnlyNotice() }
+                if let error { ErrorNotice(message: error) }
+                if let notice { Text(notice).font(.callout) }
+                if loading { ProgressView("Loading workflows…") }
+                if let pending {
+                    Button("Check last request") { Task { await run(pending.workflow, requestId: pending.requestId) } }.disabled(busy || session.readOnly)
+                }
+                if !loading && workflows.isEmpty {
+                    ContentUnavailableView("No connected workflows", systemImage: "arrow.triangle.branch",
+                                           description: Text("Connect authenticated production webhooks on the server to enable execution."))
+                }
+                if !workflows.isEmpty && visible.isEmpty { Text("All workflows are hidden. Use Manage visible workflows to show them.").font(.callout) }
+                if !monitoringAvailable && !workflows.isEmpty { Text("Live workflow monitoring is unavailable. Showing the last synced list and configured execution hooks.").font(.footnote).foregroundStyle(.secondary) }
+                ForEach(visible) { workflow in
+                    Section {
+                        Text(workflow.text("name")).font(.headline)
+                        if !workflow.flag("runnable") { Text("Execution webhook is not connected.").font(.footnote).foregroundStyle(.secondary) }
+                        Button { confirmation = workflow } label: { Label(busy ? "Sending…" : "Run workflow", systemImage: "play.fill") }
+                            .disabled(busy || session.readOnly || !workflow.flag("runnable") || pending != nil)
+                    }
+                }
+                if !runs.isEmpty {
+                    Section {
+                        ForEach(Array(runs.enumerated()), id: \.offset) { _, row in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(workflows.first { $0.id == row.object["workflow_id"]?.text }?.text("name") ?? row.object["workflow_id"]?.text ?? "Workflow").font(.headline)
+                                Text(row.object["state"]?.text.capitalized ?? "Unknown").font(.subheadline)
+                                Text(row.object["created_at"]?.text ?? "").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    } header: { Text("Recent execution requests") } footer: { Text("Accepted means n8n acknowledged the trigger. Check n8n for workflow completion.") }
+                }
+                Button("Refresh workflows") { Task { await load() } }.disabled(loading || busy)
+            }
+            .navigationTitle("Workflows")
+            .toolbar { Button { managing = true } label: { Label("Manage visible workflows", systemImage: "line.3.horizontal.decrease") } }
+            .sheet(isPresented: $managing) {
+                NavigationStack {
+                    List {
+                        Section { Text("Choose the workflows shown on this iPhone. New workflows appear automatically until you hide them.").font(.footnote).foregroundStyle(.secondary) }
+                        ForEach(workflows) { workflow in
+                            Toggle(workflow.text("name"), isOn: Binding(get: { !hidden.contains(workflow.id) }, set: { show in
+                                var next = hidden
+                                if show { next.remove(workflow.id) } else { next.insert(workflow.id) }
+                                hiddenIDs = String(data: (try? JSONEncoder().encode(next.sorted())) ?? Data("[]".utf8), encoding: .utf8) ?? "[]"
+                            }))
+                        }
+                        Button("Show all workflows") { hiddenIDs = "[]" }
+                    }
+                    .navigationTitle("Visible workflows").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { Button("Done") { managing = false } }
+                }
+            }
+            .task { await load() }
+            .refreshable { await load() }
+            .confirmationDialog("Run \(confirmation?.text("name") ?? "workflow") now? This executes its configured actions in n8n.",
+                                isPresented: Binding(get: { confirmation != nil }, set: { if !$0 { confirmation = nil } }), titleVisibility: .visible) {
+                if let workflow = confirmation {
+                    Button("Run workflow") { confirmation = nil; Task { await run(workflow, requestId: UUID().uuidString.lowercased()) } }
+                }
+            }
+        }
+    }
+    private func load() async {
+        guard !loading else { return }
+        loading = true
+        defer { loading = false }
+        do {
+            let result = try await session.api.request("workflows").object
+            workflows = (result["data"]?.array ?? []).map { Record(fields: $0.object) }
+            runs = result["runs"]?.array ?? []
+            monitoringAvailable = result["monitoringAvailable"]?.flag ?? false
+            error = nil
+        } catch { self.error = error.localizedDescription }
+    }
+    private func run(_ workflow: Record, requestId: String) async {
+        guard !busy, !session.readOnly else { return }
+        busy = true; error = nil; notice = nil
+        pending = (workflow, requestId)
+        defer { busy = false }
+        do {
+            let result = try await session.api.request("workflows/\(workflow.id)/run", method: "POST", payload: ["requestId": .string(requestId)])
+            switch result.object["state"]?.text {
+            case "accepted": notice = "n8n accepted this execution request. Check n8n for completion."
+            case "rejected": notice = "n8n rejected the execution request. Check the webhook configuration."
+            default: notice = "The acknowledgement is uncertain. Check n8n before starting another run."
+            }
+            pending = nil
+            await load()
+        } catch { self.error = error.localizedDescription + " Use Check last request to safely repeat the same request ID." }
     }
 }
 
@@ -209,7 +478,7 @@ struct RecordDetail: View {
                 }
             }
         }
-        .navigationTitle(resource.editable ? "Details" : "Lead details")
+        .navigationTitle(resource.isLead ? "Lead details" : "Details")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if resource.editable {
@@ -221,9 +490,10 @@ struct RecordDetail: View {
         .task { await load() }
         .refreshable { await load() }
         .sheet(item: $editing) { item in
-            RecordEditor(record: item, resource: resource) {
-                onSave()
-                Task { await load() }
+            if resource.isLead {
+                LeadEditor(record: item, resource: resource) { onSave(); Task { await load() } }
+            } else {
+                RecordEditor(record: item, resource: resource) { onSave(); Task { await load() } }
             }
         }
     }

@@ -13,6 +13,9 @@ For your physical iPhone, select your Apple development team under the app targe
 ## Included
 
 - Overview with website counts and lead pipeline. Inquiry totals include bookings, matching the existing website statistics endpoint.
+- Task Kanban: create/edit tasks, project names, priorities and due dates; drag cards or use Move to for stage changes.
+- Lead CRM board: move both lead sources through the pipeline; open a lead and tap Edit for internal notes, read state or request status. Submitted form answers are preserved.
+- Workflows: full synced list, authenticated execution controls and recent launch acknowledgements. Manage visible workflows controls which ones appear on this phone; hidden IDs are saved in local device preferences. Run requires the server's production webhook configuration.
 - Contact form leads and service inquiries, with search, pagination, and submission details. The service inquiry list uses `appointments?kind=requests` to show the service/project request form rather than appointment bookings.
 - Project and experience lists, details, and editors for existing entries. Pull down to refresh.
 - Editing preserves existing media paths and sends only the backend's accepted fields. Gallery, technology, and highlight entries use one item per line. Adding/deleting entries and uploading new media are outside this version's scope.
@@ -22,7 +25,9 @@ For your physical iPhone, select your Apple development team under the app targe
 
 `ShivDashboard/API.swift` defines the canonical HTTPS origin. Requests reuse the existing `/api/admin` API, including the website's session cookie and exact `Origin` header on writes. No authentication rules or CORS settings are weakened. If deployment changes its canonical origin, update this constant to match the server's `APP_ORIGIN`.
 
-The app uses an ephemeral URLSession with no disk cache or credential storage. Passwords are cleared after each login attempt; cookies and fetched records remain in memory only. Restarting the app requires signing in again. Sign out revokes the website session; if it fails due to a network error, retry. Session expiry returns to login. A privacy cover conceals the app when it is inactive or backgrounded.
+The app uses an ephemeral URLSession with no disk cache or credential storage. Passwords are cleared after each login attempt; cookies and fetched records remain in memory only. Only workflow visibility IDs are stored in local preferences. Restarting the app requires signing in again. Sign out revokes the website session; if it fails due to a network error, retry. Session expiry returns to login. A privacy cover conceals the app when it is inactive or backgrounded.
+
+Deploy the backend and apply the additive workspace migration before using Tasks and Workflows. See [workspace management setup](../docs/WORKSPACE-MANAGEMENT.md). Rebuild and run this updated app from Xcode to install these features on your iPhone.
 
 ## Validation
 

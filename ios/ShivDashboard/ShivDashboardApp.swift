@@ -77,7 +77,7 @@ struct LoginView: View {
                         .padding(20).background(.indigo.opacity(0.1), in: RoundedRectangle(cornerRadius: 24))
                     VStack(alignment: .leading, spacing: 10) {
                         Text("Your work.\nOne dashboard.").font(.system(.largeTitle, design: .rounded, weight: .bold))
-                        Text("Manage leads, projects and experience for shivpatel.in.")
+                        Text("Manage leads, tasks, workflows and your portfolio for shivpatel.in.")
                             .font(.body).foregroundStyle(.secondary)
                     }
                     VStack(spacing: 16) {
@@ -125,11 +125,17 @@ struct DashboardTabs: View {
     var body: some View {
         TabView {
             OverviewView().tabItem { Label("Overview", systemImage: "square.grid.2x2") }
-            ResourceSwitcher(resources: [.contacts, .appointments], title: "Leads")
-                .tabItem { Label("Leads", systemImage: "tray") }
-            RecordList(resource: .projects).tabItem { Label("Projects", systemImage: "square.stack.3d.up") }
-            RecordList(resource: .experiences).tabItem { Label("Experience", systemImage: "briefcase") }
+            CRMView().tabItem { Label("Lead CRM", systemImage: "person.2") }
+            TaskBoardView().tabItem { Label("Tasks", systemImage: "rectangle.split.3x1") }
+            WorkflowView().tabItem { Label("Workflows", systemImage: "arrow.triangle.branch") }
+            PortfolioView().tabItem { Label("Portfolio", systemImage: "briefcase") }
         }
+    }
+}
+
+struct PortfolioView: View {
+    var body: some View {
+        ResourceSwitcher(resources: [.projects, .experiences], title: "Portfolio")
     }
 }
 

@@ -130,3 +130,133 @@ struct RecordEditor: View {
         } catch { self.error = error.localizedDescription }
     }
 }
+
+struct LeadEditor: View {
+    @EnvironmentObject private var session: DashboardSession
+    @Environment(\.dismiss) private var dismiss
+    let record: Record
+    let resource: Resource
+    let onSave: () -> Void
+    @State private var draft: EditDraft
+    @State private var saving = false
+    @State private var error: String?
+    @State private var discard = false
+
+    init(record: Record, resource: Resource, onSave: @escaping () -> Void) {
+        self.record = record; self.resource = resource; self.onSave = onSave
+        _draft = State(initialValue: EditDraft(record: record, resource: resource))
+    }
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let error { ErrorNotice(message: error) }
+                if session.readOnly { ReadOnlyNotice() }
+                Section("CRM follow-up") {
+                    Picker("Lead stage", selection: text("lead_status", fallback: "new")) {
+                        ForEach(leadColumns, id: \.0) { key, label in Text(label).tag(key) }
+                    }
+                    if resource == .contacts {
+                        Toggle("Mark as read", isOn: Binding(get: { draft.fields["is_read"]?.flag ?? false }, set: { draft.fields["is_read"] = .bool($0) }))
+                    } else {
+                        Picker("Request status", selection: text("status", fallback: "pending")) {
+                            ForEach(["pending", "confirmed", "completed", "cancelled"], id: \.self) { Text($0.capitalized).tag($0) }
+                        }
+                    }
+                    TextField("Internal notes", text: text("admin_notes"), axis: .vertical).lineLimit(5...15)
+                }
+                .disabled(saving || session.readOnly)
+                Section { Text("Your notes and stage stay in the dashboard. The original form submission is preserved.").font(.footnote).foregroundStyle(.secondary) }
+            }
+            .navigationTitle("Edit lead CRM").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { if draft.hasChanges { discard = true } else { dismiss() } }.disabled(saving)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(saving ? "Saving…" : "Save") { Task { await save() } }.disabled(saving || session.readOnly || !draft.hasChanges)
+                }
+            }
+            .interactiveDismissDisabled(draft.hasChanges || saving)
+            .confirmationDialog("Discard your lead changes?", isPresented: $discard, titleVisibility: .visible) {
+                Button("Discard changes", role: .destructive) { dismiss() }
+            }
+        }
+    }
+    private func text(_ key: String, fallback: String = "") -> Binding<String> {
+        Binding(get: { draft.fields[key]?.text.isEmpty == false ? draft.fields[key]!.text : fallback }, set: { draft.fields[key] = .string($0) })
+    }
+    private func save() async {
+        guard !saving, !session.readOnly else { return }
+        saving = true; error = nil
+        defer { saving = false }
+        do {
+            _ = try await session.api.request("\(resource.rawValue)/\(record.id)", method: "PUT", payload: draft.payload())
+            onSave(); dismiss()
+        } catch { self.error = error.localizedDescription }
+    }
+}
+
+struct TaskForm: View {
+    @EnvironmentObject private var session: DashboardSession
+    @Environment(\.dismiss) private var dismiss
+    let record: Record?
+    let onSave: () -> Void
+    @State private var draft: TaskDraft
+    @State private var saving = false
+    @State private var error: String?
+    @State private var discard = false
+
+    init(record: Record?, onSave: @escaping () -> Void) {
+        self.record = record; self.onSave = onSave
+        _draft = State(initialValue: TaskDraft(record: record))
+    }
+    private var dirty: Bool { draft.payload() != TaskDraft(record: record).payload() }
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let error { ErrorNotice(message: error) }
+                if session.readOnly { ReadOnlyNotice() }
+                Section("Task details") {
+                    TextField("Task title", text: text("title"))
+                    TextField("Project name", text: text("project_name"))
+                    TextField("Description", text: text("description"), axis: .vertical).lineLimit(4...12)
+                }.disabled(saving || session.readOnly)
+                Section("Planning") {
+                    Picker("Stage", selection: text("status")) {
+                        ForEach(taskColumns, id: \.0) { key, label in Text(label).tag(key) }
+                    }
+                    Picker("Priority", selection: text("priority")) {
+                        ForEach(["low", "normal", "high"], id: \.self) { Text($0.capitalized).tag($0) }
+                    }
+                    TextField("Due date (YYYY-MM-DD, optional)", text: text("due_date"))
+                        .textInputAutocapitalization(.never).autocorrectionDisabled()
+                }.disabled(saving || session.readOnly)
+                if let validation = draft.validation { Text(validation).font(.footnote).foregroundStyle(.secondary) }
+            }
+            .navigationTitle(record == nil ? "Add task" : "Edit task").navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") { if dirty { discard = true } else { dismiss() } }.disabled(saving) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(saving ? "Saving…" : "Save") { Task { await save() } }
+                        .disabled(saving || session.readOnly || draft.validation != nil || !dirty)
+                }
+            }
+            .interactiveDismissDisabled(dirty || saving)
+            .confirmationDialog("Discard your task changes?", isPresented: $discard, titleVisibility: .visible) {
+                Button("Discard changes", role: .destructive) { dismiss() }
+            }
+        }
+    }
+    private func text(_ key: String) -> Binding<String> {
+        Binding(get: { draft.fields[key]?.text ?? "" }, set: { draft.fields[key] = .string($0) })
+    }
+    private func save() async {
+        guard !saving, !session.readOnly, draft.validation == nil else { return }
+        saving = true; error = nil
+        defer { saving = false }
+        do {
+            _ = try await session.api.request(record.map { "tasks/\($0.id)" } ?? "tasks", method: record == nil ? "POST" : "PUT", payload: draft.payload())
+            onSave(); dismiss()
+        } catch { self.error = error.localizedDescription }
+    }
+}
