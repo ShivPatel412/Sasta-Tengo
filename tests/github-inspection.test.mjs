@@ -16,6 +16,11 @@ test('manifests and notebook imports enrich stacks without executing repository 
  assert(video.description.includes('Action-based video analysis'));
 });
 
+test('client descriptions exclude migration runbooks and restoration instructions',()=>{
+ const result=inspectedDetails({name:'Portfolio',readme:'# Next.js migration candidate\n\nProduction cutover is on hold until database restoration is verified.\n\nLOCAL_PREVIEW=1',paths:['PortfolioFinder.jsx','project-automation.mjs'],sources:[]});
+ assert(result.description.includes('developer portfolio'));assert(!/cutover|restoration|LOCAL_PREVIEW/.test(result.description));
+});
+
 test('inspection bounds source reads, omits private/backup files and respects the public branch',async()=>{
  const calls=[];
  const result=await inspectGithub('https://github.com/octocat/example',async(url,options)=>{
