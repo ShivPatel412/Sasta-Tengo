@@ -1,4 +1,6 @@
 import SwiftUI
+import LocalAuthentication
+import Security
 
 @MainActor
 final class DashboardSession: ObservableObject {
@@ -6,12 +8,13 @@ final class DashboardSession: ObservableObject {
     @Published var user: Record?
     @Published var readOnly = true
     @Published var notice: String?
+    @Published private(set) var hasSavedLogin = UserDefaults.standard.bool(forKey: "hasSavedLogin")
 
     init() {
         api = APIClient()
         api.onUnauthorized = { [weak self] in
             self?.user = nil
-            self?.notice = "Your session expired. Please sign in again."
+            self?.notice = "Your session expired. Use Face ID or sign in again."
         }
     }
 
@@ -21,15 +24,60 @@ final class DashboardSession: ObservableObject {
         user = Record(fields: response["user"]?.object ?? [:])
     }
 
-    func signIn(email: String, password: String) async throws {
+    func signIn(email: String, password: String, remember: Bool = true) async throws {
         api.clearCookies()
         _ = try await api.request("login", method: "POST", payload: ["email": .string(email), "password": .string(password)])
         try await refreshSession()
         notice = nil
+        do {
+            if remember {
+                try LoginKeychain.save(SavedLogin(email: email, password: password,
+                    token: api.loginCookie?.value, expires: api.loginCookie?.expiresDate))
+                setSavedLogin(true)
+            } else {
+                try LoginKeychain.remove()
+                setSavedLogin(false)
+            }
+        } catch {
+            setSavedLogin(false)
+            notice = "Signed in, but Face ID login could not be saved. Check that your iPhone has a passcode set."
+        }
+    }
+
+    func signInWithFaceID(context: LAContext) async throws {
+        let saved: SavedLogin
+        do { saved = try await LoginKeychain.read(context: context) }
+        catch {
+            if (error as NSError).code == Int(errSecItemNotFound) { setSavedLogin(false) }
+            throw error
+        }
+        if let cookie = saved.cookie() {
+            api.restoreCookie(cookie)
+            do { try await refreshSession(); notice = nil; return }
+            catch {
+                guard (error as? APIError)?.status == 401 else { throw error }
+            }
+        }
+        do { try await signIn(email: saved.email, password: saved.password) }
+        catch {
+            if (error as? APIError)?.status == 401 {
+                try? LoginKeychain.remove()
+                setSavedLogin(false)
+            }
+            throw error
+        }
+    }
+
+    private func setSavedLogin(_ saved: Bool) {
+        hasSavedLogin = saved
+        UserDefaults.standard.set(saved, forKey: "hasSavedLogin")
     }
 
     func signOut() async throws {
-        _ = try await api.request("logout", method: "POST")
+        do { _ = try await api.request("logout", method: "POST") }
+        catch { guard (error as? APIError)?.status == 401 else { throw error } }
+        try LoginKeychain.remove()
+        setSavedLogin(false)
         api.clearCookies()
         user = nil
     }
@@ -49,6 +97,7 @@ struct ShivDashboardApp: App {
                 else { DashboardTabs() }
             }
             .environmentObject(session)
+            .environmentObject(appLock)
             .tint(.indigo)
             .privacySensitive()
             .overlay {
@@ -60,7 +109,7 @@ struct ShivDashboardApp: App {
                     Task { try? await session.refreshSession() }
                 }
             }
-            .onChange(of: session.user?.id) { _, _ in appLock.lock() }
+            .onChange(of: session.user?.id) { _, id in if id == nil { appLock.lock() } }
         }
     }
 }
@@ -106,10 +155,13 @@ struct UnlockView: View {
 
 struct LoginView: View {
     @EnvironmentObject private var session: DashboardSession
+    @EnvironmentObject private var appLock: AppLock
     @State private var email = ""
     @State private var password = ""
     @State private var busy = false
     @State private var error: String?
+    @State private var usePassword = false
+    @State private var remember = true
 
     var body: some View {
         NavigationStack {
@@ -123,31 +175,56 @@ struct LoginView: View {
                         Text("Manage leads, tasks, workflows and your portfolio for shivpatel.in.")
                             .font(.body).foregroundStyle(.secondary)
                     }
-                    VStack(spacing: 16) {
-                        TextField("Admin email", text: $email)
-                            .textContentType(.username).keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never).autocorrectionDisabled()
-                            .accessibilityIdentifier("login.email")
-                        Divider()
-                        SecureField("Password", text: $password)
-                            .textContentType(.password).accessibilityIdentifier("login.password")
-                            .onSubmit { if !busy && !email.isEmpty && !password.isEmpty { Task { await login() } } }
+                    if session.hasSavedLogin {
+                        Button {
+                            Task {
+                                busy = true
+                                defer { busy = false }
+                                await appLock.unlock { context in try await session.signInWithFaceID(context: context) }
+                            }
+                        } label: {
+                            Label(busy ? "Signing in…" : "Sign in with Face ID", systemImage: "faceid")
+                                .frame(maxWidth: .infinity).padding(.vertical, 9)
+                        }
+                        .buttonStyle(.borderedProminent).controlSize(.large)
+                        .disabled(busy || appLock.busy)
+                        .accessibilityIdentifier("login.faceID")
+                        Text("Face ID or your device passcode securely unlocks your saved login.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Button(usePassword ? "Hide password login" : "Use email and password") { usePassword.toggle() }
+                            .disabled(busy)
                     }
-                    .padding(20).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
-                    if let message = error ?? session.notice { ErrorNotice(message: message) }
-                    Button { Task { await login() } } label: {
-                        HStack {
-                            Spacer()
-                            if busy { ProgressView().tint(.white) }
-                            Text(busy ? "Signing in…" : "Sign in")
-                            Spacer()
-                        }.padding(.vertical, 9)
+                    if let error = appLock.error { ErrorNotice(message: error) }
+                    if !session.hasSavedLogin || usePassword {
+                        VStack(spacing: 16) {
+                            TextField("Admin email", text: $email)
+                                .textContentType(.username).keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never).autocorrectionDisabled()
+                                .accessibilityIdentifier("login.email")
+                            Divider()
+                            SecureField("Password", text: $password)
+                                .textContentType(.password).accessibilityIdentifier("login.password")
+                                .onSubmit { if !busy && !email.isEmpty && !password.isEmpty { Task { await login() } } }
+                        }
+                        .padding(20).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+                        Toggle("Save login for Face ID", isOn: $remember).disabled(busy)
+                        Text("Stores your login in this iPhone’s protected Keychain. Sign out removes it.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        if let message = error ?? session.notice { ErrorNotice(message: message) }
+                        Button { Task { await login() } } label: {
+                            HStack {
+                                Spacer()
+                                if busy { ProgressView().tint(.white) }
+                                Text(busy ? "Signing in…" : "Sign in")
+                                Spacer()
+                            }.padding(.vertical, 9)
+                        }
+                        .buttonStyle(.borderedProminent).controlSize(.large)
+                        .disabled(busy || email.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
+                        .accessibilityIdentifier("login.submit")
+                        Label("Use your existing website admin account.", systemImage: "lock.shield")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
-                    .buttonStyle(.borderedProminent).controlSize(.large)
-                    .disabled(busy || email.trimmingCharacters(in: .whitespaces).isEmpty || password.isEmpty)
-                    .accessibilityIdentifier("login.submit")
-                    Label("Use your existing website admin account.", systemImage: "lock.shield")
-                        .font(.footnote).foregroundStyle(.secondary)
                 }.padding(28).frame(maxWidth: 520).frame(maxWidth: .infinity).padding(.top, 36)
             }
             .navigationTitle("Shiv Dashboard").navigationBarTitleDisplayMode(.inline)
@@ -158,7 +235,7 @@ struct LoginView: View {
         busy = true; error = nil
         defer { busy = false }
         do {
-            try await session.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
+            try await session.signIn(email: email.trimmingCharacters(in: .whitespacesAndNewlines), password: password, remember: remember)
             password = ""
         } catch { self.error = error.localizedDescription; password = "" }
     }

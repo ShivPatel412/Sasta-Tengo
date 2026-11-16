@@ -114,6 +114,15 @@ final class APIClient {
         }
     }
 
+    var loginCookie: HTTPCookie? {
+        session.configuration.httpCookieStorage?.cookies(for: URL(string: Self.origin)!)?.first { $0.name == "shiv_admin" }
+    }
+
+    func restoreCookie(_ cookie: HTTPCookie) {
+        clearCookies()
+        session.configuration.httpCookieStorage?.setCookie(cookie)
+    }
+
     func request(_ path: String, method: String = "GET", payload: [String: JSON]? = nil,
                  query: [URLQueryItem] = []) async throws -> JSON {
         var components = URLComponents(string: Self.origin + "/api/admin/" + path)!

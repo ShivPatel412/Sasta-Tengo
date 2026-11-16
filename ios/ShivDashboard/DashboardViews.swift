@@ -21,6 +21,7 @@ struct OverviewView: View {
                         Text("Here’s what’s happening on your website.").foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
                     if session.readOnly { ReadOnlyNotice() }
+                    if let notice = session.notice { Text(notice).font(.footnote).foregroundStyle(.secondary) }
                 }
                 Section("Home PC") {
                     Button {

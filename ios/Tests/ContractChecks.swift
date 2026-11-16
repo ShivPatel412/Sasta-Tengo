@@ -78,6 +78,12 @@ struct ContractChecks {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [StubProtocol.self]
         let api = APIClient(configuration: config)
+        let restored = HTTPCookie(properties: [.name: "shiv_admin", .value: String(repeating: "a", count: 64),
+            .domain: "www.shivpatel.in", .path: "/", .secure: "TRUE", .expires: Date().addingTimeInterval(300)])!
+        api.restoreCookie(restored)
+        assert(api.loginCookie?.value == restored.value)
+        api.clearCookies()
+        assert(api.loginCookie == nil)
         StubProtocol.handler = { request in
             assert(request.url?.absoluteString == "https://www.shivpatel.in/api/admin/login")
             assert(request.httpMethod == "POST")
@@ -99,6 +105,7 @@ struct ContractChecks {
         StubProtocol.handler = { _ in (401, #"{"message":"Please sign in."}"#) }
         do { _ = try await api.request("projects"); assertionFailure("Must reject expired session") }
         catch let error as APIError { assert(error.status == 401 && expired) }
+        assert(api.loginCookie == nil)
         expired = false
         do { _ = try await api.request("login", method: "POST"); assertionFailure("Must reject bad login") }
         catch { assert(!expired) }
