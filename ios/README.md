@@ -13,6 +13,7 @@ For your physical iPhone, select your Apple development team under the app targe
 ## Included
 
 - Overview with website counts and lead pipeline. Inquiry totals include bookings, matching the existing website statistics endpoint.
+- Overview → Home PC → **Open Alexa to wake Shiv** opens the installed Amazon Alexa app. Turn on the device named **Shiv** there, or ask “Alexa, turn on Shiv.” The button only opens Alexa; it does not send a wake command or confirm that the PC is awake. The linked RemoteRelay skill and your home Echo must remain available. Sleep wake has been tested by the owner; shutdown wake and wake over mobile data still need separate verification. If Alexa cannot open, the dashboard shows installation/opening instructions. Uses Amazon’s documented [`alexa://` iOS link](https://developer.amazon.com/en-GB/blogs/alexa/device-makers/2020/06/creating-a-great-out-of-the-box-experience).
 - Task Kanban: create/edit tasks, project names, priorities and due dates; drag cards or use Move to for stage changes.
 - Lead CRM board: move both lead sources through the pipeline; open a lead and tap Edit for internal notes, read state or request status. Submitted form answers are preserved.
 - Workflows: full synced list, authenticated execution controls and recent launch acknowledgements. Manage visible workflows controls which ones appear on this phone; hidden IDs are saved in local device preferences. Run requires the server's production webhook configuration.

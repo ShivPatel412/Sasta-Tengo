@@ -2,6 +2,8 @@ import SwiftUI
 
 struct OverviewView: View {
     @EnvironmentObject private var session: DashboardSession
+    @Environment(\.openURL) private var openURL
+    @State private var alexaUnavailable = false
     @State private var counts: [String: JSON] = [:]
     @State private var pipeline: [JSON] = []
     @State private var loading = false
@@ -19,6 +21,18 @@ struct OverviewView: View {
                         Text("Here’s what’s happening on your website.").foregroundStyle(.secondary)
                     }.padding(.vertical, 8)
                     if session.readOnly { ReadOnlyNotice() }
+                }
+                Section("Home PC") {
+                    Button {
+                        openURL(URL(string: "alexa://")!) { opened in
+                            alexaUnavailable = !opened
+                        }
+                    } label: {
+                        Label("Open Alexa to wake Shiv", systemImage: "desktopcomputer")
+                    }
+                    .accessibilityIdentifier("overview.openAlexa")
+                    Text("In Alexa, turn on the device named Shiv, or ask “Alexa, turn on Shiv.” Your Echo must stay online at home. Opening Alexa does not send a wake command.")
+                        .font(.footnote).foregroundStyle(.secondary)
                 }
                 if let error {
                     Section { ErrorNotice(message: error); Button("Try again") { Task { await load() } } }
@@ -49,6 +63,11 @@ struct OverviewView: View {
                 }
             }
             .navigationTitle("Overview")
+            .alert("Couldn’t open Alexa", isPresented: $alexaUnavailable) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Install or open the Amazon Alexa app on your iPhone, then turn on the device named Shiv.")
+            }
             .refreshable { await load() }
             .task { await load() }
             .confirmationDialog("Sign out of your dashboard?", isPresented: $confirmLogout, titleVisibility: .visible) {
