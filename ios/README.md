@@ -24,6 +24,8 @@ For your physical iPhone, select your Apple development team under the app targe
 
 ## Connection and privacy
 
+After signing in, tap **Unlock dashboard** and approve Face ID. The system supports Touch ID on compatible devices and the device passcode as a fallback. The dashboard locks whenever the app enters the background, including when opening Alexa. Returning requires tapping Unlock again; dashboard navigation and unsaved edits are reset on locking. Cancelling or failing authentication keeps the dashboard locked. Face ID permission is requested by iOS, and biometric data never reaches the website or this app. This is a local session lock, not passwordless website login: a full app restart or expired website session still requires the admin email and password. Set up a device passcode if local authentication is unavailable.
+
 `ShivDashboard/API.swift` defines the canonical HTTPS origin. Requests reuse the existing `/api/admin` API, including the website's session cookie and exact `Origin` header on writes. No authentication rules or CORS settings are weakened. If deployment changes its canonical origin, update this constant to match the server's `APP_ORIGIN`.
 
 The app uses an ephemeral URLSession with no disk cache or credential storage. Passwords are cleared after each login attempt; cookies and fetched records remain in memory only. Only workflow visibility IDs are stored in local preferences. Restarting the app requires signing in again. Sign out revokes the website session; if it fails due to a network error, retry. Session expiry returns to login. A privacy cover conceals the app when it is inactive or backgrounded.
@@ -51,5 +53,16 @@ xcodebuild -project ios/ShivDashboard.xcodeproj -scheme ShivDashboard \
 ```
 
 Contract checks use synthetic fixtures and a URLProtocol stub, without sending requests to the live site. They cover JSON decoding and large string IDs, media preservation, payload field whitelists, dates and array inputs, login headers, search encoding, session expiry, read-only and validation errors, and invalid server responses.
+
+Run local authentication state checks (simulated outcomes, no real biometric prompts):
+
+```sh
+xcrun swiftc -swift-version 5 -module-cache-path /tmp/shiv-dashboard-module-cache \
+  -parse-as-library ios/ShivDashboard/AppLock.swift ios/Tests/AppLockChecks.swift \
+  -o /tmp/shiv-applock-checks
+/tmp/shiv-applock-checks
+```
+
+On an iPhone, verify successful Face ID, cancellation/retry, passcode fallback, background/reopen locking (including an open editor), and session expiry. Hardware biometric prompts require a manual acceptance check.
 
 Verified during implementation: Simulator compilation, contract checks, HTTPS redirect to the canonical host, and HTTP 401 from the live unauthenticated session API. Actual account login, private records, and saves still need an authenticated acceptance pass. Before relying on editing, verify a project and an experience change against the website using an approved test entry. No live records were changed during implementation.

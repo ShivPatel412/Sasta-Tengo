@@ -38,12 +38,14 @@ final class DashboardSession: ObservableObject {
 @main
 struct ShivDashboardApp: App {
     @StateObject private var session = DashboardSession()
+    @StateObject private var appLock = AppLock()
     @Environment(\.scenePhase) private var phase
 
     var body: some Scene {
         WindowGroup {
             Group {
                 if session.user == nil { LoginView() }
+                else if appLock.locked { UnlockView(appLock: appLock) }
                 else { DashboardTabs() }
             }
             .environmentObject(session)
@@ -53,11 +55,52 @@ struct ShivDashboardApp: App {
                 if phase != .active { Color(.systemBackground).ignoresSafeArea().overlay(Image(systemName: "lock.shield").font(.largeTitle)) }
             }
             .onChange(of: phase) { _, value in
-                if value == .active && session.user != nil {
+                if value == .background { appLock.lock() }
+                if value == .active && session.user != nil && !appLock.locked {
                     Task { try? await session.refreshSession() }
                 }
             }
+            .onChange(of: session.user?.id) { _, _ in appLock.lock() }
         }
+    }
+}
+
+struct UnlockView: View {
+    @EnvironmentObject private var session: DashboardSession
+    @ObservedObject var appLock: AppLock
+    @State private var signingOut = false
+    @State private var signOutError: String?
+
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "faceid").font(.system(size: 52)).foregroundStyle(.indigo)
+            Text("Dashboard locked").font(.title2.bold())
+            Text("Use Face ID or your device passcode to unlock. Touch ID works on supported devices.")
+                .foregroundStyle(.secondary).multilineTextAlignment(.center)
+            if let error = appLock.error ?? signOutError { ErrorNotice(message: error) }
+            Button {
+                Task {
+                    await appLock.unlock()
+                    if !appLock.locked { try? await session.refreshSession() }
+                }
+            } label: {
+                Label(appLock.busy ? "Authenticating…" : "Unlock dashboard", systemImage: "lock.open")
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(appLock.busy || signingOut)
+            .accessibilityIdentifier("lock.unlock")
+            Button("Sign out", role: .destructive) {
+                Task {
+                    signingOut = true
+                    defer { signingOut = false }
+                    do { try await session.signOut() }
+                    catch { signOutError = error.localizedDescription }
+                }
+            }.disabled(appLock.busy || signingOut)
+        }
+        .padding(28).frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color(.systemBackground).ignoresSafeArea())
+        .accessibilityIdentifier("lock.screen")
     }
 }
 
