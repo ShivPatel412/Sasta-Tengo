@@ -104,6 +104,11 @@ available to the existing `shiv` account unless its applicability is deliberatel
 The Windows sign-in startup entry launches WSL hidden; this does not provide service
 before Windows sign-in. PC sleep is already disabled while plugged in.
 
+For startup before sign-in, the optional `install-boot-startup.ps1` installer creates
+a supervised boot task under the existing WSL-owning Windows account. Run it on the
+Windows PC using [these instructions](../docs/WINDOWS-BOOT-STARTUP.md); installing
+it and testing a reboot are separate from the historical verification below.
+
 Verified: public HTTPS upload/download byte comparison against the HDD, deletion,
 password-protected sharing with automatic expiry, test-token revocation, and guard
 tests for missing/wrong drive identities. Large-file transfers, physical unplugging,
