@@ -12,7 +12,7 @@ export async function GET(request,context){return handle(async()=>{
   try{snapshot=await controlSnapshot();}catch{ /* Configured workflow buttons remain available when monitoring is offline. */ }
   const runs=await query('SELECT request_id,workflow_id,state,created_at FROM next_workflow_runs WHERE owner_id=? ORDER BY created_at DESC LIMIT 30',[owner.id]);
   const workflows=workflowList(snapshot),visible=new Set(workflows.map(row=>row.id));
-  return json({data:workflows,runs:runs.filter(run=>visible.has(String(run.workflow_id))),collectedAt:snapshot?.updated_at||null,monitoringAvailable:sourceFresh(snapshot,'n8n'),executions:(snapshot?.n8n?.executions||[]).slice(0,30),today:snapshot?.n8n?.today||null});
+  return json({data:workflows,folders:snapshot?.n8n?.folders||[],runs:runs.filter(run=>visible.has(String(run.workflow_id))),collectedAt:snapshot?.updated_at||null,monitoringAvailable:sourceFresh(snapshot,'n8n'),executions:(snapshot?.n8n?.executions||[]).slice(0,30),today:snapshot?.n8n?.today||null});
 });}
 export async function POST(request,context){return handle(async()=>{
   const owner=await admin(),{path=[]}=await context.params;

@@ -59,3 +59,7 @@ The n8n feed includes every unarchived workflow owned by the Personal project UW
 Lists, AI-node counts, recent executions and Asia/Kolkata daily totals all derive from the same project-ownership selection. Workflows belonging to other projects and archived workflows stay excluded. No workflows are moved, disabled or deleted.
 
 The feed carries project_id UWCIZeLCvuUGM9uC and folder_id null. The website rejects the earlier two-workflow folder scope, unscoped data and other projects. Collector failures reuse only snapshots with this exact workspace scope. Configured execution hooks and request history outside the visible workspace are hidden.
+
+## Workflow dashboard and folders
+
+The Workflows page shows total/published workflows, today’s execution/failure totals, and the latest five executions with an option to expand the collected history. The browser uses the actual folder and parent-folder metadata collected read-only from the Personal project. Root workflows remain directly accessible; folder breadcrumbs navigate all nested levels. Folder cards show the total workflows beneath them and the number of immediate subfolders. Search matches workflow names and full folder paths across the workspace. No folders or workflows are created, moved or modified by browsing.

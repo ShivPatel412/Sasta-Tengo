@@ -30,8 +30,11 @@ WITH personal_workflows AS (
 )
 SELECT json_build_object(
 'scope',json_build_object('project_id','UWCIZeLCvuUGM9uC','folder_id',NULL),
+'folders',(SELECT coalesce(json_agg(f),'[]'::json) FROM (
+ SELECT id,name,"parentFolderId" AS parent_id FROM folder WHERE "projectId"='UWCIZeLCvuUGM9uC' ORDER BY name
+) f),
 'workflows', (SELECT coalesce(json_agg(w),'[]'::json) FROM (
-SELECT id,name,active,"updatedAt" AS updated_at,
+SELECT id,name,active,"parentFolderId" AS folder_id,"updatedAt" AS updated_at,
  (SELECT count(*) FROM json_array_elements(nodes) n WHERE n->>'type' ILIKE '%agent%') AS agent_count
 FROM personal_workflows ORDER BY "updatedAt" DESC) w),
 'executions',(SELECT coalesce(json_agg(e),'[]'::json) FROM (

@@ -74,7 +74,7 @@ test('workspace API routes retain session, exact-origin and read-only gates',asy
 
 test('workflow monitoring preserves publication and AI metadata without leaking source fields',()=>{
  const result=workflowList({n8n:{workflows:[{id:42,name:'Real workflow',active:true,agent_count:'2',updated_at:'2026-11-16T09:00:00Z',nodes:['private']}]}},{});
- assert.deepEqual(result,[{id:'42',name:'Real workflow',active:true,agent_count:2,updated_at:'2026-11-16T09:00:00Z',runnable:false}]);
+ assert.deepEqual(result,[{id:'42',name:'Real workflow',active:true,agent_count:2,updated_at:'2026-11-16T09:00:00Z',folder_id:null,runnable:false}]);
 });
 
 test('configured hooks outside the scoped folder are not appended to dashboard workflows',()=>{
