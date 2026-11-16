@@ -14,9 +14,9 @@ test('collector freshness never turns missing, stale or future data into live me
   for(const updated_at of [null,'invalid','2026-11-06T09:50:00Z','2026-11-07T10:00:00Z'])assert(!snapshotFresh({updated_at},now));
 });
 test('master snapshot reads only configured metadata and omits unrelated state',async()=>{
-  const snapshot={updated_at:'2026-11-06T10:00:00Z',n8n:{workflows:[]},private_config:'never expose'};let requested;
+  const snapshot={updated_at:'2026-11-06T10:00:00Z',n8n:{workflows:[],scope:{project_id:'UWCIZeLCvuUGM9uC',folder_id:'zgcQe77hWdgdwdQZ'}},private_config:'never expose'};let requested;
   const result=await controlSnapshot({CONTROL_ROOM_SNAPSHOT_PATH:'/test/snapshot.json'},async file=>{requested=file;return JSON.stringify(snapshot);},async()=>({size:100}));
-  assert.equal(requested,'/test/snapshot.json');assert(!('private_config' in result));assert.deepEqual(result.n8n,{workflows:[]});
+  assert.equal(requested,'/test/snapshot.json');assert(!('private_config' in result));assert.deepEqual(result.n8n,snapshot.n8n);
 });
 test('missing, oversized or non-snapshot files fail clearly without disclosing paths',async()=>{
   for(const value of ['{}','not-json',JSON.stringify({password:'secret'})])await assert.rejects(controlSnapshot({},async()=>value,async()=>({size:10})),/collector is not connected/);

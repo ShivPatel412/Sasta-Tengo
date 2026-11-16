@@ -13,6 +13,7 @@ import urllib.request
 
 STATE = pathlib.Path(os.environ.get('SHIV_STATE', '/var/lib/shiv-control'))
 ROOT = pathlib.Path(__file__).resolve().parent
+N8N_SCOPE = {'project_id': 'UWCIZeLCvuUGM9uC', 'folder_id': 'zgcQe77hWdgdwdQZ'}
 
 def command(args, **kw):
     return subprocess.check_output(args, text=True, timeout=kw.pop('timeout', 20), stderr=subprocess.PIPE, **kw)
@@ -21,17 +22,26 @@ def n8n_data():
     env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','n8n']))[0]['Config']['Env'] if '=' in x)
     db_env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','postgres_shared']))[0]['Config']['Env'] if '=' in x)
     sql = '''BEGIN READ ONLY;
+WITH RECURSIVE personal_folders AS (
+ SELECT id FROM folder WHERE id='zgcQe77hWdgdwdQZ' AND "projectId"='UWCIZeLCvuUGM9uC'
+ UNION ALL
+ SELECT f.id FROM folder f JOIN personal_folders p ON f."parentFolderId"=p.id
+ WHERE f."projectId"='UWCIZeLCvuUGM9uC'
+), personal_workflows AS (
+ SELECT * FROM workflow_entity WHERE NOT "isArchived" AND "parentFolderId" IN (SELECT id FROM personal_folders)
+)
 SELECT json_build_object(
+'scope',json_build_object('project_id','UWCIZeLCvuUGM9uC','folder_id','zgcQe77hWdgdwdQZ'),
 'workflows', (SELECT coalesce(json_agg(w),'[]'::json) FROM (
 SELECT id,name,active,"updatedAt" AS updated_at,
  (SELECT count(*) FROM json_array_elements(nodes) n WHERE n->>'type' ILIKE '%agent%') AS agent_count
-FROM workflow_entity WHERE NOT "isArchived" ORDER BY "updatedAt" DESC) w),
+FROM personal_workflows ORDER BY "updatedAt" DESC) w),
 'executions',(SELECT coalesce(json_agg(e),'[]'::json) FROM (
  SELECT e.id,e.status,e."workflowId" AS workflow_id,w.name,e."startedAt" AS started_at,e."stoppedAt" AS stopped_at
- FROM execution_entity e LEFT JOIN workflow_entity w ON w.id=e."workflowId"
+ FROM execution_entity e JOIN personal_workflows w ON w.id=e."workflowId"
  WHERE e."deletedAt" IS NULL ORDER BY e.id DESC LIMIT 30) e),
 'today',(SELECT json_build_object('total',count(*),'success',count(*) FILTER (WHERE status='success'),'errors',count(*) FILTER (WHERE status IN ('error','crashed')),'running',count(*) FILTER (WHERE status='running'))
- FROM execution_entity WHERE "deletedAt" IS NULL AND "startedAt">=date_trunc('day',now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'));
+ FROM execution_entity WHERE "workflowId" IN (SELECT id FROM personal_workflows) AND "deletedAt" IS NULL AND "startedAt">=date_trunc('day',now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata'));
 COMMIT;'''
     schema=env.get('DB_POSTGRESDB_SCHEMA','public').replace('"','""')
     sql=sql.replace('BEGIN READ ONLY;',f'BEGIN READ ONLY; SET LOCAL search_path TO "{schema}";')
@@ -120,7 +130,7 @@ def collect():
             result[name]=fn(); result['source_updated_at'][name]=now
         except Exception as error:
             result['errors'][name]=type(error).__name__
-            if name in previous:
+            if name in previous and (name != 'n8n' or previous[name].get('scope') == N8N_SCOPE):
                 result[name]=previous[name]
                 result['source_updated_at'][name]=previous.get('source_updated_at',{}).get(name)
     disk=shutil.disk_usage('/mnt/c')

@@ -76,3 +76,8 @@ test('workflow monitoring preserves publication and AI metadata without leaking 
  const result=workflowList({n8n:{workflows:[{id:42,name:'Real workflow',active:true,agent_count:'2',updated_at:'2026-11-16T09:00:00Z',nodes:['private']}]}},{});
  assert.deepEqual(result,[{id:'42',name:'Real workflow',active:true,agent_count:2,updated_at:'2026-11-16T09:00:00Z',runnable:false}]);
 });
+
+test('configured hooks outside the scoped folder are not appended to dashboard workflows',()=>{
+ const snapshot={n8n:{scope:{folder_id:'zgcQe77hWdgdwdQZ'},workflows:[{id:'personal',name:'Personal workflow'}]}};
+ assert.deepEqual(workflowList(snapshot,config('https://n8n.shivpatel.in/webhook/github-sync')).map(row=>row.id),['personal']);
+});

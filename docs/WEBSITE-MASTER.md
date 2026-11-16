@@ -51,3 +51,9 @@ The legacy shiv-dashboard.service is already disabled/inactive and dashboard.shi
 Authenticated production reads passed for session, analytics, projects, experience, contacts, service requests, tasks, CRM, workflows, collector status and project drafts. Signed-out status/workflow/job requests returned 401. Seven imported GitHub repositories are published and present in the public portfolio.
 
 Rollback: disable MASTER_DASHBOARD_ENABLED and redeploy to restore the portfolio-only navigation. The old subdomain is retired and is not a rollback target. Stop shiv-master-push.timer only to pause uploads; retain its snapshot table and service data.
+
+## Personal workflow scope — 16 November 2026
+
+The n8n feed is restricted to project UWCIZeLCvuUGM9uC, folder Personal Projects (zgcQe77hWdgdwdQZ), including nested folders. Lists, AI-node counts, recent executions and Asia/Kolkata daily totals all derive from the same recursive folder selection. Moving a workflow into or out of this folder updates its visibility on the next collection/upload cycle. No workflows are moved, disabled or deleted.
+
+The feed carries its project/folder scope. The website refuses old unscoped or differently scoped snapshots, and the collector never restores the earlier all-workflow feed on a source failure. Configured execution hooks and request history outside the folder are hidden.
