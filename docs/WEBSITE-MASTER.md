@@ -52,8 +52,10 @@ Authenticated production reads passed for session, analytics, projects, experien
 
 Rollback: disable MASTER_DASHBOARD_ENABLED and redeploy to restore the portfolio-only navigation. The old subdomain is retired and is not a rollback target. Stop shiv-master-push.timer only to pause uploads; retain its snapshot table and service data.
 
-## Personal workflow scope — 16 November 2026
+## Personal workspace scope — 16 November 2026
 
-The n8n feed is restricted to project UWCIZeLCvuUGM9uC, folder Personal Projects (zgcQe77hWdgdwdQZ), including nested folders. Lists, AI-node counts, recent executions and Asia/Kolkata daily totals all derive from the same recursive folder selection. Moving a workflow into or out of this folder updates its visibility on the next collection/upload cycle. No workflows are moved, disabled or deleted.
+The n8n feed includes every unarchived workflow owned by the Personal project UWCIZeLCvuUGM9uC: workflows at the project root and inside every folder, including Sasta Tengo, Infrastructure, Personal Projects and Bugle. This is the Personal workspace shown in the n8n sidebar; it is not limited to the similarly named Personal Projects folder.
 
-The feed carries its project/folder scope. The website refuses old unscoped or differently scoped snapshots, and the collector never restores the earlier all-workflow feed on a source failure. Configured execution hooks and request history outside the folder are hidden.
+Lists, AI-node counts, recent executions and Asia/Kolkata daily totals all derive from the same project-ownership selection. Workflows belonging to other projects and archived workflows stay excluded. No workflows are moved, disabled or deleted.
+
+The feed carries project_id UWCIZeLCvuUGM9uC and folder_id null. The website rejects the earlier two-workflow folder scope, unscoped data and other projects. Collector failures reuse only snapshots with this exact workspace scope. Configured execution hooks and request history outside the visible workspace are hidden.

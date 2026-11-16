@@ -10,7 +10,7 @@ test('status uploader needs its own secret and cannot authenticate with a browse
   feedAuth(new Request('https://test', { headers: { authorization: `Bearer ${key}` } }), { CONTROL_ROOM_PUSH_KEY: key });
 });
 test('snapshot upload rejects invalid, future and stale data, strips unrelated top-level fields', async () => {
-  const input = { updated_at: new Date().toISOString(), n8n: { workflows: [], scope:{project_id:'UWCIZeLCvuUGM9uC',folder_id:'zgcQe77hWdgdwdQZ'} }, private_config: 'omit' };
+  const input = { updated_at: new Date().toISOString(), n8n: { workflows: [], scope:{project_id:'UWCIZeLCvuUGM9uC',folder_id:null} }, private_config: 'omit' };
   assert(!('private_config' in cleanSnapshot(input)));
   for (const data of [{}, { ...input, updated_at: 'bad' }, { ...input, updated_at: new Date(Date.now()+60000).toISOString() }]) assert.throws(() => cleanSnapshot(data));
   await assert.rejects(saveSnapshot({ ...input, updated_at: '2020-01-01T00:00:00Z' }, () => assert.fail('No SQL for rejected upload')));
@@ -28,6 +28,6 @@ test('production master is opt-in; local master remains separate from production
 });
 
 test('dashboard rejects unscoped status and status for any other project or folder',()=>{
- const updated_at=new Date().toISOString(),scope={project_id:'UWCIZeLCvuUGM9uC',folder_id:'zgcQe77hWdgdwdQZ'};
- for(const invalid of [undefined,{...scope,folder_id:'other'},{...scope,project_id:'other'}])assert.throws(()=>cleanSnapshot({updated_at,n8n:{workflows:[],scope:invalid}}),/Personal Projects/);
+ const updated_at=new Date().toISOString(),scope={project_id:'UWCIZeLCvuUGM9uC',folder_id:null};
+ for(const invalid of [undefined,{...scope,folder_id:'other'},{...scope,project_id:'other'}])assert.throws(()=>cleanSnapshot({updated_at,n8n:{workflows:[],scope:invalid}}),/Personal workspace/);
 });

@@ -13,7 +13,7 @@ import urllib.request
 
 STATE = pathlib.Path(os.environ.get('SHIV_STATE', '/var/lib/shiv-control'))
 ROOT = pathlib.Path(__file__).resolve().parent
-N8N_SCOPE = {'project_id': 'UWCIZeLCvuUGM9uC', 'folder_id': 'zgcQe77hWdgdwdQZ'}
+N8N_SCOPE = {'project_id': 'UWCIZeLCvuUGM9uC', 'folder_id': None}
 
 def command(args, **kw):
     return subprocess.check_output(args, text=True, timeout=kw.pop('timeout', 20), stderr=subprocess.PIPE, **kw)
@@ -22,16 +22,14 @@ def n8n_data():
     env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','n8n']))[0]['Config']['Env'] if '=' in x)
     db_env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','postgres_shared']))[0]['Config']['Env'] if '=' in x)
     sql = '''BEGIN READ ONLY;
-WITH RECURSIVE personal_folders AS (
- SELECT id FROM folder WHERE id='zgcQe77hWdgdwdQZ' AND "projectId"='UWCIZeLCvuUGM9uC'
- UNION ALL
- SELECT f.id FROM folder f JOIN personal_folders p ON f."parentFolderId"=p.id
- WHERE f."projectId"='UWCIZeLCvuUGM9uC'
-), personal_workflows AS (
- SELECT * FROM workflow_entity WHERE NOT "isArchived" AND "parentFolderId" IN (SELECT id FROM personal_folders)
+WITH personal_workflows AS (
+ SELECT w.* FROM workflow_entity w WHERE NOT w."isArchived" AND EXISTS (
+  SELECT 1 FROM shared_workflow sw WHERE sw."workflowId"=w.id
+  AND sw."projectId"='UWCIZeLCvuUGM9uC' AND sw.role='workflow:owner'
+ )
 )
 SELECT json_build_object(
-'scope',json_build_object('project_id','UWCIZeLCvuUGM9uC','folder_id','zgcQe77hWdgdwdQZ'),
+'scope',json_build_object('project_id','UWCIZeLCvuUGM9uC','folder_id',NULL),
 'workflows', (SELECT coalesce(json_agg(w),'[]'::json) FROM (
 SELECT id,name,active,"updatedAt" AS updated_at,
  (SELECT count(*) FROM json_array_elements(nodes) n WHERE n->>'type' ILIKE '%agent%') AS agent_count
