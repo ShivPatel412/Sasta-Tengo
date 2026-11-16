@@ -104,7 +104,8 @@ const Home = () => {
         email: formData.email?.trim() || '',
         phone: formData.mobile?.trim() || '',
         subject: formData.subject?.trim() || 'General Inquiry',
-        message: formData.message?.trim() || ''
+        message: formData.message?.trim() || '',
+        whatsapp_consent:formData.whatsapp_consent===true
       };
 
       await api.post('/v1/contacts', payload);

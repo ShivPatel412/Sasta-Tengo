@@ -1,10 +1,12 @@
 'use client';
 import CornerFrame from '../../CornerFrame';
 import React, { useState, useRef, useEffect } from 'react';
+import WhatsAppConsent from './WhatsAppConsent';
 
 const TerminalForm = ({ onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [responses, setResponses] = useState({});
+  const [whatsappConsent,setWhatsappConsent]=useState(false);
   const [currentInput, setCurrentInput] = useState('');
   const [history, setHistory] = useState([]);
   const [cursorPosition, setCursorPosition] = useState({ left: 0, top: 2 });
@@ -77,6 +79,10 @@ const TerminalForm = ({ onSubmit }) => {
     if (!currentInput.trim() || isUploading) return; // ignore while uploading
 
     const currentQuestion = questions[currentStep];
+    if(currentQuestion.multiline&&whatsappConsent&&!/^\+[1-9][0-9]{6,14}$/.test((responses.mobile||'').replace(/[\s().-]/g,''))){
+      setHistory(prev=>[...prev,{type:'error',text:'WhatsApp needs a country code such as +91. Uncheck WhatsApp consent to send this inquiry without WhatsApp follow-up.'}]);
+      return;
+    }
     let isValid = true;
     let isCmdError = false;
 
@@ -108,7 +114,7 @@ const TerminalForm = ({ onSubmit }) => {
     setHistory(newHistory);
 
     if (isValid) {
-      const newResponses = { ...responses, [currentQuestion.id]: currentInput };
+      const newResponses = { ...responses, [currentQuestion.id]: currentInput,whatsapp_consent:whatsappConsent };
       setResponses(newResponses);
       setCurrentInput('');
       if (currentStep < questions.length - 1) {
@@ -153,6 +159,7 @@ const TerminalForm = ({ onSubmit }) => {
             setTimeout(() => {
               setCurrentStep(0);
               setResponses({});
+              setWhatsappConsent(false);
               setUploadProgress(0);
               setHistory([
                 { type: 'system', text: 'Terminal Contact Form v1.0' },
@@ -273,6 +280,7 @@ const TerminalForm = ({ onSubmit }) => {
                 )}
               </div>
             </form>
+            {currentQuestion.multiline&&<WhatsAppConsent checked={whatsappConsent} onChange={setWhatsappConsent} disabled={isUploading}/>}
             {currentQuestion.multiline && (
               <div className="terminal-hint">
                 Press Ctrl+Enter to submit

@@ -68,6 +68,11 @@ async function route(request, context) {
           if ((await query('SELECT id FROM projects WHERE category=? LIMIT 1', [existing.category], connection)).length) throw new HttpError(409, 'Move projects to another type first.');
           await query('DELETE FROM project_types WHERE id=?', [id], connection);
         });
+      } else if(['contacts','appointments'].includes(resource)&&process.env.NEXT_PUBLIC_LEADS_ENABLED==='1'){
+        await transaction(async connection=>{
+          await query('DELETE FROM next_lead_conversations WHERE resource=? AND record_id=?',[resource,id],connection);
+          await query(`DELETE FROM \`${table}\` WHERE id=?`,[id],connection);
+        });
       } else await query(`DELETE FROM \`${table}\` WHERE id=?`, [id]);
       // Media is retained for recovery; remove orphaned blobs only after a backup review.
       return json({ ok: true });

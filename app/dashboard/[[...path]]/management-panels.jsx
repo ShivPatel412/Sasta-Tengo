@@ -89,6 +89,33 @@ function CRMBoard({readOnly,refresh}){
   }
   return <section className="management-panel"><BoardTools board={board}/><p className="panel-footnote">Contact messages and service inquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
     <Kanban rows={board.rows} columns={leadColumns} statusKey="lead_status" busy={busy||board.loading} readOnly={readOnly} onMove={move} renderCard={row=><><span className="task-priority">{row.resource==='contacts'?'Contact form':'Service inquiry / booking'}</span><Link className="kanban-title" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><p>{row.email}</p>{row.phone&&<p>{row.phone}</p>}{row.summary&&<p className="task-summary">{row.summary}</p>}<small>{dateLabel(row.created_at,true)}</small></>}/><BoardFooter board={board}/>
+    {process.env.NEXT_PUBLIC_LEADS_ENABLED==='1'&&<LeadConversations readOnly={readOnly} refresh={refresh}/>}
+  </section>;
+}
+
+function LeadConversations({readOnly,refresh}){
+  const [rows,setRows]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
+  useEffect(()=>{
+    const controller=new AbortController();
+    api('lead-conversations',{signal:controller.signal}).then(value=>{setRows(value.data);setError('');}).catch(e=>{if(!controller.signal.aborted)setError(e.message);});
+    return()=>controller.abort();
+  },[refresh,revision]);
+  async function stop(row,state){
+    if(busy||readOnly)return;setBusy(true);setError('');
+    try{await api('lead-conversations',jsonRequest('PATCH',{id:row.id,version:Number(row.version),state}));}
+    catch(e){setError(e.message);}finally{setBusy(false);setRevision(value=>value+1);}
+  }
+  return <section className="workspace-panel"><h2>WhatsApp follow-up</h2>
+    <p className="panel-footnote">Latest 100 conversations. Accepted means n8n acknowledged the event. Requested call times require a person to confirm availability.</p>
+    <button className="button secondary" disabled={busy} onClick={()=>setRevision(value=>value+1)}>Refresh conversations</button>
+    {error&&<p className="feedback error" role="alert">{error}</p>}
+    {rows.map(row=><article className="kanban-card" key={row.id}>
+      <Link href={`/dashboard/${row.resource}/${row.record_id}`}>Lead #{row.record_id}</Link><p>{row.phone} · {row.state.replaceAll('_',' ')}</p>
+      {row.preferred_call_at&&<p>Requested: {row.preferred_call_at} UTC · {row.timezone}</p>}
+      <button className="button secondary" disabled={readOnly||busy||['human_takeover','opted_out'].includes(row.state)} onClick={()=>stop(row,'human_takeover')}>Take over</button>
+      <button className="button secondary" disabled={readOnly||busy||row.state==='opted_out'} onClick={()=>stop(row,'opted_out')}>Stop WhatsApp</button>
+    </article>)}
+    {!rows.length&&!error&&<p>No WhatsApp follow-up records loaded.</p>}
   </section>;
 }
 

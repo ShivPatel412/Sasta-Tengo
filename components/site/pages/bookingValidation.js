@@ -24,6 +24,7 @@ export const getStepErrors = (step, form) => {
   }
 
   if (step === 6 && !form.confirmed) errors.confirmed = 'Please confirm that the information is correct.';
+  if (step === 6 && form.whatsapp_consent && !/^\+[1-9][0-9]{6,14}$/.test(form.phone.replace(/[\s().-]/g,''))) errors.confirmed='Include a country code such as +91 in your phone number for WhatsApp.';
 
   return errors;
 };

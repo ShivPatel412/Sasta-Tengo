@@ -2,6 +2,7 @@ import { query, transaction, insert, assertWritable, handle, body, HttpError } f
 import { rateLimit } from '../../../../lib/auth.mjs';
 import { contactSchema, appointmentSchema, requestSchema, storageData, serialize } from '../../../../lib/validation.mjs';
 import { enqueue } from '../../../../lib/mail.mjs';
+import {enqueueLead,requireLeadIntegration} from '../../../../lib/lead-conversations.mjs';
 import { isLocalPreview } from '../../../../lib/preview.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,13 +36,16 @@ export async function POST(request, context) {
     assertWritable();
     await rateLimit(request, 'leads');
     const input = await body(request);
+    if(input.whatsapp_consent===true)requireLeadIntegration();
     if (path[0] === 'contacts') {
       const data = contactSchema.parse(input);
       await transaction(async connection => {
         const duplicate = await query('SELECT id FROM contacts WHERE email=? AND subject=? AND message=? AND created_at>=DATE_SUB(UTC_TIMESTAMP(),INTERVAL 10 SECOND) LIMIT 1', [data.email,data.subject,data.message], connection);
         if (duplicate.length) return;
-        const id = await insert('contacts', storageData({ ...data, is_read: false }), connection);
+        const {whatsapp_consent,...answers}=data;
+        const id = await insert('contacts', storageData({ ...answers, is_read: false }), connection);
         await enqueue('contact', id, connection);
+        await enqueueLead('contacts',id,data,connection);
       });
       return Response.json({ message: 'Your message has been received.' }, { status: 201 });
     }
@@ -50,6 +54,7 @@ export async function POST(request, context) {
       await transaction(async connection => {
         const id = await insert('appointments', storageData({ client_name: data.fullName, client_email: data.email, client_phone: data.phone, notes: data.description, request_data: JSON.stringify(data) }), connection);
         await enqueue('request', id, connection);
+        await enqueueLead('appointments',id,data,connection);
       });
     } else {
       const data = appointmentSchema.parse(input);
@@ -61,7 +66,9 @@ export async function POST(request, context) {
         const instant = new Date(data.appointment_date).toISOString().slice(0,19).replace('T',' ');
         const booked = await query("SELECT id FROM appointments WHERE appointment_date=? AND status IN ('pending','confirmed') LIMIT 1", [instant], connection);
         if (booked.length) throw new HttpError(422, 'This time slot is no longer available.');
-        await insert('appointments', storageData({ ...data, appointment_date: instant }), connection);
+        const {whatsapp_consent,...answers}=data;
+        const id=await insert('appointments', storageData({ ...answers, appointment_date: instant }), connection);
+        await enqueueLead('appointments',id,data,connection);
       });
     }
     return Response.json({ message: 'Your request has been received.' }, { status: 201 });

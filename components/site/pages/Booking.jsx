@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import Footer from '../components/Footer';
+import WhatsAppConsent from '../components/WhatsAppConsent';
 import {
   assetOptions, budgetOptions, emptyForm, featureOptions,
   projectTypes, promoBenefits, serviceOptions, steps, timelineOptions
@@ -402,6 +403,7 @@ const Booking = () => {
                         <span>I confirm that all the information is correct.</span>
                       </label>
                       <FieldError>{errors.confirmed}</FieldError>
+                      <WhatsAppConsent checked={form.whatsapp_consent||false} onChange={value=>setField('whatsapp_consent',value)} disabled={submitting}/>
                     </fieldset>
                   )}
                 </div>
