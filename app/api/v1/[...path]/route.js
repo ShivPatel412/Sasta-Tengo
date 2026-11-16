@@ -1,11 +1,13 @@
 import { query, transaction, insert, assertWritable, handle, body, HttpError } from '../../../../lib/db.mjs';
 import { rateLimit } from '../../../../lib/auth.mjs';
 import { contactSchema, appointmentSchema, requestSchema, storageData, serialize } from '../../../../lib/validation.mjs';
-import { enqueue } from '../../../../lib/mail.mjs';
+import { enqueue, deliver } from '../../../../lib/mail.mjs';
+import { after } from 'next/server.js';
 import {enqueueLead,requireLeadIntegration} from '../../../../lib/lead-conversations.mjs';
 import { isLocalPreview } from '../../../../lib/preview.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 const tables = { services: 'services', projects: 'projects', experience: 'experience', education: 'education' };
 export async function GET(request, context) {
   return handle(async () => {
@@ -46,6 +48,10 @@ export async function POST(request, context) {
         const id = await insert('contacts', storageData({ ...answers, is_read: false }), connection);
         await enqueue('contact', id, connection);
         await enqueueLead('contacts',id,data,connection);
+      });
+      after(async () => {
+        try { await deliver(); }
+        catch { console.error('Contact notification dispatch failed; enquiry remains in the mail outbox.'); }
       });
       return Response.json({ message: 'Your message has been received.' }, { status: 201 });
     }
