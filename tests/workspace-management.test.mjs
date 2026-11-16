@@ -71,3 +71,8 @@ test('workspace API routes retain session, exact-origin and read-only gates',asy
     assert.match(source,/await admin\(\)/);assert.match(source,/sameOrigin\(request\)/);assert.match(source,/assertWritable\(\)/);assert.match(source,/Cache-Control.*no-store/);
   }
 });
+
+test('workflow monitoring preserves publication and AI metadata without leaking source fields',()=>{
+ const result=workflowList({n8n:{workflows:[{id:42,name:'Real workflow',active:true,agent_count:'2',updated_at:'2026-11-16T09:00:00Z',nodes:['private']}]}},{});
+ assert.deepEqual(result,[{id:'42',name:'Real workflow',active:true,agent_count:2,updated_at:'2026-11-16T09:00:00Z',runnable:false}]);
+});

@@ -847,7 +847,7 @@
       "typeVersion": 2,
       "parameters": {
         "mode": "runOnceForEachItem",
-        "jsCode": "const draft=$json.screenshot_added ? $('Build project with screenshot').item.json : $('Build draft without live screenshot').item.json;\nconst {manual_approval,...input}=draft;\nreturn {json:{...input,recovery:true,auto_publish:true}};"
+        "jsCode": "const draft=$json.screenshot_added ? $('Build project with screenshot').item.json : $('Build draft without live screenshot').item.json;\nconst {manual_approval,auto_publish,...input}=draft;\nif($('Configuration').first().json.autoPublish!==true)return {json:{...input,recovery:true,manual_approval:true}};\nreturn {json:{...input,recovery:true,auto_publish:true}};"
       },
       "position": [
         3950,

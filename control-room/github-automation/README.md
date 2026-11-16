@@ -29,3 +29,11 @@ Media-only recovery uses the saved revision and preserves dashboard edits. New r
 - Provider uploads require a public Blob store; do not use the private Instagram store.
 
 The Gemini and Browserless switches remain off until their access is ready. Existing generated covers support automatic publication now. New repositories without a generated cover remain pending until generation is configured. Keep one scheduler active and avoid overlapping manual runs.
+
+## Verification — 16 November 2026
+
+Production /api/jobs/projects authenticated successfully from the scheduled workflow; all seven saved repository drafts are published and match public portfolio project IDs. The most recent inspected hourly execution skipped unchanged repositories, confirming duplicate detection.
+
+The final publication node must respect autoPublish: false by keeping manual_approval: true. The exported workflow now does this, with regression coverage. Applying this one-node change and manually running the workflow were blocked by the connected n8n tool's approval policy in this session; the installed workflow is unchanged.
+
+Gemini and OpenAI credentials exist, but funded image access was not verified because the same policy blocked the generation test. No Browserless credential was found. Both media switches remain disabled. Existing showcase covers and two saved real captures work; ongoing generation and screenshot capture for new repositories remain provider setup work. Do not mistake an overall successful execution for successful media generation.

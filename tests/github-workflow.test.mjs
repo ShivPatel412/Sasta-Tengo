@@ -46,7 +46,7 @@ test('automatic publishing follows repository inspection and removes the checkpo
  assert.equal(w.connections['Needs repository inspection'].main[0][0].node,'Inspect GitHub project');
  assert.equal(w.connections['Inspect GitHub project'].main[0][0].node,'Use inspected project details');
  const original={repository:'ShivPatel412/example',revision:'a'.repeat(64),manual_approval:true,project:{title:'Edited'},provenance:{cover_status:'generated'}};
- const publish=new Function('$json','$',node('Prepare automatic publication').parameters.jsCode)({},()=>({item:{json:original}})).json;
+ const publish=new Function('$json','$',node('Prepare automatic publication').parameters.jsCode)({},()=>({item:{json:original},first:()=>({json:{autoPublish:true}})})).json;
  assert.equal(publish.auto_publish,true);assert.equal(publish.recovery,true);assert(!('manual_approval'in publish));assert.equal(publish.project.title,'Edited');
  assert.equal(w.connections['Has a live website'].main[1][0].node,'Prepare automatic publication');
  assert.equal(w.connections['Keep cover after screenshot failure'].main[0][0].node,'Prepare automatic publication');
@@ -76,4 +76,12 @@ test('GitHub homepage validation works in n8n without the browser URL global',()
  const run=homepage=>new Function('$','$input','URL',node('Prepare repository metadata').parameters.jsCode)(name=>({first:()=>({json:name==='Resolve website settings'?{config,existingProjects:[]}:{data:[]}})}),{all:()=>[{json:{id:1,name:'Sasta-Tengo',full_name:'ShivPatel412/Sasta-Tengo',owner:{login:'ShivPatel412'},size:1,homepage}}]},undefined);
  assert.equal(run('https://www.shivpatel.in/')[0].json.live_url,'https://www.shivpatel.in/');
  for(const url of ['http://example.com','https://user:password@example.com','https://127.0.0.1/','https://example.local/','https://example.com:5678/','https://example..com/','https://example.com\\@localhost/'])assert.throws(()=>run(url),/homepage|public HTTPS/);
+});
+
+test('disabled automatic publishing retains manual review even when the API enables auto publishing',()=>{
+ const draft={repository:'ShivPatel412/example',manual_approval:true,auto_publish:true,project:{title:'Review me'}};
+ for(const autoPublish of [false,undefined]){
+  const result=new Function('$json','$',node('Prepare automatic publication').parameters.jsCode)({},()=>({item:{json:draft},first:()=>({json:{autoPublish}})})).json;
+  assert.equal(result.manual_approval,true);assert(!('auto_publish' in result));assert.equal(result.project,draft.project);
+ }
 });

@@ -28,3 +28,13 @@ test('master bridge is unavailable outside local development',()=>{
   assert.throws(requireLocalMaster,/Not found/);
   for(const [k,v] of Object.entries(before))v===undefined?delete process.env[k]:process.env[k]=v;
 });
+
+test('fresh uploads cannot disguise stale or failed individual sources',async()=>{
+ const {sourceFresh}=await import('../lib/master-dashboard.mjs');
+ const now=Date.parse('2026-11-16T10:00:00Z'),updated_at=new Date(now-10000).toISOString();
+ const snapshot={updated_at,source_updated_at:{n8n:updated_at,cloud:'2026-11-07T00:00:00Z'}};
+ assert(sourceFresh(snapshot,'n8n',now));assert(!sourceFresh(snapshot,'cloud',now));assert(!sourceFresh(snapshot,'codex',now));
+ assert(!sourceFresh({...snapshot,errors:{n8n:'TimeoutError'}},'n8n',now));
+ assert(!sourceFresh({...snapshot,updated_at:'2026-11-15T00:00:00Z'},'n8n',now));
+ assert(sourceFresh({updated_at},'n8n',now));assert(!sourceFresh(null,'n8n',now));
+});

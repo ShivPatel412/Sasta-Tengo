@@ -95,7 +95,15 @@ function CRMBoard({readOnly,refresh}){
 const runMessage={accepted:'n8n accepted this execution request. Check n8n for completion.',rejected:'n8n rejected this execution request. Check the webhook configuration.',uncertain:'The acknowledgement is uncertain. Check n8n before starting another run.',dispatching:'The execution request is being dispatched. Check n8n before starting another run.'};
 function Workflows({readOnly,refresh}){
   const [data,setData]=useState(null),[error,setError]=useState(''),[notice,setNotice]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0),[pending,setPending]=useState(null);
-  useEffect(()=>{let active=true;api('workflows').then(value=>{if(active){setData(value);setError('');}}).catch(e=>{if(active)setError(e.message);});return()=>{active=false;};},[refresh,revision]);
+  useEffect(()=>{
+    let active=true,timer;
+    async function load(){
+      try{const value=await api('workflows');if(active){setData(value);setError('');}}
+      catch(e){if(active)setError(e.message);}
+      if(active)timer=setTimeout(load,30000);
+    }
+    load();return()=>{active=false;clearTimeout(timer);};
+  },[refresh,revision]);
   async function execute(workflow,retry=null){
     if(busy||readOnly)return;
     if(!retry&&!window.confirm(`Run “${workflow.name}” now? This executes its configured actions in n8n.`))return;
@@ -105,11 +113,12 @@ function Workflows({readOnly,refresh}){
     finally{setBusy(false);}
   }
   return <section className="management-panel">{error&&<p className="feedback error" role="alert">{error}</p>}{notice&&<p className="feedback notice" role="status">{notice}</p>}
-    {data&&!data.monitoringAvailable&&<p className="panel-footnote">Live workflow monitoring is unavailable. Showing the last synced list and configured execution hooks.</p>}
+    {data&&(!data.monitoringAvailable||error)&&<p className="panel-footnote">Live workflow monitoring is unavailable. Showing the last synced list and configured execution hooks.</p>}
     <div className="management-tools"><button className="button secondary" onClick={()=>setRevision(value=>value+1)} disabled={busy}>Refresh workflows</button>{pending&&<button className="button secondary" disabled={busy||readOnly} onClick={()=>execute(pending.workflow,pending.requestId)}>Check last request</button>}<a className="button secondary" href="https://n8n.shivpatel.in" target="_blank" rel="noopener noreferrer">Open n8n ↗</a></div>
     {!data&&!error&&<p role="status">Loading workflows…</p>}
     {data?.data.length===0&&<div className="workspace-panel"><h2>No connected execution webhooks yet</h2><p>Your workflows will appear from the collector or the server’s workflow configuration. Connect each workflow’s authenticated production webhook to enable its Run button.</p></div>}
-    <div className="workflow-cards">{data?.data.map(workflow=><article className="workspace-panel" key={workflow.id}><h2>{workflow.name}</h2><p>{workflow.runnable?'Execution webhook connected.':'Connect its execution webhook to enable running.'}</p><button className="button primary" disabled={busy||readOnly||!workflow.runnable||pending!==null} onClick={()=>execute(workflow)}>{busy?'Sending…':'Run workflow'}</button><a href={'https://n8n.shivpatel.in/workflow/'+encodeURIComponent(workflow.id)} target="_blank" rel="noopener noreferrer">View in n8n ↗</a></article>)}</div>
+    {data&&<section className="workspace-panel"><h2>Recent n8n executions</h2><p className="panel-footnote">{!error&&data.monitoringAvailable?`${data.today?.total??'—'} runs today · refreshes every 30 seconds`:'Last-known execution history; live counts are unavailable.'}</p><div className="workflow-history">{(data.executions||[]).map(run=><div key={run.id}><a href={'https://n8n.shivpatel.in/workflow/'+encodeURIComponent(run.workflow_id)+'/executions/'+encodeURIComponent(run.id)} target="_blank" rel="noopener noreferrer">{run.name||data.data.find(row=>row.id===String(run.workflow_id))?.name||'Workflow'} · #{run.id}</a><span>{run.status}</span><small>{dateLabel(run.started_at,true)}</small></div>)}</div>{!data.executions?.length&&<p className="panel-footnote">No execution history is available yet.</p>}</section>}
+    <div className="workflow-cards">{data?.data.map(workflow=><article className="workspace-panel" key={workflow.id}><h2>{workflow.name}</h2><p>{workflow.active==null?'Status unavailable':workflow.active?'Published':'Draft'} · {workflow.agent_count||0} AI nodes</p><p>{workflow.runnable?'Execution webhook connected.':'Connect its execution webhook to enable running.'}</p><button className="button primary" disabled={busy||readOnly||!workflow.runnable||pending!==null} onClick={()=>execute(workflow)}>{busy?'Sending…':'Run workflow'}</button><a href={'https://n8n.shivpatel.in/workflow/'+encodeURIComponent(workflow.id)} target="_blank" rel="noopener noreferrer">View in n8n ↗</a></article>)}</div>
     {data?.runs.length>0&&<section className="workspace-panel"><h2>Recent execution requests</h2><p className="panel-footnote">Accepted means n8n acknowledged the trigger. It does not confirm the workflow completed.</p><div className="workflow-history">{data.runs.map(run=><div key={run.request_id}><strong>{data.data.find(row=>row.id===run.workflow_id)?.name||run.workflow_id}</strong><span>{run.state}</span><small>{dateLabel(run.created_at,true)}</small></div>)}</div></section>}
   </section>;
 }

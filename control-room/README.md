@@ -1,4 +1,9 @@
-# Shiv Control Room and Nextcloud
+# Control-room support services
+
+The canonical dashboard is https://www.shivpatel.in/dashboard. As verified on 16 November 2026, the old Python dashboard web service is disabled and its public hostname returns HTTP 404. The master hosts the protected 3D café at /dashboard/3d and the hosted Instagram Studio at /dashboard/instagram. Keep this directory's collector, uploader, storage guards, workers and service source; retiring the duplicate web UI does not retire those services. See docs/WEBSITE-MASTER.md for the current connection and rollback state.
+
+The following installation notes describe the earlier Python-hosted setup. Old dashboard.shivpatel.in links are historical and are not current entry points.
+
 
 ## Instagram photo review
 

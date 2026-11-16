@@ -40,23 +40,14 @@ snapshots cannot overwrite newer ones. The collector exports metadata only;
 the upload further discards unrelated top-level fields. No task bodies, prompts
 or credentials should ever be added to the collector feed.
 
-## Remaining cutover requirements
+## Verified production state — 16 November 2026
 
-The production status connection was activated on 8 November 2026: the snapshot
-table, production upload key and master flag, and PC upload timer are configured.
-The uploader identifies itself as `ShivControlRoom/1.0`; Cloudflare rejected
-Python's default user agent with HTTP 403 / error 1010. Updates run every 30
-seconds while the PC, WSL collector and internet connection are available.
+The production snapshot table and upload key are configured. The PC uploader succeeds every 30 seconds; the authenticated master API returns 123 workflows and 30 recent executions. Missing individual source timestamps, source errors and stale snapshots suppress live metrics. Nextcloud currently reports a collector connection error; old cloud usage is not live usage.
 
-The Instagram photo tool still runs on the PC. Its existing localhost worker
-API is not remotely accessible from Vercel; it must be integrated separately
-before retiring the old interface. Keep that link available during migration.
-Do not stop the collector, n8n, Nextcloud, photo workers or Cloudflare Tunnel
-when removing duplicate dashboard UI. Website authentication endpoints are also
-still used by the old control room until its UI is retired.
+The unified workflow page now displays actual n8n execution history and refreshes every 30 seconds. Execution requests are separate from completed n8n runs. Run buttons require explicitly configured authenticated webhooks in WORKSPACE_N8N_WORKFLOWS; none were configured during this review. Monitoring remains available without them.
 
-Retire the old subdomain interface only after authenticated acceptance passes
-for every required feature. No DNS change is necessary for this source change.
-Rollback: disable MASTER_DASHBOARD_ENABLED and redeploy; the original website
-dashboard returns. Stop shiv-master-push.timer to pause uploads without deleting
-the snapshot table or any other service data.
+The legacy shiv-dashboard.service is already disabled/inactive and dashboard.shivpatel.in returns HTTP 404. Keep the collector, upload timer, n8n, Nextcloud, photo workers, storage volumes and tunnel. The master serves its own protected 3D experience and routes /dashboard/photos to Instagram Studio. Historical local photo tools are not equivalent to the hosted Instagram Studio and their source/data was retained.
+
+Authenticated production reads passed for session, analytics, projects, experience, contacts, service requests, tasks, CRM, workflows, collector status and project drafts. Signed-out status/workflow/job requests returned 401. Seven imported GitHub repositories are published and present in the public portfolio.
+
+Rollback: disable MASTER_DASHBOARD_ENABLED and redeploy to restore the portfolio-only navigation. The old subdomain is retired and is not a rollback target. Stop shiv-master-push.timer only to pause uploads; retain its snapshot table and service data.
