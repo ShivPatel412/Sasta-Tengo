@@ -35,6 +35,7 @@ test('Forms combines both storage tables and filters every source before paginat
 test('Forms and CV navigation preserve the original projects and experience editors',()=>{
   const cv=dashboardGroups.find(([name])=>name==='CV')[1];
   assert.ok(cv.includes('projects'));assert.ok(cv.includes('experiences'));
+  assert.ok(!cv.includes('types'));assert.ok(sections.types);
   assert.ok(dashboardGroups[0][1].includes('forms'));
   const keys=dashboardGroups.flatMap(([,keys])=>keys);
   assert.equal(new Set(keys).size,keys.length);
