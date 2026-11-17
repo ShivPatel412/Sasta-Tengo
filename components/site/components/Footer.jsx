@@ -36,6 +36,7 @@ const Footer = () => {
             </svg>
           </a>
         </div>
+        <nav className="footer-legal" aria-label="Legal"><Link href="/privacy-policy">Privacy Policy</Link><Link href="/privacy-policy#terms-of-service">Terms of Service</Link></nav>
         <div className="footer-bottom">
           <p>&copy; 2026 Shiv Patel. All Rights Reserved.</p>
         </div>
