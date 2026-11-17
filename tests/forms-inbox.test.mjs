@@ -38,6 +38,7 @@ test('Forms and CV navigation preserve the original projects and experience edit
   assert.ok(!cv.includes('types'));assert.ok(sections.types);
   assert.ok(dashboardGroups[0][1].includes('forms'));
   assert.ok(!dashboardGroups[0][1].includes('tasks'));assert.ok(sections.tasks);
+  assert.ok(!dashboardGroups[0][1].includes('crm'));assert.ok(sections.crm);
   const keys=dashboardGroups.flatMap(([,keys])=>keys);
   assert.equal(new Set(keys).size,keys.length);
   for(const key of keys)assert.ok(sections[key]);

@@ -82,6 +82,10 @@ function TaskEditor({initial,readOnly,onClose,onSaved}){
   </fieldset><footer><button className="button secondary" type="button" disabled={busy} onClick={close}>Cancel</button><button className="button primary" disabled={busy||readOnly}>{busy?'Saving…':'Save task'}</button></footer></form></dialog>;
 }
 
+function FormsNavigation({source='',crm=false}){
+  return <nav className="forms-source-tabs" aria-label="Form sections">{[['','All forms'],...Object.entries(formSources)].map(([key,label])=><Link key={key} href={'/dashboard/forms'+(key?'/'+key:'')} aria-current={!crm&&source===key?'page':undefined}>{label}</Link>)}<Link href="/dashboard/crm" aria-current={crm?'page':undefined}>Lead CRM</Link></nav>;
+}
+
 function CRMBoard({readOnly,refresh}){
   const board=useBoard('crm',refresh),[busy,setBusy]=useState(false);
   async function move(row,lead_status){
@@ -89,7 +93,7 @@ function CRMBoard({readOnly,refresh}){
     try{await api(`crm/${row.resource}/${row.id}`,jsonRequest('PATCH',{lead_status}));board.reload();}
     catch(e){board.setError(e.message);}finally{setBusy(false);}
   }
-  return <section className="management-panel"><BoardTools board={board}/><p className="panel-footnote">Contact, service and landing page enquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
+  return <section className="management-panel"><FormsNavigation crm/><BoardTools board={board}/><p className="panel-footnote">Contact, service and landing page enquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
     <Kanban rows={board.rows} columns={leadColumns} statusKey="lead_status" busy={busy||board.loading} readOnly={readOnly} onMove={move} renderCard={row=><><span className="task-priority">{formSources[row.form_source]||'Website enquiry'}</span><Link className="kanban-title" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><p>{row.email}</p>{row.phone&&<p>{row.phone}</p>}{row.summary&&<p className="task-summary">{row.summary}</p>}<small>{dateLabel(row.created_at,true)}</small></>}/><BoardFooter board={board}/>
     {process.env.NEXT_PUBLIC_LEADS_ENABLED==='1'&&<LeadConversations readOnly={readOnly} refresh={refresh}/>}
   </section>;
@@ -98,7 +102,7 @@ function CRMBoard({readOnly,refresh}){
 function FormsInbox({refresh,source=''}){
   const board=useBoard('forms',refresh,source);
   return <section className="management-panel forms-inbox">
-    <nav className="forms-source-tabs" aria-label="Form source">{[['','All forms'],...Object.entries(formSources)].map(([key,label])=><Link key={key} href={'/dashboard/forms'+(key?'/'+key:'')} aria-current={source===key?'page':undefined}>{label}</Link>)}</nav>
+    <FormsNavigation source={source}/>
     <section className="workspace-panel"><h2>What happens after someone submits?</h2><p className="panel-footnote">The enquiry is saved here, then an email notification is sent to you and an acknowledgement to the visitor. Open a submission for every original answer, notes and status. Track follow up in <Link href="/dashboard/crm">Lead CRM</Link>.</p></section>
     <BoardTools board={board}/>
     {board.error&&<p className="feedback error" role="alert">{board.error}</p>}
