@@ -97,7 +97,7 @@ function CRMBoard({readOnly,refresh}){
 
 function FormsInbox({refresh,source=''}){
   const board=useBoard('forms',refresh,source);
-  return <section className="management-panel">
+  return <section className="management-panel forms-inbox">
     <nav className="forms-source-tabs" aria-label="Form source">{[['','All forms'],...Object.entries(formSources)].map(([key,label])=><Link key={key} href={'/dashboard/forms'+(key?'/'+key:'')} aria-current={source===key?'page':undefined}>{label}</Link>)}</nav>
     <section className="workspace-panel"><h2>What happens after someone submits?</h2><p className="panel-footnote">The enquiry is saved here, then an email notification is sent to you and an acknowledgement to the visitor. Open a submission for every original answer, notes and status. Track follow up in <Link href="/dashboard/crm">Lead CRM</Link>.</p></section>
     <BoardTools board={board}/>

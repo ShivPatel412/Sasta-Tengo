@@ -5,3 +5,5 @@
 .workflow-breadcrumbs>span{min-width:0;max-width:100%}.workflow-breadcrumbs button{overflow-wrap:anywhere}.workflow-dashboard .button{min-height:44px}
 
 .forms-source-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}.forms-source-tabs a{padding:8px 12px;border:1px solid var(--workspace-border,#45483f);border-radius:8px}.forms-source-tabs a[aria-current=page]{background:#c9ee8f;color:#181818}.forms-source-tabs a:hover{opacity:.8}
+
+.forms-inbox .records-table table{table-layout:fixed;width:100%;min-width:760px}.forms-inbox .records-table td{white-space:normal;overflow-wrap:anywhere;vertical-align:top}.forms-inbox th:nth-child(1){width:16%}.forms-inbox th:nth-child(2){width:20%}.forms-inbox th:nth-child(3){width:24%}.forms-inbox th:nth-child(4){width:8%}.forms-inbox th:nth-child(5){width:18%}.forms-inbox th:nth-child(6){width:14%}.forms-inbox .records-table .button{white-space:normal}
