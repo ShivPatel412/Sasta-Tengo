@@ -9,6 +9,12 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 const tables = { services: 'services', projects: 'projects', experience: 'experience', education: 'education' };
+function dispatchMail() {
+  after(async () => {
+    try { await deliver(); }
+    catch { console.error('Notification dispatch failed; enquiry remains in the mail outbox.'); }
+  });
+}
 export async function GET(request, context) {
   return handle(async () => {
     const { path } = await context.params;
@@ -49,10 +55,7 @@ export async function POST(request, context) {
         await enqueue('contact', id, connection);
         await enqueueLead('contacts',id,data,connection);
       });
-      after(async () => {
-        try { await deliver(); }
-        catch { console.error('Contact notification dispatch failed; enquiry remains in the mail outbox.'); }
-      });
+      dispatchMail();
       return Response.json({ message: 'Your message has been received.' }, { status: 201 });
     }
     if (path[0] === 'project-requests') {
@@ -74,9 +77,11 @@ export async function POST(request, context) {
         if (booked.length) throw new HttpError(422, 'This time slot is no longer available.');
         const {whatsapp_consent,...answers}=data;
         const id=await insert('appointments', storageData({ ...answers, appointment_date: instant }), connection);
+        await enqueue('request',id,connection);
         await enqueueLead('appointments',id,data,connection);
       });
     }
+    dispatchMail();
     return Response.json({ message: 'Your request has been received.' }, { status: 201 });
   });
 }

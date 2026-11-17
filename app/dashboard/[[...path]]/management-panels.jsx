@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {adminApi as api,jsonRequest} from '../../../lib/dashboard-client.mjs';
 import {dateLabel} from '../../../lib/dashboard.mjs';
+import {formSources} from '../../../lib/form-sources.mjs';
 import './management.css';
 import WorkflowDashboard from './workflow-dashboard';
 
@@ -11,18 +12,18 @@ const leadColumns=[['new','New'],['contacted','Contacted'],['qualified','Qualifi
 const taskPayload=row=>Object.fromEntries(['title','description','project_name','status','priority','due_date'].map(key=>[key,key==='due_date'?(row[key]?.slice(0,10)||null):row[key]]));
 const recordKey=row=>row.resource?`${row.resource}/${row.id}`:String(row.id);
 
-function useBoard(path,refresh){
+function useBoard(path,refresh,source=''){
   const [rows,setRows]=useState([]),[total,setTotal]=useState(0),[page,setPage]=useState(1);
   const [search,setSearch]=useState(''),[input,setInput]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState(''),[revision,setRevision]=useState(0);
   useEffect(()=>{
     const controller=new AbortController();setLoading(true);setError('');
-    api(`${path}?page=${page}&search=${encodeURIComponent(search)}`,{signal:controller.signal}).then(data=>{
+    api(`${path}?page=${page}&search=${encodeURIComponent(search)}&source=${encodeURIComponent(source)}`,{signal:controller.signal}).then(data=>{
       if(controller.signal.aborted)return;
       setRows(current=>page===1?data.data:[...current,...data.data.filter(row=>!current.some(old=>recordKey(old)===recordKey(row)))]);
       setTotal(Number(data.count));
     }).catch(e=>{if(!controller.signal.aborted)setError(e.message);}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
     return()=>controller.abort();
-  },[path,page,search,refresh,revision]);
+  },[path,page,search,refresh,revision,source]);
   return {rows,total,page,loading,error,setError,input,setInput,
     reload(){setPage(1);setRows([]);setRevision(value=>value+1);},
     more(){setPage(value=>value+1);},
@@ -33,7 +34,7 @@ function BoardTools({board,children}){
   return <div className="management-tools"><form onSubmit={board.search}><label htmlFor="board-search" className="sr-only">Search this board</label><input id="board-search" type="search" placeholder="Search this board" value={board.input} onChange={e=>board.setInput(e.target.value)}/><button className="button secondary" disabled={board.loading}>Search</button></form><button className="button secondary" disabled={board.loading} onClick={board.reload}>Refresh board</button>{children}</div>;
 }
 function BoardFooter({board}){
-  return <div className="board-footer"><span>{board.loading?'Loading…':`Showing ${board.rows.length} of ${board.total}. Column counts reflect loaded cards.`}</span>{board.rows.length<board.total&&<button className="button secondary" disabled={board.loading||Boolean(board.error)} onClick={board.more}>Load more cards</button>}</div>;
+  return <div className="board-footer"><span>{board.loading?'Loading…':`Showing ${board.rows.length} of ${board.total} records.`}</span>{board.rows.length<board.total&&<button className="button secondary" disabled={board.loading||Boolean(board.error)} onClick={board.more}>Load more cards</button>}</div>;
 }
 function Kanban({rows,columns,statusKey,busy,readOnly,onMove,renderCard}){
   return <div className="kanban-board" aria-label="Kanban board">{columns.map(([status,label])=>{
@@ -88,9 +89,22 @@ function CRMBoard({readOnly,refresh}){
     try{await api(`crm/${row.resource}/${row.id}`,jsonRequest('PATCH',{lead_status}));board.reload();}
     catch(e){board.setError(e.message);}finally{setBusy(false);}
   }
-  return <section className="management-panel"><BoardTools board={board}/><p className="panel-footnote">Contact messages and service inquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
-    <Kanban rows={board.rows} columns={leadColumns} statusKey="lead_status" busy={busy||board.loading} readOnly={readOnly} onMove={move} renderCard={row=><><span className="task-priority">{row.resource==='contacts'?'Contact form':'Service inquiry / booking'}</span><Link className="kanban-title" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><p>{row.email}</p>{row.phone&&<p>{row.phone}</p>}{row.summary&&<p className="task-summary">{row.summary}</p>}<small>{dateLabel(row.created_at,true)}</small></>}/><BoardFooter board={board}/>
+  return <section className="management-panel"><BoardTools board={board}/><p className="panel-footnote">Contact, service and landing page enquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
+    <Kanban rows={board.rows} columns={leadColumns} statusKey="lead_status" busy={busy||board.loading} readOnly={readOnly} onMove={move} renderCard={row=><><span className="task-priority">{formSources[row.form_source]||'Website enquiry'}</span><Link className="kanban-title" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><p>{row.email}</p>{row.phone&&<p>{row.phone}</p>}{row.summary&&<p className="task-summary">{row.summary}</p>}<small>{dateLabel(row.created_at,true)}</small></>}/><BoardFooter board={board}/>
     {process.env.NEXT_PUBLIC_LEADS_ENABLED==='1'&&<LeadConversations readOnly={readOnly} refresh={refresh}/>}
+  </section>;
+}
+
+function FormsInbox({refresh,source=''}){
+  const board=useBoard('forms',refresh,source);
+  return <section className="management-panel">
+    <nav className="forms-source-tabs" aria-label="Form source">{[['','All forms'],...Object.entries(formSources)].map(([key,label])=><Link key={key} href={'/dashboard/forms'+(key?'/'+key:'')} aria-current={source===key?'page':undefined}>{label}</Link>)}</nav>
+    <section className="workspace-panel"><h2>What happens after someone submits?</h2><p className="panel-footnote">The enquiry is saved here, then an email notification is sent to you and an acknowledgement to the visitor. Open a submission for every original answer, notes and status. Track follow up in <Link href="/dashboard/crm">Lead CRM</Link>.</p></section>
+    <BoardTools board={board}/>
+    {board.error&&<p className="feedback error" role="alert">{board.error}</p>}
+    <div className="records-table" aria-busy={board.loading}><table><thead><tr><th>Form</th><th>Sender</th><th>Subject / project</th><th>Stage</th><th>Received</th><th>Details</th></tr></thead><tbody>{board.rows.map(row=><tr key={recordKey(row)}><td>{formSources[row.form_source]||'Website enquiry'}</td><td><Link className="record-name" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><small>{row.email}</small>{row.phone&&<small>{row.phone}</small>}</td><td>{row.summary||'Service enquiry'}</td><td>{row.lead_status||'new'}</td><td>{dateLabel(row.created_at,true)}</td><td><Link className="button secondary small" href={`/dashboard/${row.resource}/${row.id}`}>View submission</Link></td></tr>)}</tbody></table></div>
+    {!board.rows.length&&!board.loading&&!board.error&&<div className="empty-state"><h3>No submissions yet</h3><p>{source?formSources[source]+' submissions will appear here.':'Submissions from all three website forms will appear here.'}</p></div>}
+    <BoardFooter board={board}/>
   </section>;
 }
 
@@ -121,6 +135,7 @@ function LeadConversations({readOnly,refresh}){
 }
 
 export default function ManagementPanels({section,...props}){
+  if(section==='forms')return <FormsInbox {...props}/>;
   if(section==='tasks')return <TaskBoard {...props}/>;
   if(section==='crm')return <CRMBoard {...props}/>;
   return <WorkflowDashboard {...props}/>;
