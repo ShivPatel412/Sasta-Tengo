@@ -18,5 +18,42 @@ Database errors return 503 without database diagnostics or keys; retrying the sa
 Missing/incorrect credentials return 401; missing server configuration returns 503.
 Invalid JSON returns 400, invalid jobs 422, oversized bodies 413, and non-JSON content 415.
 
-This endpoint only stores discovered jobs. It does not score jobs, submit applications, or activate workflows.
-Keep all seven Job Hunter workflows unpublished while verifying the other backend endpoints separately.
+## Other workflow endpoints
+
+Apply `scripts/009-job-hunter-workflows-supabase.sql` after the ingestion schema.
+All routes use the same server-only bearer authentication and Supabase connection.
+
+| Method | Path under `/api/job-hunter` | Behavior |
+| --- | --- | --- |
+| POST | `/score` | Upsert the AI score by job ID; leave the job's application status unchanged. |
+| POST | `/resume-drafts` | Save a review-required resume draft. |
+| POST | `/application-drafts` | Save a review-required application draft; never submit it. |
+| POST | `/interview-packs` | Save a review-required interview pack. |
+| POST | `/agent-tasks` | Queue a task that requires approval; never execute it. |
+| GET | `/follow-ups?days=7` | Return at most 100 oldest eligible jobs without existing reminders. |
+| POST | `/reminders` | Save internal follow-up reminders; never send messages. |
+
+Score and draft routes accept the workflows' `{id, verified_profile, ai, ...jobFields}` payloads.
+`job_id` can replace `id`; conflicting IDs are rejected. The job must exist.
+The `ai` object is validated against each workflow's prompt contract.
+A non-placeholder verified profile is required; profile contents are not copied into storage.
+Validation cannot independently establish that AI-generated statements are true; every draft requires review.
+Repeated identical draft/task payloads and reminders are deduplicated. Changed drafts are retained as new versions.
+
+Agent tasks accept `{message, job_id, skill, reason, requires_approval:true, status:"queued"}`.
+Targeted score, resume, application, and interview tasks require a job ID.
+Only the seven supported skills are accepted; there is no submission skill.
+
+Follow-ups require a job in `applied` or `awaiting_reply`, an explicit `applied_at` older than the requested
+1–365 day threshold, `follow_up_completed:false`, and no saved reminder.
+Discovery dates are never treated as application dates. Jobs lacking an application date are excluded.
+The read-only database function uses caller privileges and is executable only by the service role.
+Existing reminders are excluded before limiting the result, so already-reminded jobs cannot block later candidates.
+
+Reminders accept `{reminders:[{job_id,company?,title?,reminder_type:"review_followup",send_external_message:false}]}`.
+Company/title are optional workflow metadata and are not used to overwrite the stored job.
+Each job must still be applied, have a recorded nonfuture application date, and have an incomplete follow-up.
+An empty reminder list succeeds without writes. Repeated reminders are ignored.
+
+These routes store data only. They do not call an AI provider, dispatch tasks, submit applications, or activate workflows.
+Keep all seven workflows unpublished until AI credentials and the verified candidate profile are configured separately.
