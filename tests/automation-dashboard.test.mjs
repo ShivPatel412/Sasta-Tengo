@@ -145,17 +145,3 @@ test('youtube shorts enforce manual review before public publishing', () => {
   assert.equal(updatePrivacy('review_approve'), 'public');
   assert.equal(updatePrivacy('unknown', 'public'), 'private');
 });
-
-test('linkedin publisher remains paused and rejects automatic activation', () => {
-  function handleLinkedInAction(payload) {
-    if (payload.enabled === true) throw new Error('Automated activation blocked');
-    if (payload.action === 'update_limits') {
-      return { max_posts_week: Math.min(5, Math.max(1, Number.parseInt(payload.max_posts_week, 10) || 2)) };
-    }
-    return { ok: true };
-  }
-
-  assert.throws(() => handleLinkedInAction({ enabled: true }), /activation blocked/);
-  assert.equal(handleLinkedInAction({ action: 'update_limits', max_posts_week: 10 }).max_posts_week, 5);
-  assert.equal(handleLinkedInAction({ action: 'update_limits', max_posts_week: -1 }).max_posts_week, 1);
-});

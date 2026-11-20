@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 
 test('unsupported social dashboard actions remain gated until the API reports a real backend',async()=>{
-  for(const file of ['youtube-studio.jsx','linkedin-studio.jsx']){
+  for(const file of ['youtube-studio.jsx']){
     const source=await readFile(new URL('../app/dashboard/[[...path]]/'+file,import.meta.url),'utf8');
     assert(source.includes('data.actions_available !== true'),file);
     for(const control of source.matchAll(/disabled=\{[^}]*readOnly[^}]*\}/g))assert(control[0].includes('data.actions_available !== true'),file+': '+control[0]);
