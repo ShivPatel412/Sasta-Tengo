@@ -99,6 +99,7 @@ def automations_data():
       'funny_jobs', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Ij8wnQ1Duve8Eno5" ORDER BY id DESC LIMIT 20) t),
       'live_streams', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_tOrT9XpiYkJrqbYN" ORDER BY id DESC LIMIT 20) t),
       'youtube_uploads', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_mpJSsahLGSp5xc90" ORDER BY id DESC LIMIT 20) t),
+      'instagram_reels', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_8aPwNmzYRPGzoTKX" ORDER BY id DESC LIMIT 20) t),
       'linkedin_control', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Yo7IUrn9QrIvYuwD" LIMIT 1) t),
       'linkedin_queue', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_3e6OLA0xHtHxwwPX" ORDER BY id DESC LIMIT 20) t),
       'linkedin_audit', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_7BkyviIzDYMurW3c" ORDER BY id DESC LIMIT 20) t),
@@ -127,7 +128,12 @@ def automations_data():
                     'path': str(mp4)
                 })
     return {
-        'funny_reels': {'jobs': parsed.get('funny_jobs', []), 'streams': parsed.get('live_streams', []), 'clips': clips},
+        'funny_reels': {
+            'jobs': parsed.get('funny_jobs', []),
+            'streams': parsed.get('live_streams', []),
+            'clips': clips,
+            'instagram_reels': parsed.get('instagram_reels', [])
+        },
         'youtube': {'uploads': parsed.get('youtube_uploads', [])},
         'linkedin': {'control': (parsed.get('linkedin_control') or [None])[0], 'queue': parsed.get('linkedin_queue', []), 'audit': parsed.get('linkedin_audit', [])},
         'whatsapp_errors': parsed.get('whatsapp_errors', [])
