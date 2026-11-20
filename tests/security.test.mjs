@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { contactSchema, requestSchema, projectSchema, experienceSchema, serialize } from '../lib/validation.mjs';
-import { sameOrigin } from '../lib/auth.mjs';
+import { sameOrigin, clientIp } from '../lib/auth.mjs';
 import { assertWritable, body } from '../lib/db.mjs';
 import { imageExtension } from '../lib/media.mjs';
 test('contact accepts expected fields and rejects privilege fields and excessive messages', () => {
@@ -36,7 +36,14 @@ test('admin mutations reject absent or foreign origins', () => {
   process.env.APP_ORIGIN = 'https://shivpatel.in';
   assert.throws(() => sameOrigin(new Request('https://shivpatel.in/api/admin/projects')), /Origin/);
   assert.throws(() => sameOrigin(new Request('https://shivpatel.in/api/admin/projects',{headers:{origin:'https://evil.example'}})), /Origin/);
-  sameOrigin(new Request('https://shivpatel.in/api/admin/projects',{headers:{origin:'https://shivpatel.in'}}));
+  assert.throws(() => sameOrigin(new Request('https://shivpatel.in/api/admin/projects',{headers:{origin:'https://shivpatel.in','sec-fetch-site':'cross-site'}})), /Cross-site/);
+  sameOrigin(new Request('https://shivpatel.in/api/admin/projects',{headers:{origin:'https://shivpatel.in','sec-fetch-site':'same-origin'}}));
+});
+test('clientIp resolves trusted proxy headers with precedence', () => {
+  assert.equal(clientIp(new Request('http://localhost', { headers: { 'cf-connecting-ip': '203.0.113.195', 'x-forwarded-for': '198.51.100.1, 10.0.0.1' } })), '203.0.113.195');
+  assert.equal(clientIp(new Request('http://localhost', { headers: { 'x-forwarded-for': '198.51.100.22, 10.0.0.1' } })), '198.51.100.22');
+  assert.equal(clientIp(new Request('http://localhost', { headers: { 'x-real-ip': '198.51.100.33' } })), '198.51.100.33');
+  assert.equal(clientIp(new Request('http://localhost')), 'local');
 });
 test('writes are denied unless explicitly enabled', () => {
   delete process.env.MIGRATION_READ_ONLY; assert.throws(assertWritable,/review mode/);
