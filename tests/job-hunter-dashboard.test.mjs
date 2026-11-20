@@ -84,7 +84,8 @@ test('getDashboardJobs queries Supabase with proper filters and pagination', asy
   const reqUrl = calls[0].url;
   assert.equal(reqUrl.searchParams.get('source'), 'eq.linkedin');
   assert.equal(reqUrl.searchParams.get('status'), 'eq.discovered');
-  assert.equal(reqUrl.searchParams.get('overall_score'), 'gte.80');
+  assert.equal(reqUrl.searchParams.get('scores.score'), 'gte.80');
+  assert.match(reqUrl.searchParams.get('select'), /scores:job_hunter_scores!inner/);
   assert.equal(reqUrl.searchParams.get('limit'), '10');
   assert.equal(reqUrl.searchParams.get('offset'), '10'); // (2 - 1) * 10
 });

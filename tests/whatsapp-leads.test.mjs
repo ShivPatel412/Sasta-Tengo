@@ -53,3 +53,21 @@ test('invalid sender and status are rejected',async()=>{
  await assert.rejects(()=>ingestWhatsapp({action:'claim',message_id:'wamid.test.123',sender:'123'}));
  await assert.rejects(()=>ingestWhatsapp({action:'upsert',sender:'919876543210',message_id:'wamid.test.456',status:'spam'}));
 });
+
+test('incoming AI classifications cannot resume a lead in human takeover',async()=>{
+ for(const status of ['new','contacted','qualified','booking_requested','human_takeover']){
+  const run=async sql=>sql.startsWith('SELECT')?[{status:'human_takeover',last_message_id:'previous-message',handoff_requested:1}]:{affectedRows:1};
+  const result=await ingestWhatsapp({action:'upsert',sender:'919000000000',message_id:'next-message-id',status},{run,atomic:async work=>work({})});
+  assert.equal(result.status,'human_takeover',status);
+ }
+ const run=async sql=>sql.startsWith('SELECT')?[{status:'human_takeover',last_message_id:'previous-message'}]:{affectedRows:1};
+ assert.equal((await ingestWhatsapp({action:'upsert',sender:'919000000000',message_id:'next-message-id',status:'opted_out'},{run,atomic:async work=>work({})})).status,'opted_out');
+});
+
+test('opt-out supersedes a closed lead and cannot be reversed by later AI classifications',async()=>{
+ for(const [old,status,expected] of [['closed','opted_out','opted_out'],['opted_out','qualified','opted_out'],['opted_out','human_takeover','opted_out']]){
+  const run=async sql=>sql.startsWith('SELECT')?[{status:old,last_message_id:'previous-message'}]:{affectedRows:1};
+  const result=await ingestWhatsapp({action:'upsert',sender:'919000000000',message_id:'next-message-id',status},{run,atomic:async work=>work({})});
+  assert.equal(result.status,expected);
+ }
+});
