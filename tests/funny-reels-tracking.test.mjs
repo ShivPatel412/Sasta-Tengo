@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { jobTracking, safeReelLink } from '../lib/funny-reels-tracking.mjs';
+import { jobTracking, reelRemaining, safeReelLink } from '../lib/funny-reels-tracking.mjs';
 import { formatWorkflowsList, formatPublishedReels } from '../lib/funny-reels.mjs';
 
 test('waiting and handoff do not claim processing or publication', () => {
@@ -42,4 +42,41 @@ test('unsafe preview and action links are rejected', () => {
   assert.equal(safeReelLink('javascript:alert(1)'), null);
   assert.equal(safeReelLink('https://user:secret@example.com/'), null);
   assert.equal(safeReelLink('https://www.youtube.com/shorts/example'), 'https://www.youtube.com/shorts/example');
+});
+
+const etaNow = Date.parse('2026-11-20T12:00:00Z');
+const milestone = (stage, message, ago) => ({ stage, message, created_at: new Date(etaNow - ago * 1000).toISOString() });
+const running = { state: 'PROCESSING', stage: 'RENDERING', last_heartbeat_at: new Date(etaNow).toISOString(), clips_selected: 10,
+  events: [milestone('RENDERING', 'Rendering · clip 1/10', 180), milestone('RENDERING', 'Rendering · clip 2/10', 60)] };
+
+test('ETA waits for video size, pauses for stale data and never calls handoff finished', () => {
+  assert.match(reelRemaining({ state: 'PROCESSING', last_heartbeat_at: new Date(etaNow).toISOString() }, etaNow).label, /Calculating/);
+  for (const state of ['ERROR', 'AWAITING_PERMISSION', 'QUEUED', 'UNCERTAIN']) assert.equal(reelRemaining({ state }, etaNow).label, 'Estimate paused');
+  assert.equal(reelRemaining(running, etaNow, false).label, 'Estimate paused');
+  assert.equal(reelRemaining(running, etaNow + 16 * 60000).label, 'Estimate paused');
+  assert.equal(reelRemaining({ state: 'PUBLISHED' }, etaNow, false).label, 'Finished');
+  assert.match(reelRemaining({ state: 'DISPATCHED', clips_selected: 10, finished_at: new Date(etaNow).toISOString() }, etaNow).detail, /Clips are ready/);
+});
+
+test('ETA uses clip pace, counts down and provides a finish window for ten clips', () => {
+  const first = reelRemaining(running, etaNow);
+  const later = reelRemaining(running, etaNow + 30000);
+  assert(first.finishStart > etaNow && first.finishEnd > first.finishStart);
+  assert(later.finishEnd - (etaNow + 30000) < first.finishEnd - etaNow);
+  assert(reelRemaining({ ...running, clips_selected: 3 }, etaNow).finishEnd < first.finishEnd);
+  assert.match(first.detail, /Initial estimate/);
+  assert.match(reelRemaining({ ...running, clips_selected: 2 }, etaNow + 240000).label, /Taking longer/);
+});
+
+test('analysis starts a provisional estimate and publishing overruns do not count down to finished', () => {
+  assert(reelRemaining({ ...running, stage: 'ANALYZING', segments_total: 4, events: [milestone('ANALYZING', 'Analyzing · segment 1/4', 30)] }, etaNow).finishEnd > etaNow);
+  const handedOff = { state: 'DISPATCHED', clips_selected: 2, finished_at: new Date(etaNow - 900000).toISOString() };
+  assert.match(reelRemaining(handedOff, etaNow).label, /Taking longer/);
+});
+
+test('publication receipt pace refines the provisional platform budget', () => {
+  const receipts = [60, 30].map(ago => ({ state: 'PUBLISHED', published_at: new Date(etaNow - ago * 1000).toISOString() }));
+  const job = { state: 'DISPATCHED', clips_selected: 3, instagram_published: 2, youtube_published: 2,
+    instagram_clips: receipts, youtube_clips: receipts, finished_at: new Date(etaNow).toISOString() };
+  assert.match(reelRemaining(job, etaNow).detail, /publication pace/);
 });

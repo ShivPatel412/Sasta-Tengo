@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { adminApi as api, jsonRequest } from '../../../lib/dashboard-client.mjs';
-import { reelStepStates, safeReelLink } from '../../../lib/funny-reels-tracking.mjs';
+import { reelRemaining, reelStepStates, safeReelLink } from '../../../lib/funny-reels-tracking.mjs';
 
 export function ReelSubmission({ ready, readOnly, onSubmitted }) {
   const [url, setUrl] = useState(''), [count, setCount] = useState(3), [rights, setRights] = useState(false);
@@ -32,10 +32,12 @@ export function ReelSubmission({ ready, readOnly, onSubmitted }) {
   </form></section>;
 }
 
-export function ReelTimeline({ job, time }) {
+export function ReelTimeline({ job, time, now, fresh }) {
   const platforms = [['Instagram', job?.instagram_clips || []], ['YouTube', job?.youtube_clips || []]];
+  const estimate = reelRemaining(job, now, fresh);
   return <section className="neon-panel reel-timeline"><h3>Processing pipeline</h3>{!job ? <p>Your video will appear here after you submit it. Each step is reported by the worker.</p> : <>
     <p><strong>{job.video_id || 'Your submitted video'}</strong> · up to {job.max_clips || '—'} clips</p>
+    <div className="reel-estimate"><strong>{estimate.label}</strong>{estimate.finishEnd && <p>Estimated finish: {time(estimate.finishStart)} – {time(estimate.finishEnd)}</p>}<small>{estimate.detail}</small></div>
     <ol className="reel-step-list">{reelStepStates(job).map(step => <li key={step.key} className={step.status === 'Done' ? 'done' : step.status === 'Current step' ? 'current' : ''}><strong>{step.label}</strong><span>{step.status}</span></li>)}</ol>
     <p>Instagram: <strong>{job.instagram_published || 0}</strong> public · YouTube: <strong>{job.youtube_published || 0}</strong> public · {job.clips_selected || 0} clips selected</p>
     {job.error_message && <p className="reel-error" role="status">{job.error_message}</p>}

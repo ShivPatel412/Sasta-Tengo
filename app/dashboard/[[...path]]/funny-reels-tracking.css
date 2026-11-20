@@ -51,5 +51,8 @@
 .reel-platform-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-top: 1rem; }
 .reel-platform-results p { font-size: .875rem; overflow-wrap: anywhere; }
 .reel-timeline small { display: block; color: #aaa; }
+.reel-estimate { padding: 1rem; background: #20251a; border: 1px solid #5a872b; border-radius: .5rem; margin: 1rem 0; }
+.reel-estimate > strong { font-size: 1.2rem; color: #b5ed72; }
+.reel-estimate p { margin: .5rem 0; }
 @media(max-width: 950px) { .reel-workspace { grid-template-columns: 1fr; } }
 @media(max-width: 700px) { .reel-job-layout { grid-template-columns: 1fr; } .funny-tracker .neon-panel { padding: 1rem; } .reel-job-detail dl { grid-template-columns: 1fr; } .reel-job-detail dd { margin-bottom: .5rem; } }
