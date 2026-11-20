@@ -15,7 +15,7 @@ test('ingestion authenticates before parsing, validates whole batches, and persi
   const calls = [];
   t.mock.method(globalThis, 'fetch', async (url, options) => {
     calls.push({ url, options });
-    return Response.json([{ id: 'test-id' }]);
+    return Response.json(JSON.parse(options.body).map(record => ({ id: '11111111-1111-4111-8111-111111111111', url_hash: record.url_hash })));
   });
 
   for (const auth of ['', 'Bearer wrong', `Basic ${token}`, `Bearer ${'é'.repeat(40)}`]) {
@@ -41,7 +41,7 @@ test('ingestion authenticates before parsing, validates whole batches, and persi
   process.env.SUPABASE_SECRET_KEY = 'test-server-key';
   const response = await ingestJobs(request({ jobs: [job, { ...job, url: job.url + '#details' }] }));
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { received: 2, inserted: 1, duplicates: 1 });
+  assert.deepEqual(await response.json(), { received: 2, inserted: 1, duplicates: 1, inserted_jobs: [{ ...job, id: '11111111-1111-4111-8111-111111111111', published_at: '2026-11-18T12:00:00.000Z' }] });
   const { url, options } = calls[0];
   assert.equal(url.origin, process.env.SUPABASE_URL);
   assert.equal(url.searchParams.get('on_conflict'), 'url_hash');
@@ -56,7 +56,7 @@ test('ingestion authenticates before parsing, validates whole batches, and persi
   assert.match(records[0].url_hash, /^[a-f0-9]{64}$/);
 
   globalThis.fetch.mock.mockImplementation(async () => Response.json([]));
-  assert.deepEqual(await (await ingestJobs(request({ jobs: [job] }))).json(), { received: 1, inserted: 0, duplicates: 1 });
+  assert.deepEqual(await (await ingestJobs(request({ jobs: [job] }))).json(), { received: 1, inserted: 0, duplicates: 1, inserted_jobs: [] });
   globalThis.fetch.mock.mockImplementation(async () => new Response('private database diagnostics', { status: 500 }));
   const failure = await ingestJobs(request({ jobs: [job] }));
   assert.equal(failure.status, 503);
