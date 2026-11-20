@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {adminApi as api,jsonRequest} from '../../../lib/dashboard-client.mjs';
-import {dateLabel} from '../../../lib/dashboard.mjs';
+import {dateLabel,timestamp} from '../../../lib/dashboard.mjs';
 import {formSources} from '../../../lib/form-sources.mjs';
 import './management.css';
 import WorkflowDashboard from './workflow-dashboard';
@@ -113,7 +113,7 @@ function WhatsAppInboundLeads({readOnly,refresh}){
     {error&&<p role="alert" className="feedback error">{error}</p>}
     <div className="records-table"><table><thead><tr><th>Contact</th><th>Service / request</th><th>Budget / timeline</th><th>Stage</th><th>Follow-up</th></tr></thead>
       <tbody>{rows.map(row=>{
-        const overdue=row.follow_up_at&&new Date(row.follow_up_at)<=new Date()&&!['closed','opted_out'].includes(row.status);
+        const overdue=row.follow_up_at&&timestamp(row.follow_up_at)<=new Date()&&!['closed','opted_out'].includes(row.status);
         return <tr key={row.sender}>
           <td><strong>{row.name||row.sender}</strong><small>{row.sender}</small><small>Updated {dateLabel(row.updated_at,true)}</small></td>
           <td>{row.service||'General enquiry'}<small>{row.summary||''}</small>{row.booking_request&&<small>Call request: {row.booking_request}</small>}</td>
