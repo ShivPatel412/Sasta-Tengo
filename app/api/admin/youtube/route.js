@@ -13,13 +13,9 @@ export async function GET() {
     const uploads = snapshot?.automations?.youtube?.uploads || [];
     return Response.json({
       ok: true,
-      channel: {
-        id: 'UCShivPatelStudio',
-        name: 'Shiv Patel',
-        handle: '@ShivPatel412',
-        status: 'CONNECTED',
-        manual_review_enforced: true
-      },
+      actions_available: false,
+      action_message: 'Read-only monitoring. YouTube review, scheduling and privacy changes are not connected.',
+      channel: { id: null, name: null, handle: null, status: 'NOT_VERIFIED', manual_review_enforced: null },
       uploads
     }, { headers: { 'Cache-Control': 'no-store' } });
   });
@@ -33,19 +29,6 @@ export async function PATCH(request) {
     if (!id || !['review_approve', 'schedule', 'set_privacy'].includes(action)) {
       throw new HttpError(422, 'Invalid action. Manual review is required for YouTube Shorts.');
     }
-    const nextPrivacy = action === 'review_approve' ? 'public' : (privacy_status || 'private');
-    if (!['private', 'unlisted', 'public'].includes(nextPrivacy)) {
-      throw new HttpError(422, 'Invalid privacy status.');
-    }
-
-    return Response.json({
-      ok: true,
-      id,
-      action,
-      privacy_status: nextPrivacy,
-      status: nextPrivacy === 'public' ? 'PUBLIC_APPROVED' : (scheduled_at ? 'SCHEDULED' : 'PRIVATE_UPLOADED'),
-      scheduled_at: scheduled_at || null,
-      updated_at: new Date().toISOString()
-    }, { headers: { 'Cache-Control': 'no-store' } });
+    throw new HttpError(503, 'YouTube actions are not connected. No video privacy or publication state was changed.');
   });
 }

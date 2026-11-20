@@ -53,7 +53,7 @@ test('calculateOverviewStats handles empty and populated data without fabricatin
     ],
     streams: [{ stream_id: 'str-1' }],
     clips: [{ filename: 'clip1.mp4' }, { filename: 'clip2.mp4' }],
-    instagram_reels: [{ state: 'PUBLISHED' }],
+    instagram_reels: [{ state: 'PUBLISHED', instagram_media_id: 'fixture-receipt', permalink: 'https://www.instagram.com/reel/test/' }],
     youtube_uploads: [{ status: 'PRIVATE_UPLOADED', privacy_status: 'private' }]
   });
 
@@ -92,7 +92,7 @@ test('workflow monitor tracks exactly the 7 funny reels workflows and separates 
   assert.equal(f02.status, 'DRAFT_PAUSED');
 });
 
-test('published reels and AI highlights format dual platform receipts and 60fps metadata', () => {
+test('published reels require receipts and missing media facts stay unverified', () => {
   const auto = {
     instagram_reels: [{
       id: 1,
@@ -101,6 +101,7 @@ test('published reels and AI highlights format dual platform receipts and 60fps 
       caption: 'Funny moment',
       state: 'PUBLISHED',
       permalink: 'https://www.instagram.com/reel/abc12345/',
+      instagram_media_id: 'fixture-receipt',
       streamer_name: 'carryminati'
     }],
     youtube_uploads: [{
@@ -121,14 +122,14 @@ test('published reels and AI highlights format dual platform receipts and 60fps 
   assert.equal(published[0].instagram_permalink, 'https://www.instagram.com/reel/abc12345/');
   assert.equal(published[0].youtube_status, 'PRIVATE_UPLOADED');
   assert.equal(published[0].youtube_url, 'https://www.youtube.com/shorts/yt123');
-  assert.equal(published[0].fps, '60fps');
-  assert.equal(published[0].resolution, '1080x1920 (9:16)');
+  assert.equal(published[0].fps, null);
+  assert.equal(published[0].resolution, null);
 
   const highlights = formatAIHighlights(auto);
   assert.equal(highlights.length, 1);
-  assert.equal(highlights[0].render_status, 'RENDERED_60FPS');
-  assert.equal(highlights[0].humor_score, 94);
-  assert.match(highlights[0].selection_reason, /engagement/i);
+  assert.equal(highlights[0].render_status, 'NOT_VERIFIED');
+  assert.equal(highlights[0].humor_score, null);
+  assert.equal(highlights[0].selection_reason, null);
 });
 
 test('youtube shorts enforce manual review before public publishing', () => {

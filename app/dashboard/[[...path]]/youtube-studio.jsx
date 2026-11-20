@@ -6,7 +6,7 @@ import { YoutubeLogo, ExternalLink, Check, ShieldCheck, RefreshCw } from './dash
 import './control-room-neon.css';
 
 export default function YouTubeStudio({ readOnly, refresh }) {
-  const [data, setData] = useState({ uploads: [], channel: {} });
+  const [data, setData] = useState({ uploads: [], channel: {}, actions_available: false });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -34,7 +34,7 @@ export default function YouTubeStudio({ readOnly, refresh }) {
   }, [refresh]);
 
   async function updateStatus(id, action, privacy_status) {
-    if (readOnly || busy) return;
+    if (readOnly || busy || data.actions_available !== true) return;
     setBusy(true); setError(''); setNotice('');
     try {
       const scheduled_at = scheduledDates[id] || null;
@@ -58,11 +58,11 @@ export default function YouTubeStudio({ readOnly, refresh }) {
           <div className="neon-title-group">
             <span className="mini-label">VIDEO PUBLISHING PIPELINE</span>
             <h2><YoutubeLogo size={28} color="#ff0000" /> YouTube Shorts Management</h2>
-            <p>Review and schedule YouTube Shorts. All automated uploads are held as <strong>PRIVATE</strong> until manual review.</p>
+            <p>Inspect YouTube upload records. Dashboard publishing and scheduling controls require a verified action backend.</p>
           </div>
           <div className="neon-actions">
-            <span className="neon-badge live">
-              <span className="neon-dot live" /> Channel: {data.channel?.handle || '@ShivPatel412'}
+            <span className="neon-badge neutral">
+              Channel: {data.channel?.handle || 'Not verified'} · {data.channel?.status || 'NOT_VERIFIED'}
             </span>
           </div>
         </div>
@@ -70,9 +70,11 @@ export default function YouTubeStudio({ readOnly, refresh }) {
         {/* Safety Gate Banner */}
         <div className="neon-delay-banner" style={{ borderColor: 'rgba(255, 255, 255, 0.2)' }}>
           <ShieldCheck size={20} color="#98FF02" />
-          <span><strong>Manual Review Gate:</strong> In accordance with SHIV OS security policy, no video is set to public automatically. Every Short must be approved below before public release.</span>
+          <span><strong>Review policy:</strong> Require approval before public release. This dashboard has not verified or changed the existing publisher configuration.</span>
         </div>
       </section>
+
+      {data.actions_available !== true && <p role="status" className="panel-footnote">{data.action_message || 'Read-only monitoring. A durable authenticated action backend is not connected.'}</p>}
 
       {/* Uploads Queue & History */}
       <section className="neon-panel">
@@ -136,7 +138,7 @@ export default function YouTubeStudio({ readOnly, refresh }) {
                           type="datetime-local"
                           className="neon-input"
                           style={{ padding: '0.35rem 0.5rem', fontSize: '0.8rem', background: '#111' }}
-                          disabled={readOnly || busy}
+                          disabled={readOnly || busy || data.actions_available !== true}
                           value={scheduledDates[item.id] || (item.scheduled_at ? item.scheduled_at.slice(0, 16) : '')}
                           onChange={e => setScheduledDates({ ...scheduledDates, [item.id]: e.target.value })}
                         />
@@ -146,7 +148,7 @@ export default function YouTubeStudio({ readOnly, refresh }) {
                           {!isPublic && (
                             <button
                               className="neon-button primary small"
-                              disabled={readOnly || busy}
+                              disabled={readOnly || busy || data.actions_available !== true}
                               onClick={() => updateStatus(item.id, 'review_approve', 'public')}
                               title="Approve for public release"
                             >
@@ -155,7 +157,7 @@ export default function YouTubeStudio({ readOnly, refresh }) {
                           )}
                           <button
                             className="neon-button secondary small"
-                            disabled={readOnly || busy}
+                            disabled={readOnly || busy || data.actions_available !== true}
                             onClick={() => updateStatus(item.id, 'schedule', item.privacy_status)}
                           >
                             Save Schedule

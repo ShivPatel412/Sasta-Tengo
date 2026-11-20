@@ -2,6 +2,7 @@
 import CornerFrame from '../../CornerFrame';
 import React, { useState, useRef, useEffect } from 'react';
 import WhatsAppConsent from './WhatsAppConsent';
+import {sendTerminalContact} from '../../../lib/terminal-contact.mjs';
 
 const TerminalForm = ({ onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(0);
@@ -10,8 +11,8 @@ const TerminalForm = ({ onSubmit }) => {
   const [currentInput, setCurrentInput] = useState('');
   const [history, setHistory] = useState([]);
   const [cursorPosition, setCursorPosition] = useState({ left: 0, top: 2 });
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const pendingSubmission = useRef(false);
   const [isInView, setIsInView] = useState(false);
   const inputRef = useRef(null);
   const terminalRef = useRef(null);
@@ -76,7 +77,7 @@ const TerminalForm = ({ onSubmit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!currentInput.trim() || isUploading) return; // ignore while uploading
+    if (!currentInput.trim() || isUploading || pendingSubmission.current) return;
 
     const currentQuestion = questions[currentStep];
     if(currentQuestion.multiline&&whatsappConsent&&!/^\+[1-9][0-9]{6,14}$/.test((responses.mobile||'').replace(/[\s().-]/g,''))){
@@ -120,72 +121,22 @@ const TerminalForm = ({ onSubmit }) => {
       if (currentStep < questions.length - 1) {
         setCurrentStep(currentStep + 1);
       } else {
-        // Form complete - start upload progress
         setHistory(prev => [
           ...prev,
           { type: 'system', text: '─'.repeat(50) },
-          { type: 'system', text: 'Uploading data...' }
+          { type: 'system', text: 'Sending your inquiry...' }
         ]);
-        setIsUploading(true);
-        setUploadProgress(0);
-        
-        // Animate progress with stops at 10%, 25%, 50%, 75%, and 100%
-        const milestones = [10, 25, 50, 75, 100];
-        let currentMilestoneIndex = 0;
-        
-        const animateToNextMilestone = () => {
-          if (currentMilestoneIndex >= milestones.length) {
-            setIsUploading(false);
-            
-            // After progress completes, attempt API submission
-            if (onSubmit) {
-              onSubmit(newResponses)
-                .then(() => {
-                  setHistory(prevHistory => [
-                    ...prevHistory,
-                    { type: 'success', text: '✓ Form submitted successfully!' },
-                    { type: 'system', text: 'Thank you for your message. I will get back to you soon.' }
-                  ]);
-                })
-                .catch(() => {
-                  setHistory(prevHistory => [
-                    ...prevHistory,
-                    { type: 'error', text: '✗ Submission failed. Please try again.' }
-                  ]);
-                });
-            }
-
-            // Reset after 3 seconds regardless of result
-            setTimeout(() => {
-              setCurrentStep(0);
-              setResponses({});
-              setWhatsappConsent(false);
-              setUploadProgress(0);
-              setHistory([
-                { type: 'system', text: 'Terminal Contact Form v1.0' },
-                { type: 'system', text: 'Type your answers and press Enter to continue.' },
-                { type: 'system', text: '─'.repeat(50) }
-              ]);
-            }, 3000);
-            return;
+        void sendTerminalContact({
+          pending:pendingSubmission,send:onSubmit,answers:newResponses,onPending:setIsUploading,
+          onSuccess:()=>{
+            setCurrentStep(0);setResponses({});setWhatsappConsent(false);
+            setHistory(prev=>[...prev,{type:'success',text:'Inquiry sent. Thank you for your message.'}]);
+          },
+          onFailure:()=>{
+            setCurrentInput(newResponses.message || '');
+            setHistory(prev=>[...prev,{type:'error',text:'Sending failed. Your answers are kept. Submit the message again to retry.'}]);
           }
-          
-          const targetProgress = milestones[currentMilestoneIndex];
-          const progressInterval = setInterval(() => {
-            setUploadProgress(prev => {
-              if (prev >= targetProgress) {
-                clearInterval(progressInterval);
-                currentMilestoneIndex++;
-                // Pause at each milestone before continuing
-                setTimeout(animateToNextMilestone, 500);
-                return targetProgress;
-              }
-              return prev + 1;
-            });
-          }, 50);
-        };
-        
-        animateToNextMilestone();
+        });
       }
     }
   };
@@ -215,12 +166,7 @@ const TerminalForm = ({ onSubmit }) => {
         ))}
         
         {isUploading && (
-          <div className="upload-progress">
-            <div className="progress-bar-container">
-              <div className="progress-bar" style={{ width: `${uploadProgress}%` }}></div>
-            </div>
-            <div className="progress-text">{uploadProgress}%</div>
-          </div>
+          <div className="upload-progress" role="status">Sending your inquiry…</div>
         )}
         
         {!isComplete && (
@@ -239,6 +185,7 @@ const TerminalForm = ({ onSubmit }) => {
                     <textarea
                       ref={inputRef}
                       value={currentInput}
+                      disabled={isUploading}
                       onChange={(e) => setCurrentInput(e.target.value)}
                       placeholder={currentQuestion.placeholder}
                       className="terminal-textarea"
@@ -261,6 +208,7 @@ const TerminalForm = ({ onSubmit }) => {
                       ref={inputRef}
                       type="text"
                       value={currentInput}
+                      disabled={isUploading}
                       onChange={(e) => setCurrentInput(e.target.value)}
                       placeholder={currentQuestion.placeholder}
                       className="terminal-input"
@@ -274,7 +222,7 @@ const TerminalForm = ({ onSubmit }) => {
                   </>
                 )}
                 {currentQuestion.multiline && (
-                  <button type="submit" className="terminal-mobile-submit">
+                  <button type="submit" className="terminal-mobile-submit" disabled={isUploading}>
                     Submit message
                   </button>
                 )}

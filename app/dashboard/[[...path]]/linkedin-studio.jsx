@@ -6,7 +6,7 @@ import { LinkedinLogo, Check, X, ShieldCheck, RefreshCw } from './dashboard-icon
 import './control-room-neon.css';
 
 export default function LinkedInStudio({ readOnly, refresh }) {
-  const [data, setData] = useState({ automation_status: 'PAUSED', oauth_ready: false, control: { max_posts_week: 2 }, queue: [], audit: [] });
+  const [data, setData] = useState({ automation_status: 'PAUSED', oauth_ready: false, actions_available: false, control: { max_posts_week: 2 }, queue: [], audit: [] });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -35,7 +35,7 @@ export default function LinkedInStudio({ readOnly, refresh }) {
   }, [refresh]);
 
   async function updateQueue(queueId, action, post_text) {
-    if (readOnly || busy) return;
+    if (readOnly || busy || data.actions_available !== true) return;
     setBusy(true); setError(''); setNotice('');
     try {
       await api('linkedin', jsonRequest('PATCH', { queue_id: queueId, action, post_text }));
@@ -51,7 +51,7 @@ export default function LinkedInStudio({ readOnly, refresh }) {
 
   async function updateWeeklyLimit(e) {
     e.preventDefault();
-    if (readOnly || busy) return;
+    if (readOnly || busy || data.actions_available !== true) return;
     setBusy(true); setError(''); setNotice('');
     try {
       await api('linkedin', jsonRequest('PATCH', { action: 'update_limits', max_posts_week: Number(limit) }));
@@ -74,7 +74,7 @@ export default function LinkedInStudio({ readOnly, refresh }) {
           <div className="neon-title-group">
             <span className="mini-label">PROFESSIONAL NETWORK AUTOMATION</span>
             <h2><LinkedinLogo size={28} color="#0077b5" /> LinkedIn Publisher</h2>
-            <p>AI-assisted drafts with strict source fact checking. Fail-closed architecture prevents unauthorized posts.</p>
+            <p>Review reported draft content. Dashboard actions are unavailable until a durable action backend is connected.</p>
           </div>
           <div className="neon-actions">
             <span className="neon-badge paused">
@@ -101,7 +101,7 @@ export default function LinkedInStudio({ readOnly, refresh }) {
             className="neon-input"
             value={limit}
             onChange={e => setLimit(e.target.value)}
-            disabled={readOnly || busy}
+            disabled={readOnly || busy || data.actions_available !== true}
             style={{ padding: '0.35rem 0.65rem' }}
           >
             <option value={1}>1 post per week</option>
@@ -109,13 +109,15 @@ export default function LinkedInStudio({ readOnly, refresh }) {
             <option value={3}>3 posts per week</option>
             <option value={5}>5 posts per week</option>
           </select>
-          <button type="submit" className="neon-button secondary small" disabled={readOnly || busy}>
+          <button type="submit" className="neon-button secondary small" disabled={readOnly || busy || data.actions_available !== true}>
             Save Limit
           </button>
           {notice && <span style={{ color: '#98FF02', fontSize: '0.85rem' }}>{notice}</span>}
           {error && <span style={{ color: '#ff4444', fontSize: '0.85rem' }}>{error}</span>}
         </form>
       </section>
+
+      {data.actions_available !== true && <p role="status" className="panel-footnote">{data.action_message || 'Read-only monitoring. A durable authenticated action backend is not connected.'}</p>}
 
       {/* Content Approval Queue */}
       <section className="neon-panel">
@@ -145,13 +147,13 @@ export default function LinkedInStudio({ readOnly, refresh }) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.5rem' }}>
                   <div style={{ fontSize: '0.78rem', color: '#98FF02' }}>
-                    ✓ Safety Checked: No secrets · Validated source URLs only
+                    Review source facts and sensitive data before approval.
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="neon-button primary small" disabled={readOnly || busy} onClick={() => updateQueue(item.id, 'approve')}>
+                    <button className="neon-button primary small" disabled={readOnly || busy || data.actions_available !== true} onClick={() => updateQueue(item.id, 'approve')}>
                       <Check size={14} /> Approve Draft
                     </button>
-                    <button className="neon-button danger small" disabled={readOnly || busy} onClick={() => updateQueue(item.id, 'reject')}>
+                    <button className="neon-button danger small" disabled={readOnly || busy || data.actions_available !== true} onClick={() => updateQueue(item.id, 'reject')}>
                       <X size={14} /> Reject
                     </button>
                   </div>

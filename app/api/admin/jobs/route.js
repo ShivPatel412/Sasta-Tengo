@@ -84,11 +84,12 @@ export async function POST(request) {
       const taskMsg = message || (action === 'analyze_job' ? `Analyze compatibility for job ${job_id}` : 'Agent request');
       const taskReason = reason || 'Dashboard manual trigger';
 
-      // Create synthetic request for queueJobTask
+      if (!process.env.SHIV_JOB_API_TOKEN || process.env.SHIV_JOB_API_TOKEN.length < 32) throw new HttpError(503, 'Job Hunter task integration is not configured.');
+      // Reuse the existing validated durable task-ingestion path.
       const syntheticReq = new Request('https://internal/api/job-hunter/agent-tasks', {
         method: 'POST',
         headers: {
-          authorization: `Bearer ${process.env.SHIV_JOB_API_TOKEN || 'a'.repeat(32)}`,
+          authorization: `Bearer ${process.env.SHIV_JOB_API_TOKEN}`,
           'content-type': 'application/json'
         },
         body: JSON.stringify({
@@ -101,17 +102,10 @@ export async function POST(request) {
         })
       });
 
-      // Forward to n8n orchestrator webhook if reachable
-      try {
-        fetch('https://n8n.shivpatel.in/webhook/shiv-job-hunter-agent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ job_id, skill: taskSkill, message: taskMsg }),
-          signal: AbortSignal.timeout(3000)
-        }).catch(() => {});
-      } catch {}
-
-      return queueJobTask(syntheticReq);
+      // Persist the approved task request only. No workflow execution is confirmed here.
+      const queued = await queueJobTask(syntheticReq);
+      if (!queued.ok) return queued;
+      return Response.json({ ...await queued.json(), execution_started: false, message: 'Task saved for the Job Hunter runner. Workflow execution has not started.' }, { headers: { 'Cache-Control': 'no-store' } });
     }
 
     throw new HttpError(422, 'Invalid post action.');

@@ -33,9 +33,9 @@ const PIPELINE_STAGES = [
   { key: 'DOWNLOADED', label: 'Downloaded', icon: '⚡' },
   { key: 'GEMINI', label: 'Analyzed by Gemini', icon: '🧠' },
   { key: 'HIGHLIGHTS', label: 'Highlights Selected', icon: '✂️' },
-  { key: 'RENDERED', label: '60fps Rendered', icon: '🎬' },
+  { key: 'RENDERED', label: 'Rendered', icon: '🎬' },
   { key: 'UPLOADED', label: 'Platform Upload', icon: '☁️' },
-  { key: 'VERIFIED', label: 'Processing Verified', icon: '🛡️' },
+  { key: 'VERIFIED', label: 'Processing check', icon: '🛡️' },
   { key: 'PUBLISHED', label: 'Published', icon: '🚀' }
 ];
 
@@ -52,7 +52,8 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
     executions: [],
     accounts: {},
     drive_url: '',
-    configured: true
+    configured: false,
+    actions_available: false
   });
 
   const [loading, setLoading] = useState(true);
@@ -64,7 +65,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [url, setUrl] = useState('');
   const [isLive, setIsLive] = useState(false);
-  const [rightsConfirmed, setRightsConfirmed] = useState(true);
+  const [rightsConfirmed, setRightsConfirmed] = useState(false);
   const [maxClips, setMaxClips] = useState(3);
   const [streamerHandle, setStreamerHandle] = useState('');
 
@@ -117,7 +118,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
 
   async function submitJob(e) {
     e.preventDefault();
-    if (readOnly || busy) return;
+    if (readOnly || busy || data.actions_available !== true) return;
     setBusy(true); setError(''); setNotice('');
     try {
       const res = await api('funny-reels', jsonRequest('POST', {
@@ -140,7 +141,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
   }
 
   async function updateJob(jobId, action) {
-    if (readOnly || busy) return;
+    if (readOnly || busy || data.actions_available !== true) return;
     setBusy(true); setError(''); setNotice('');
     try {
       await api('funny-reels', jsonRequest('PATCH', { job_id: jobId, action }));
@@ -200,7 +201,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
               Funny Reels AI Control Center
             </h2>
             <p style={{ margin: 0, color: '#aaa', fontSize: '0.9rem' }}>
-              Autonomous 1080×1920 60fps comedy clip extraction from YouTube videos & livestreams with Gemini AI and dual Meta/YouTube distribution.
+              Monitor existing video processing, rendered clips and publishing receipts. Output properties and external delivery need verification.
             </p>
           </div>
 
@@ -213,11 +214,13 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
             <button className="neon-button secondary small" onClick={handleRefresh} disabled={loading || busy}>
               <RefreshCw size={14} className={loading ? 'spinning' : ''} /> Refresh
             </button>
-            <button className="neon-button primary small" onClick={() => setShowSubmitModal(true)} disabled={busy || readOnly}>
+            <button className="neon-button primary small" onClick={() => setShowSubmitModal(true)} disabled={busy || readOnly || data.actions_available !== true}>
               <Sparkles size={14} /> Submit Video
             </button>
           </div>
         </div>
+
+        {data.actions_available !== true && <p role="status" className="panel-footnote">{data.action_message || 'Read-only monitoring. A durable authenticated action backend is not connected.'}</p>}
 
         {/* Navigation Tabs */}
         <div style={{ display: 'flex', gap: '0.5rem', borderBottom: '1px solid #222', paddingBottom: '0.5rem', overflowX: 'auto' }}>
@@ -287,7 +290,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
             <div className="neon-stat-card">
               <span className="neon-stat-label">Clips Rendered</span>
               <strong className="neon-stat-value">{stats.clips_rendered ?? 0}</strong>
-              <small className="neon-stat-sub">1080×1920 60fps MP4s</small>
+              <small className="neon-stat-sub">Reported render records</small>
             </div>
             <div className="neon-stat-card">
               <span className="neon-stat-label">Instagram Reels</span>
@@ -326,7 +329,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
             <div className="neon-header" style={{ marginBottom: '0.75rem', paddingBottom: '0.5rem' }}>
               <div className="neon-title-group">
                 <span className="mini-label">AUTOMATION PIPELINE</span>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>Autonomous Clip Flow</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#fff' }}>Workflow pipeline outline</h3>
               </div>
               <span className="neon-badge live">REAL-TIME MONITOR</span>
             </div>
@@ -551,7 +554,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
               <span className="mini-label">GEMINI AI DECISIONS</span>
               <h3 style={{ margin: 0, color: '#fff' }}>Selected Comedy Moments</h3>
               <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>
-                Actual highlight extraction decisions produced by Gemini and 60fps FFmpeg render pipeline.
+                Reported highlight and render metadata. Source scores and actual media properties need verification.
               </p>
             </div>
           </div>
@@ -575,10 +578,10 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
                         {selectedClip.filename}
                       </strong>
                       <small style={{ color: '#888' }}>
-                        Streamer: {selectedClip.streamer || '@carryminati'} · 1080×1920 60fps
+                        Streamer: {selectedClip.streamer || 'Not reported'} · Media properties not verified
                       </small>
                     </div>
-                    <span className="neon-badge live">60FPS RENDERED</span>
+                    <span className="neon-badge neutral">MEDIA NOT VERIFIED</span>
                   </div>
                 </>
               ) : (
@@ -642,7 +645,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
                         if (match) setSelectedClip(match);
                       }}
                     >
-                      <Play size={12} /> Preview 60fps MP4
+                      <Play size={12} /> Preview video
                     </button>
                   </div>
                 </div>
@@ -756,7 +759,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
               <span className="mini-label">N8N ENGINE MONITOR</span>
               <h3 style={{ margin: 0, color: '#fff' }}>Funny Reels AI Workflows (7 Workflows)</h3>
               <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>
-                Live state directly inspected from n8n. Drafts remain safely paused until verified.
+                Last reported workflow metadata. A draft label is not proof that published workflows or external processing are paused.
               </p>
             </div>
             <a href="https://n8n.shivpatel.in" target="_blank" rel="noopener noreferrer" className="neon-button secondary small">
@@ -813,7 +816,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
               <div>  ↳ [FUNNY-02] Gemini Scene Analysis & 60fps Cut (0DlqKnBRQPvkwknF)</div>
               <div>      ↳ [REELS-04] Free Cover Generation & Packaging (E9mNbyn7ZetDGfH6)</div>
               <div>          ├── [REELS-02] Instagram Container Upload (86Kj8o1974krkKlR)</div>
-              <div>          │    ↳ [REELS-03] Verified Instagram Auto-Publisher (uFAzLSFG7vb8GLXl)</div>
+              <div>          │    ↳ [REELS-03] Instagram Publisher (uFAzLSFG7vb8GLXl)</div>
               <div>          └── [YT-01] YouTube Private Shorts Upload (tJ14ZUpQV8diY5gP)</div>
               <div>               ↳ [YT-02] Verified Public Release & Recovery (L3yhy79MTMjELUqZ)</div>
             </div>
@@ -903,9 +906,9 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
           <div className="neon-header">
             <div className="neon-title-group">
               <span className="mini-label">ACCOUNT CREDENTIALS & POLICIES</span>
-              <h3 style={{ margin: 0, color: '#fff' }}>Connected Social Platforms</h3>
+              <h3 style={{ margin: 0, color: '#fff' }}>Social platform status</h3>
               <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>
-                Secure verified publishing destinations. Credentials and OAuth tokens remain isolated on the server.
+                Account details are shown only when reported. Connection and publishing permissions still need verification.
               </p>
             </div>
           </div>
@@ -915,13 +918,13 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
             <div className="neon-card" style={{ background: '#121212', borderLeft: '4px solid #ff2d75' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <strong style={{ color: '#ff2d75', fontSize: '1rem' }}>Instagram Professional</strong>
-                <span className="neon-badge live">VERIFIED</span>
+                <span className="neon-badge neutral">{data.accounts?.instagram?.status || 'NOT_VERIFIED'}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.82rem', color: '#aaa' }}>
-                <div>Account ID: <code style={{ color: '#fff' }}>{data.accounts?.instagram?.account_id || '17841467420993171'}</code></div>
-                <div>Verified Handle: <code style={{ color: '#fff' }}>@{data.accounts?.instagram?.verified_username || 'shiv__412__'}</code></div>
-                <div>Caption Attribution: <code style={{ color: '#98FF02' }}>{data.accounts?.instagram?.caption_branding || '@sastatengo'}</code></div>
-                <div>Publish Rule: <span style={{ color: '#98FF02' }}>Automatic post after 60fps render validation</span></div>
+                <div>Account ID: <code style={{ color: '#fff' }}>{data.accounts?.instagram?.account_id || 'Not verified'}</code></div>
+                <div>Handle: <code style={{ color: '#fff' }}>{data.accounts?.instagram?.verified_username || 'Not verified'}</code></div>
+                <div>Caption credit policy: <code style={{ color: '#98FF02' }}>{data.accounts?.instagram?.caption_branding || '@sastatengo'}</code></div>
+                <div>Publish Rule: <span style={{ color: '#98FF02' }}>Publishing policy not verified</span></div>
               </div>
             </div>
 
@@ -929,31 +932,31 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
             <div className="neon-card" style={{ background: '#121212', borderLeft: '4px solid #ff3333' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                 <strong style={{ color: '#ff3333', fontSize: '1rem' }}>YouTube Shorts Channel</strong>
-                <span className="neon-badge live">VERIFIED</span>
+                <span className="neon-badge neutral">{data.accounts?.youtube?.status || 'NOT_VERIFIED'}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', fontSize: '0.82rem', color: '#aaa' }}>
-                <div>Channel: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.channel || 'Sasta Tengo'}</code></div>
-                <div>Channel ID: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.channel_id || 'UCjixoELED6wc8keo98Txa8w'}</code></div>
-                <div>Verified Handle: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.handle || '@its.tango69'}</code></div>
-                <div>Publish Rule: <span style={{ color: '#98FF02' }}>Private upload first → Verified public release</span></div>
+                <div>Channel: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.channel || 'Not verified'}</code></div>
+                <div>Channel ID: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.channel_id || 'Not verified'}</code></div>
+                <div>Handle: <code style={{ color: '#fff' }}>{data.accounts?.youtube?.handle || 'Not verified'}</code></div>
+                <div>Publish Rule: <span style={{ color: '#98FF02' }}>Publishing policy not verified</span></div>
               </div>
             </div>
           </div>
 
           <div style={{ background: '#0a0a0a', padding: '1rem', borderRadius: '4px', border: '1px solid #222' }}>
-            <h4 style={{ margin: '0 0 0.5rem 0', color: '#fff', fontSize: '0.9rem' }}>Automation Pipeline Defaults</h4>
+            <h4 style={{ margin: '0 0 0.5rem 0', color: '#fff', fontSize: '0.9rem' }}>Intended pipeline policies</h4>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', fontSize: '0.82rem', color: '#888' }}>
               <div>
                 <strong style={{ color: '#fff', display: 'block' }}>15-Minute Live Delay</strong>
-                Livestream monitoring runs 15 minutes behind the edge to avoid partial buffer corruption.
+                Target policy: process behind the live edge. Verify the actual workflow delay before use.
               </div>
               <div>
                 <strong style={{ color: '#fff', display: 'block' }}>1080×1920 60FPS Output</strong>
-                Standard vertical format rendered via high-performance hardware accelerated FFmpeg.
+                Target format only. Verify source, encoder and actual output with media probes.
               </div>
               <div>
                 <strong style={{ color: '#fff', display: 'block' }}>Creator Rights Requirement</strong>
-                Unconfirmed streams remain in "AWAITING_PERMISSION" until rights confirmation is granted.
+                Require confirmed creator rights before processing. Dashboard intake is currently unavailable.
               </div>
             </div>
           </div>
@@ -1090,7 +1093,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
                 <button
                   type="submit"
                   className="neon-button primary small"
-                  disabled={busy || readOnly}
+                  disabled={busy || readOnly || data.actions_available !== true}
                 >
                   {busy ? 'Queuing…' : 'Queue for Processing'}
                 </button>
@@ -1176,7 +1179,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
                 {selectedJob.state === 'AWAITING_PERMISSION' && (
                   <button
                     className="neon-button primary small"
-                    disabled={busy || readOnly}
+                    disabled={busy || readOnly || data.actions_available !== true}
                     onClick={() => {
                       updateJob(selectedJob.job_id || selectedJob.video_id, 'approve');
                       setSelectedJob(null);
@@ -1188,7 +1191,7 @@ export default function FunnyReelsStudio({ readOnly, refresh }) {
                 {selectedJob.state === 'ERROR' && (
                   <button
                     className="neon-button secondary small"
-                    disabled={busy || readOnly}
+                    disabled={busy || readOnly || data.actions_available !== true}
                     onClick={() => {
                       updateJob(selectedJob.job_id || selectedJob.video_id, 'retry');
                       setSelectedJob(null);

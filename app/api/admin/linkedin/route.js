@@ -13,6 +13,8 @@ export async function GET() {
     const li = snapshot?.automations?.linkedin || {};
     return Response.json({
       ok: true,
+      actions_available: false,
+      action_message: 'LinkedIn remains paused. Draft actions and publishing controls are not connected.',
       automation_status: 'PAUSED',
       oauth_ready: false,
       oauth_message: 'LinkedIn Publish node disabled in n8n. OAuth Person URN required before activation.',
@@ -34,22 +36,7 @@ export async function PATCH(request) {
       throw new HttpError(403, 'Automated activation is blocked. LinkedIn workflow must remain paused until approved.');
     }
 
-    if (action === 'update_limits' && max_posts_week !== undefined) {
-      const limit = Math.min(5, Math.max(1, Number.parseInt(max_posts_week, 10) || 2));
-      return Response.json({ ok: true, max_posts_week: limit, updated_at: new Date().toISOString() });
-    }
-
-    if (['approve', 'reject', 'edit'].includes(action)) {
-      if (!queue_id) throw new HttpError(422, 'queue_id is required.');
-      return Response.json({
-        ok: true,
-        queue_id,
-        status: action === 'approve' ? 'APPROVED_MANUAL' : action === 'reject' ? 'REJECTED' : 'DRAFT_EDITED',
-        post_text: post_text || undefined,
-        updated_at: new Date().toISOString()
-      });
-    }
-
-    throw new HttpError(422, 'Invalid LinkedIn action.');
+    if (!['update_limits','approve','reject','edit'].includes(action)) throw new HttpError(422, 'Invalid LinkedIn action.');
+    throw new HttpError(503, 'LinkedIn actions are not connected. No draft or posting limit was changed.');
   });
 }
