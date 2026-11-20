@@ -39,7 +39,11 @@ per platform. Jobs remain stored in n8n after leaving this dashboard window.
 Keep the PC, Docker, WSL, collector, and n8n running for automatic processing.
 
 Speed update (20 November 2026): FUNNY-02 downloads up to four source fragments
-concurrently. REELS-03 and YT-02 poll every 30 seconds rather than 120; ten ready
+concurrently and selects source video with both dimensions at most 1920 pixels,
+avoiding 4K downloads for the existing HD output. Landscape sources normally use
+1080p; portrait sources can retain 1080x1920. An in-flight download keeps its
+original workflow version and is not automatically canceled or restarted.
+REELS-03 and YT-02 poll every 30 seconds rather than 120; ten ready
 items need about five minutes of scheduling slots per platform instead of twenty,
 excluding processing, network latency, other queued jobs and retries. These
 parameter changes are published in n8n; no credentials or full workflow exports
