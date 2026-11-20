@@ -44,9 +44,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options','nosniff')
         self.send_header('X-Frame-Options','DENY')
         self.send_header('Referrer-Policy','no-referrer')
-        wasm=" 'wasm-unsafe-eval'" if urlsplit(self.path).path=='/3d' else ''
         media=" https:" if urlsplit(self.path).path=='/projects' else ''
-        self.send_header('Content-Security-Policy',f"default-src 'self'; script-src 'self'{wasm}; style-src 'self'; img-src 'self' data:{media}; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+        self.send_header('Content-Security-Policy',f"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:{media}; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
         if cookie: self.send_header('Set-Cookie',cookie)
         self.end_headers();self.wfile.write(data)
     def host(self): return self.headers.get('Host','').lower()
@@ -76,17 +75,6 @@ class Handler(BaseHTTPRequestHandler):
             if not self.session(): return self.reply(401,{'error':'Please sign in.'})
             try: return self.reply(200,(STATE/'snapshot.json').read_bytes())
             except OSError: return self.reply(503,{'error':'Waiting for the first service snapshot.'})
-        if path=='/3d':
-            if not self.session():
-                self.send_response(303);self.send_header('Location','/?view=3d');self.send_header('Cache-Control','no-store');self.end_headers();return
-            return self.reply(200,(ROOT/'static/hq.html').read_bytes(),'text/html; charset=utf-8')
-        if path.startswith('/hq/'):
-            # Only generated JS/CSS assets; never serve state, paths or arbitrary files.
-            filename=path.removeprefix('/hq/')
-            if not re.fullmatch(r'[A-Za-z0-9_-]+\.(js|css)',filename): return self.reply(404,{'error':'Not found'})
-            asset=ROOT/'static/hq'/filename
-            if not asset.is_file(): return self.reply(404,{'error':'Not found'})
-            return self.reply(200,asset.read_bytes(),'application/javascript; charset=utf-8' if filename.endswith('.js') else 'text/css; charset=utf-8')
         files={'/':'index.html','/app.js':'app.js','/style.css':'style.css'}
         if path not in files: return self.reply(404,{'error':'Not found'})
         ctype={'html':'text/html; charset=utf-8','css':'text/css; charset=utf-8','js':'application/javascript; charset=utf-8'}[files[path].rsplit('.',1)[1]]

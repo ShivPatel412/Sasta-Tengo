@@ -6,7 +6,7 @@ import {controlSnapshot,requireLocalMaster} from '../lib/control-room.mjs';
 test('master mode is explicitly local and never enabled in production',()=>{
   assert.equal(isLocalMaster({NODE_ENV:'development',MASTER_DASHBOARD_LOCAL:'1'}),true);
   for(const env of [{NODE_ENV:'production',MASTER_DASHBOARD_LOCAL:'1'},{NODE_ENV:'development'},{}])assert.equal(isLocalMaster(env),false);
-  assert.deepEqual(Object.keys(controlSections),['workflows','agents','cloud','services']);
+  assert.deepEqual(Object.keys(controlSections),['workflows','agents','services']);
 });
 test('collector freshness never turns missing, stale or future data into live metrics',()=>{
   const now=Date.parse('2026-11-06T10:00:00Z');

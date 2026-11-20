@@ -76,18 +76,5 @@ class AuthTests(unittest.TestCase):
             self.assertEqual(self.req('/api/login',{'username':'owner@example.test','password':'website-password-test'})[0],503)
         self.assertFalse(server.SESSIONS)
 
-    def test_hq_keeps_existing_auth_and_only_serves_generated_assets(self):
-        status,headers,_=self.req('/3d')
-        self.assertEqual(status,303);self.assertEqual(headers['Location'],'/?view=3d')
-        server.SESSIONS['hq-test']={'expires':time.time()+60}
-        status,headers,body=self.req('/3d',cookie='shiv_session=hq-test')
-        self.assertEqual(status,200);self.assertIn(b'/hq/app.js',body)
-        self.assertIn("'wasm-unsafe-eval'",headers['Content-Security-Policy'])
-        self.assertNotIn("'unsafe-eval'",headers['Content-Security-Policy'])
-        self.assertNotIn("'wasm-unsafe-eval'",self.req('/')[1]['Content-Security-Policy'])
-        self.assertEqual(self.req('/hq/app.js')[0],200)
-        for path in ['/hq/../server.py','/hq/%2e%2e%2fserver.py','/hq/snapshot.json','/hq/auth.json']:
-            self.assertEqual(self.req(path)[0],404)
-        self.assertEqual(self.req('/api/overview')[0],401)
 
 if __name__=='__main__': unittest.main()
