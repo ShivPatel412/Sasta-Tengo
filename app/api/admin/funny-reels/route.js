@@ -1,7 +1,7 @@
 import { admin, sameOrigin } from '../../../../lib/auth.mjs';
 import { assertWritable, body, handle, HttpError } from '../../../../lib/db.mjs';
+import { sourceFresh } from '../../../../lib/master-dashboard.mjs';
 import { controlSnapshot } from '../../../../lib/control-room.mjs';
-import {sourceFresh} from '../../../../lib/master-dashboard.mjs';
 import {
   calculateOverviewStats,
   formatWorkflowsList,
@@ -63,9 +63,11 @@ export async function GET(request) {
 
     const responsePayload = {
       ok: true,
-      configured: configured && sourceFresh(snapshot, 'n8n') && Boolean(snapshot?.automations?.funny_reels),
+      configured: configured && sourceFresh(snapshot, 'n8n') && sourceFresh(snapshot, 'automations'),
       actions_available: false,
-      action_message: 'Read-only monitoring. Authenticated media intake and durable actions are not connected.',
+      action_message: 'Video submission is not connected to the processing worker. Nothing can be queued from this page yet.',
+      source_status: { workflows: sourceFresh(snapshot, 'n8n'), jobs: sourceFresh(snapshot, 'automations') },
+      source_updated_at: snapshot?.source_updated_at || {},
       stats,
       jobs: combinedAuto.jobs,
       streams: combinedAuto.streams,
@@ -93,7 +95,7 @@ export async function POST(request) {
     try { submission = validateVideoSubmission(await body(request, 4096)); }
     catch (error) { if (error instanceof HttpError) throw error; throw new HttpError(422, error.message); }
     if (!submission.rightsConfirmed) throw new HttpError(422, 'Confirm permission to use the source before submitting it.');
-    throw new HttpError(503, 'Authenticated media intake and durable job dispatch are not connected. No video was queued.');
+    throw new HttpError(503, 'Submission is not connected to the video worker. No video was queued.');
   });
 }
 
@@ -102,6 +104,6 @@ export async function PATCH(request) {
     await admin(); sameOrigin(request); assertWritable();
     const data = await body(request, 2048);
     if (!data.job_id || !['approve', 'retry', 'archive'].includes(data.action)) throw new HttpError(422, 'Invalid job update action.');
-    throw new HttpError(503, 'Media job updates are not connected. No job was changed.');
+    throw new HttpError(503, 'Job controls are not connected. No job was changed.');
   });
 }

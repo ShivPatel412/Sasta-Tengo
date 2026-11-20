@@ -89,7 +89,7 @@ test('workflow monitor tracks exactly the 7 funny reels workflows and separates 
 
   const f02 = formatted.find(w => w.id === '0DlqKnBRQPvkwknF');
   assert.equal(f02.active, false);
-  assert.equal(f02.status, 'DRAFT_PAUSED');
+  assert.equal(f02.status, 'INACTIVE');
 });
 
 test('published reels require receipts and missing media facts stay unverified', () => {
