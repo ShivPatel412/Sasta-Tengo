@@ -89,13 +89,57 @@ def codex_data():
         try: proc.wait(timeout=5)
         except subprocess.TimeoutExpired: proc.kill()
 
+def automations_data():
+    env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','n8n']))[0]['Config']['Env'] if '=' in x)
+    db_env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','postgres_shared']))[0]['Config']['Env'] if '=' in x)
+    schema = env.get('DB_POSTGRESDB_SCHEMA','n8n').replace('"','""')
+    sql = f'''BEGIN READ ONLY;
+    SET LOCAL search_path TO "{schema}", public;
+    SELECT json_build_object(
+      'funny_jobs', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Ij8wnQ1Duve8Eno5" ORDER BY id DESC LIMIT 20) t),
+      'live_streams', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_tOrT9XpiYkJrqbYN" ORDER BY id DESC LIMIT 20) t),
+      'youtube_uploads', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_mpJSsahLGSp5xc90" ORDER BY id DESC LIMIT 20) t),
+      'linkedin_control', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Yo7IUrn9QrIvYuwD" LIMIT 1) t),
+      'linkedin_queue', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_3e6OLA0xHtHxwwPX" ORDER BY id DESC LIMIT 20) t),
+      'linkedin_audit', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_7BkyviIzDYMurW3c" ORDER BY id DESC LIMIT 20) t),
+      'whatsapp_errors', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_c5qXbLdcbOVViRJL" ORDER BY id DESC LIMIT 20) t)
+    );
+    COMMIT;'''
+    result_raw = command(['docker','exec','-i','postgres_shared','psql','-X','-qAt','-v','ON_ERROR_STOP=1','-U',db_env.get('POSTGRES_USER','n8n_local'),'-d',env.get('DB_POSTGRESDB_DATABASE','n8n_local')], input=sql)
+    lines = [l for l in result_raw.splitlines() if l.strip() and l.strip() != 'SET']
+    parsed = json.loads('\n'.join(lines)) if lines else {}
+    probes_dir = pathlib.Path('/home/patelsastatengo/projects/shiv-os-funny/probes')
+    clips = []
+    if probes_dir.exists():
+        for vid_dir in probes_dir.iterdir():
+            if not vid_dir.is_dir(): continue
+            streamer = ''
+            streamer_file = list(vid_dir.glob('*streamer.txt'))
+            if streamer_file:
+                try: streamer = streamer_file[0].read_text().strip()
+                except Exception: pass
+            for mp4 in vid_dir.glob('*.mp4'):
+                clips.append({
+                    'video_id': vid_dir.name,
+                    'filename': mp4.name,
+                    'size_bytes': mp4.stat().st_size,
+                    'streamer': streamer,
+                    'path': str(mp4)
+                })
+    return {
+        'funny_reels': {'jobs': parsed.get('funny_jobs', []), 'streams': parsed.get('live_streams', []), 'clips': clips},
+        'youtube': {'uploads': parsed.get('youtube_uploads', [])},
+        'linkedin': {'control': (parsed.get('linkedin_control') or [None])[0], 'queue': parsed.get('linkedin_queue', []), 'audit': parsed.get('linkedin_audit', [])},
+        'whatsapp_errors': parsed.get('whatsapp_errors', [])
+    }
+
 def collect():
     previous={}
     try: previous=json.loads((STATE/'snapshot.json').read_text())
     except (OSError,ValueError): pass
     now=dt.datetime.now(dt.timezone.utc).isoformat()
     result={'updated_at':now,'errors':{},'source_updated_at':{}}
-    for name,fn in [('n8n',n8n_data),('codex',codex_data)]:
+    for name,fn in [('n8n',n8n_data),('codex',codex_data),('automations',automations_data)]:
         try:
             result[name]=fn(); result['source_updated_at'][name]=now
         except Exception as error:

@@ -36,7 +36,7 @@ class PersonalScopeTests(unittest.TestCase):
                 state=Path(temporary)
                 previous={'n8n': {'scope': scope, 'workflows': []}}
                 (state/'snapshot.json').write_text(json.dumps(previous))
-                with patch.object(collector, 'STATE', state), patch.object(collector, 'n8n_data', side_effect=RuntimeError), patch.object(collector, 'codex_data', return_value={}), patch.object(collector, 'cloud_status', return_value={}), patch.object(collector, 'command', return_value=''), patch.object(collector.shutil, 'disk_usage', return_value=SimpleNamespace(total=100, used=10, free=90)), patch.object(collector.os.path, 'ismount', return_value=False):
+                with patch.object(collector, 'STATE', state), patch.object(collector, 'n8n_data', side_effect=RuntimeError), patch.object(collector, 'codex_data', return_value={}), patch.object(collector, 'automations_data', return_value={}), patch.object(collector, 'command', return_value=''), patch.object(collector.shutil, 'disk_usage', return_value=SimpleNamespace(total=100, used=10, free=90)), patch.object(collector.os.path, 'ismount', return_value=False):
                     result=collector.collect()
                 self.assertEqual('n8n' in result, scope == collector.N8N_SCOPE)
 

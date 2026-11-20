@@ -17,7 +17,7 @@ def main():
     if path.stat().st_size > 2_000_000:
         raise RuntimeError('Status snapshot exceeds size limit')
     data = json.loads(path.read_text())
-    allowed = ['updated_at','source_updated_at','n8n','codex','storage','hdd','cloud','services','errors']
+    allowed = ['updated_at','source_updated_at','n8n','codex','storage','services','errors','automations']
     payload = json.dumps({k: data[k] for k in allowed if k in data}).encode()
     request = urllib.request.Request(
         'https://www.shivpatel.in/api/control-room/snapshot',

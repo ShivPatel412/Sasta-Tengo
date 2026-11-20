@@ -2,7 +2,7 @@
 import {useEffect,useRef,useState} from 'react';
 import Link from 'next/link';
 import {adminApi as api,jsonRequest} from '../../../lib/dashboard-client.mjs';
-import {dateLabel} from '../../../lib/dashboard.mjs';
+import {dateLabel,timestamp} from '../../../lib/dashboard.mjs';
 import {formSources} from '../../../lib/form-sources.mjs';
 import './management.css';
 import WorkflowDashboard from './workflow-dashboard';
@@ -86,6 +86,77 @@ function FormsNavigation({source='',crm=false}){
   return <nav className="forms-source-tabs" aria-label="Form sections">{[['','All forms'],...Object.entries(formSources)].map(([key,label])=><Link key={key} href={'/dashboard/forms'+(key?'/'+key:'')} aria-current={!crm&&source===key?'page':undefined}>{label}</Link>)}<Link href="/dashboard/crm" aria-current={crm?'page':undefined}>Lead CRM</Link></nav>;
 }
 
+function WhatsAppInboundLeads({readOnly,refresh}){
+  const [rows,setRows]=useState([]),[deliveryErrors,setDeliveryErrors]=useState([]),[error,setError]=useState(''),[busy,setBusy]=useState(false),[revision,setRevision]=useState(0);
+  const [search,setSearch]=useState('');
+  useEffect(()=>{
+    const controller=new AbortController();
+    api('whatsapp-leads?search='+encodeURIComponent(search),{signal:controller.signal})
+      .then(data=>{
+        if(!controller.signal.aborted){
+          setRows(data.data||[]);
+          setDeliveryErrors(data.delivery_errors||[]);
+          setError('');
+        }
+      })
+      .catch(e=>{if(!controller.signal.aborted)setError(e.message);});
+    return()=>controller.abort();
+  },[refresh,revision,search]);
+
+  async function update(sender,status,follow_up_at){
+    if(readOnly||busy)return;
+    setBusy(true);setError('');
+    try{await api('whatsapp-leads',jsonRequest('PATCH',{sender,status,...(follow_up_at!==undefined?{follow_up_at}:{})}));setRevision(n=>n+1);}
+    catch(e){setError(e.message);}
+    finally{setBusy(false);}
+  }
+  const statuses=[['new','New'],['contacted','Contacted'],['qualified','Qualified'],['human_takeover','Human takeover'],['booking_requested','Booking requested'],['closed','Closed'],['opted_out','Opted out']];
+  return <section className="workspace-panel">
+    <div className="panel-heading">
+      <div>
+        <span className="mini-label">WHATSAPP AUTOMATION & CRM</span>
+        <h2>WhatsApp Inbound Leads</h2>
+      </div>
+      <button type="button" className="button secondary small" disabled={busy} onClick={()=>setRevision(n=>n+1)}>Refresh WhatsApp leads</button>
+    </div>
+    <p className="panel-footnote">Contacts, service requests, budgets and timelines collected via WhatsApp. Review follow-up dates and manually take over when needed.</p>
+    <label className="master-search">Search WhatsApp leads <input type="search" value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search by name, phone or requested service…"/></label>
+    {error&&<p role="alert" className="feedback error">{error}</p>}
+    <div className="records-table"><table><thead><tr><th>Contact</th><th>Service / request</th><th>Budget / timeline</th><th>Stage</th><th>Follow-up</th></tr></thead>
+      <tbody>{rows.map(row=>{
+        const overdue=row.follow_up_at&&timestamp(row.follow_up_at)<=new Date()&&!['closed','opted_out'].includes(row.status);
+        return <tr key={row.sender}>
+          <td><strong>{row.name||row.sender}</strong><small>{row.sender}</small><small>Updated {dateLabel(row.updated_at,true)}</small></td>
+          <td>{row.service||'General enquiry'}<small>{row.summary||''}</small>{row.booking_request&&<small style={{color:'#98FF02'}}>Call request: {row.booking_request}</small>}</td>
+          <td><small>Budget: {row.budget||'Not provided'}</small><small>Timeline: {row.timeline||'Not provided'}</small></td>
+          <td>
+            <select aria-label={'Stage for '+row.sender} value={row.status} disabled={readOnly||busy} onChange={e=>update(row.sender,e.target.value)}>
+              {statuses.map(([id,label])=><option key={id} value={id}>{label}</option>)}
+            </select>
+            {row.handoff_requested&&<small style={{color:'#ffaa00',display:'block',marginTop:'4px'}}>Human review requested</small>}
+          </td>
+          <td>
+            {row.follow_up_at?<small style={{color:overdue?'#ff4444':'inherit',display:'block',marginBottom:'4px'}}>{overdue?'⚠️ Due for follow-up: ':'Scheduled: '}{dateLabel(row.follow_up_at,true)}</small>:<small style={{display:'block',marginBottom:'4px'}}>No reminder scheduled</small>}
+            <button className="button secondary small" type="button" disabled={readOnly||busy||row.status==='human_takeover'} onClick={()=>update(row.sender,'human_takeover',row.follow_up_at||null)}>
+              {row.status==='human_takeover'?'Taken Over':'Take over'}
+            </button>
+          </td>
+        </tr>;
+      })}</tbody>
+    </table></div>
+    {!rows.length&&!error&&<p style={{padding:'1rem 0',color:'#777'}}>No inbound WhatsApp leads found.</p>}
+
+    {deliveryErrors.length>0&&(
+      <div style={{marginTop:'1.5rem',borderTop:'1px solid #333',paddingTop:'1rem'}}>
+        <h3 style={{color:'#ff6666',fontSize:'1rem',marginBottom:'0.5rem'}}>Message Delivery Errors ({deliveryErrors.length})</h3>
+        <div className="records-table"><table><thead><tr><th>Sender</th><th>Node</th><th>Error details</th><th>Timestamp</th></tr></thead>
+          <tbody>{deliveryErrors.map((err,idx)=><tr key={err.id||idx}><td><code>{err.sender||'N/A'}</code></td><td>{err.node||'Webhook'}</td><td style={{color:'#ff8888'}}>{err.error||'Failed to deliver message'}</td><td><small>{dateLabel(err.createdAt||err.created_at,true)}</small></td></tr>)}</tbody>
+        </table></div>
+      </div>
+    )}
+  </section>;
+}
+
 function CRMBoard({readOnly,refresh}){
   const board=useBoard('crm',refresh),[busy,setBusy]=useState(false);
   async function move(row,lead_status){
@@ -96,6 +167,7 @@ function CRMBoard({readOnly,refresh}){
   return <section className="management-panel"><FormsNavigation crm/><BoardTools board={board}/><p className="panel-footnote">Contact, service and landing page enquiries share this pipeline. Open a lead to edit its stage, internal notes, read state or request status. Original form answers are preserved.</p>{board.error&&<p className="feedback error" role="alert">{board.error}</p>}
     <Kanban rows={board.rows} columns={leadColumns} statusKey="lead_status" busy={busy||board.loading} readOnly={readOnly} onMove={move} renderCard={row=><><span className="task-priority">{formSources[row.form_source]||'Website enquiry'}</span><Link className="kanban-title" href={`/dashboard/${row.resource}/${row.id}`}>{row.name}</Link><p>{row.email}</p>{row.phone&&<p>{row.phone}</p>}{row.summary&&<p className="task-summary">{row.summary}</p>}<small>{dateLabel(row.created_at,true)}</small></>}/><BoardFooter board={board}/>
     {process.env.NEXT_PUBLIC_LEADS_ENABLED==='1'&&<LeadConversations readOnly={readOnly} refresh={refresh}/>}
+    <WhatsAppInboundLeads readOnly={readOnly} refresh={refresh}/>
   </section>;
 }
 

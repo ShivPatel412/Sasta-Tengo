@@ -1,0 +1,345 @@
+/* SHIV OS — Modern Neon Gaming Control-Room Aesthetic */
+
+.neon-panel {
+  background: #141414;
+  border: 1px solid #222222;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.neon-panel:hover {
+  border-color: rgba(152, 255, 2, 0.3);
+}
+
+.neon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
+}
+
+.neon-title-group h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  margin: 0.25rem 0 0.5rem 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.neon-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+}
+
+.neon-badge.live {
+  background: rgba(152, 255, 2, 0.12);
+  color: #98ff02;
+  border: 1px solid rgba(152, 255, 2, 0.4);
+  box-shadow: 0 0 10px rgba(152, 255, 2, 0.15);
+}
+
+.neon-badge.paused {
+  background: rgba(255, 170, 0, 0.12);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.4);
+}
+
+.neon-badge.error {
+  background: rgba(255, 68, 68, 0.12);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.4);
+}
+
+.neon-badge.neutral {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #333;
+}
+
+.neon-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.neon-dot.live {
+  background: #98ff02;
+  box-shadow: 0 0 8px #98ff02;
+}
+
+.neon-dot.paused {
+  background: #ffaa00;
+}
+
+.neon-dot.error {
+  background: #ff4444;
+}
+
+.neon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.neon-card {
+  background: #181818;
+  border: 1px solid #262626;
+  border-radius: 6px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.neon-card:hover {
+  border-color: rgba(152, 255, 2, 0.4);
+  transform: translateY(-2px);
+}
+
+.neon-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.neon-stat {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #98ff02;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.neon-progress-bar {
+  width: 100%;
+  height: 6px;
+  background: #222;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 0.5rem 0;
+}
+
+.neon-progress-fill {
+  height: 100%;
+  background: #98ff02;
+  box-shadow: 0 0 8px rgba(152, 255, 2, 0.6);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.neon-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.neon-input-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ccc;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.neon-input {
+  background: #0d0d0d;
+  border: 1px solid #333;
+  color: #fff;
+  padding: 0.65rem 0.85rem;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.neon-input:focus {
+  outline: none;
+  border-color: #98ff02;
+  box-shadow: 0 0 10px rgba(152, 255, 2, 0.2);
+}
+
+.neon-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-size: 0.88rem;
+  color: #bbb;
+  cursor: pointer;
+  margin: 0.5rem 0;
+}
+
+.neon-checkbox input[type="checkbox"] {
+  accent-color: #98ff02;
+  width: 16px;
+  height: 16px;
+}
+
+.neon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.neon-button.primary {
+  background: #98ff02;
+  color: #000;
+}
+
+.neon-button.primary:hover:not(:disabled) {
+  background: #aaff1a;
+  box-shadow: 0 0 15px rgba(152, 255, 2, 0.4);
+}
+
+.neon-button.secondary {
+  background: transparent;
+  color: #fff;
+  border: 1px solid #333;
+}
+
+.neon-button.secondary:hover:not(:disabled) {
+  border-color: #98ff02;
+  color: #98ff02;
+}
+
+.neon-button.danger {
+  background: rgba(255, 68, 68, 0.1);
+  color: #ff4444;
+  border: 1px solid rgba(255, 68, 68, 0.3);
+}
+
+.neon-button.danger:hover:not(:disabled) {
+  background: rgba(255, 68, 68, 0.2);
+}
+
+.neon-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Video Player in Control Room */
+.neon-video-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: #0d0d0d;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.neon-video {
+  width: 100%;
+  max-height: 480px;
+  background: #000;
+  border-radius: 6px;
+  outline: none;
+}
+
+.neon-clip-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+/* Responsive Table */
+.neon-table-wrapper {
+  overflow-x: auto;
+  border-radius: 6px;
+  border: 1px solid #262626;
+  margin-top: 1rem;
+}
+
+.neon-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  text-align: left;
+}
+
+.neon-table th {
+  background: #181818;
+  color: #888;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #262626;
+}
+
+.neon-table td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #1f1f1f;
+  color: #eee;
+  vertical-align: middle;
+}
+
+.neon-table tr:hover td {
+  background: rgba(152, 255, 2, 0.02);
+}
+
+/* Delay Banner */
+.neon-delay-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(152, 255, 2, 0.06);
+  border: 1px solid rgba(152, 255, 2, 0.25);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 0.88rem;
+  margin-bottom: 1.25rem;
+}
+
+.neon-delay-banner strong {
+  color: #98ff02;
+}
+
+@media (max-width: 768px) {
+  .neon-panel {
+    padding: 1rem;
+  }
+  .neon-grid {
+    grid-template-columns: 1fr;
+  }
+  .neon-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
