@@ -90,6 +90,7 @@ def codex_data():
         except subprocess.TimeoutExpired: proc.kill()
 
 def automations_data():
+    from reels_tracking import enrich_reel_jobs
     env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','n8n']))[0]['Config']['Env'] if '=' in x)
     db_env = dict(x.split('=',1) for x in json.loads(command(['docker','inspect','postgres_shared']))[0]['Config']['Env'] if '=' in x)
     schema = env.get('DB_POSTGRESDB_SCHEMA','n8n').replace('"','""')
@@ -98,8 +99,10 @@ def automations_data():
     SELECT json_build_object(
       'funny_jobs', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Ij8wnQ1Duve8Eno5" ORDER BY id DESC LIMIT 20) t),
       'live_streams', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_tOrT9XpiYkJrqbYN" ORDER BY id DESC LIMIT 20) t),
-      'youtube_uploads', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_mpJSsahLGSp5xc90" ORDER BY id DESC LIMIT 20) t),
-      'instagram_reels', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_8aPwNmzYRPGzoTKX" ORDER BY id DESC LIMIT 20) t),
+      'reel_events', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_WatVsMggkgeC0mRr" ORDER BY id DESC LIMIT 1000) t),
+      'worker_executions', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT e.id,e.status FROM execution_entity e WHERE e.id::text IN (SELECT execution_id FROM "data_table_user_Ij8wnQ1Duve8Eno5" ORDER BY id DESC LIMIT 20)) t),
+      'youtube_uploads', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_mpJSsahLGSp5xc90" ORDER BY id DESC LIMIT 250) t),
+      'instagram_reels', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_8aPwNmzYRPGzoTKX" ORDER BY id DESC LIMIT 250) t),
       'linkedin_control', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Yo7IUrn9QrIvYuwD" LIMIT 1) t),
       'linkedin_queue', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_3e6OLA0xHtHxwwPX" ORDER BY id DESC LIMIT 20) t),
       'linkedin_audit', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_7BkyviIzDYMurW3c" ORDER BY id DESC LIMIT 20) t),
@@ -127,12 +130,15 @@ def automations_data():
                     'streamer': streamer,
                     'path': str(mp4)
                 })
+    jobs = enrich_reel_jobs(parsed, clips)
     return {
         'funny_reels': {
-            'jobs': parsed.get('funny_jobs', []),
+            'jobs': jobs,
             'streams': parsed.get('live_streams', []),
             'clips': clips,
-            'instagram_reels': parsed.get('instagram_reels', [])
+            'instagram_reels': parsed.get('instagram_reels', []),
+            'events': parsed.get('reel_events', []),
+            'accounts': {'instagram': {'account_id': '17841467420993171', 'verified_username': 'sastatengo.clips', 'status': 'VERIFIED_AT_SETUP', 'verified_date': '2026-11-20'}, 'youtube': {'channel_id': 'UCjixoELED6wc8keo98Txa8w', 'channel': 'Sasta Tengo', 'handle': '@its.tango69', 'status': 'VERIFIED_AT_SETUP'}}
         },
         'youtube': {'uploads': parsed.get('youtube_uploads', [])},
         'linkedin': {'control': (parsed.get('linkedin_control') or [None])[0], 'queue': parsed.get('linkedin_queue', []), 'audit': parsed.get('linkedin_audit', [])},

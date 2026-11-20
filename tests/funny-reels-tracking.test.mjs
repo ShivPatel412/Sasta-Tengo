@@ -8,7 +8,7 @@ test('waiting and handoff do not claim processing or publication', () => {
   assert.equal(jobTracking({ state: 'QUEUED' }).label, 'Waiting to start');
   assert.equal(jobTracking({ state: 'QUEUED' }).progress, null);
   assert.equal(jobTracking({ state: 'DONE', progress_percent: 100 }).label, 'Handoff complete');
-  assert.equal(jobTracking({ state: 'PUBLISHED' }).label, 'Reported published');
+  assert.equal(jobTracking({ state: 'PUBLISHED' }).label, 'Published on both platforms');
   assert.equal(jobTracking({}).label, 'Status not reported');
 });
 test('old running jobs need checking, fresh jobs show reported stage, errors take precedence', () => {

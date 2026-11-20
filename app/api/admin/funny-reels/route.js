@@ -2,6 +2,7 @@ import { admin, sameOrigin } from '../../../../lib/auth.mjs';
 import { assertWritable, body, handle, HttpError } from '../../../../lib/db.mjs';
 import { sourceFresh } from '../../../../lib/master-dashboard.mjs';
 import { controlSnapshot } from '../../../../lib/control-room.mjs';
+import { reelWorkerReady, submitReelJob } from '../../../../lib/reel-dispatch.mjs';
 import {
   calculateOverviewStats,
   formatWorkflowsList,
@@ -64,8 +65,8 @@ export async function GET(request) {
     const responsePayload = {
       ok: true,
       configured: configured && sourceFresh(snapshot, 'n8n') && sourceFresh(snapshot, 'automations'),
-      actions_available: false,
-      action_message: 'Video submission is not connected to the processing worker. Nothing can be queued from this page yet.',
+      actions_available: reelWorkerReady(snapshot),
+      action_message: reelWorkerReady(snapshot) ? 'Ready: approved source videos will be processed and automatically published to both accounts.' : 'The worker connection needs checking. New submissions are paused until recent status and the clips account are available.',
       source_status: { workflows: sourceFresh(snapshot, 'n8n'), jobs: sourceFresh(snapshot, 'automations') },
       source_updated_at: snapshot?.source_updated_at || {},
       stats,
@@ -76,7 +77,7 @@ export async function GET(request) {
       published,
       workflows,
       executions: recentExecutions,
-      accounts: CONNECTED_ACCOUNTS,
+      accounts: auto.accounts || CONNECTED_ACCOUNTS,
       drive_folder_id: '1lPgEW-_OXeFgstKjr24GlHlBNDpIBi3U',
       drive_url: 'https://drive.google.com/drive/folders/1lPgEW-_OXeFgstKjr24GlHlBNDpIBi3U',
       updated_at: snapshot?.updated_at || null
@@ -90,12 +91,10 @@ export async function GET(request) {
 
 export async function POST(request) {
   return handle(async () => {
-    await admin(); sameOrigin(request); assertWritable();
-    let submission;
-    try { submission = validateVideoSubmission(await body(request, 4096)); }
-    catch (error) { if (error instanceof HttpError) throw error; throw new HttpError(422, error.message); }
-    if (!submission.rightsConfirmed) throw new HttpError(422, 'Confirm permission to use the source before submitting it.');
-    throw new HttpError(503, 'Submission is not connected to the video worker. No video was queued.');
+    const user = await admin(); sameOrigin(request); assertWritable();
+    if (!reelWorkerReady(await controlSnapshot())) throw new HttpError(503, 'The video worker or verified clips account is unavailable. Nothing was submitted.');
+    const receipt = await submitReelJob(user.id, await body(request, 4096));
+    return Response.json({ ok: true, ...receipt }, { status: 202, headers: { 'Cache-Control': 'no-store' } });
   });
 }
 

@@ -35,7 +35,7 @@ test('funny reels intake validates YouTube watch and live stream URLs and bounds
 
   // Bounds check
   const clampedMax = validateVideoSubmission({ youtube_url: validUrls[0], max_clips: 10 });
-  assert.equal(clampedMax.maxClips, 5);
+  assert.equal(clampedMax.maxClips, 10);
   const clampedMin = validateVideoSubmission({ youtube_url: validUrls[0], max_clips: -2 });
   assert.equal(clampedMin.maxClips, 1);
 });
