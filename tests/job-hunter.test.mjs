@@ -41,7 +41,7 @@ test('ingestion authenticates before parsing, validates whole batches, and persi
   process.env.SUPABASE_SECRET_KEY = 'test-server-key';
   const response = await ingestJobs(request({ jobs: [job, { ...job, url: job.url + '#details' }] }));
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { received: 2, inserted: 1, duplicates: 1, inserted_jobs: [{ ...job, id: '11111111-1111-4111-8111-111111111111', published_at: '2026-11-18T12:00:00.000Z' }] });
+  assert.deepEqual(await response.json(), { received: 2, inserted: 1, duplicates: 1, inserted_jobs: [{ ...job, description: '', company: null, location: null, status: 'discovered', id: '11111111-1111-4111-8111-111111111111', published_at: '2026-11-18T12:00:00.000Z' }] });
   const { url, options } = calls[0];
   assert.equal(url.origin, process.env.SUPABASE_URL);
   assert.equal(url.searchParams.get('on_conflict'), 'url_hash');
