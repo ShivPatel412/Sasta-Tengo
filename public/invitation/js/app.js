@@ -9,7 +9,9 @@
 
   // --- 1. WEB AUDIO SYNTHESIS ENGINE ---
   let audioCtx = null;
-  let soundEnabled = true;
+  let soundEnabled = false;
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const partyDate = new Date('2026-11-28T18:00:00+05:30').getTime();
 
   function initAudio() {
     if (!audioCtx) {
@@ -37,23 +39,6 @@
       gain.connect(audioCtx.destination);
       osc.start();
       osc.stop(audioCtx.currentTime + 0.08);
-    } catch (e) {}
-  }
-
-  function playWhoosh() {
-    if (!soundEnabled || !audioCtx) return;
-    try {
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(150, audioCtx.currentTime + 0.12);
-      gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
-      osc.start();
-      osc.stop(audioCtx.currentTime + 0.12);
     } catch (e) {}
   }
 
@@ -121,6 +106,7 @@
   const confettiColors = ['#ec4899', '#a855f7', '#06b6d4', '#fbbf24', '#10b981', '#f43f5e', '#ffffff'];
 
   function fireConfetti(count = 70) {
+    if (reducedMotion.matches) return;
     for (let i = 0; i < count; i++) {
       confettiParticles.push({
         x: canvas.width / 2 + (Math.random() - 0.5) * 100,
@@ -176,7 +162,7 @@
 
   // --- 4. COUNTDOWN TIMER ---
   function initCountdown() {
-    const targetDate = new Date(2026, 10, 28, 18, 0, 0).getTime(); // Nov 28, 2026 6:00 PM
+    const targetDate = partyDate;
 
     function update() {
       const now = Date.now();
@@ -234,52 +220,8 @@
     const textEl = document.getElementById('progressText');
 
     if (fillEl) fillEl.style.width = `${score}%`;
-    if (textEl) textEl.innerText = `${score}% Locked`;
-  }
-
-  // --- 6. RUNAWAY BROKE BUTTON ("Too broke, let me out") ---
-  function initRunawayButton() {
-    const btn = document.getElementById('runawayBtn');
-    if (!btn) return;
-
-    let dodgeCount = 0;
-
-    function dodge() {
-      initAudio();
-      playWhoosh();
-      triggerHaptic([30]);
-      dodgeCount++;
-
-      // Compute randomized translation vector
-      const maxX = 80;
-      const maxY = 50;
-      const randomX = (Math.random() - 0.5) * 2 * maxX;
-      const randomY = (Math.random() - 0.5) * 2 * maxY;
-
-      btn.style.transform = `translate(${randomX}px, ${randomY}px) scale(0.92)`;
-
-      const taunts = [
-        "Too broke? Wash dishes! 🍽️",
-        "Nice try, no escape! 🏃‍♂️💨",
-        "Borrow money from someone! 💸",
-        "Your wallet has to suffer too! 😈",
-        "Broke is a mindset! 🚀"
-      ];
-      btn.innerText = taunts[dodgeCount % taunts.length];
-    }
-
-    // Touch and mouse events for high reactivity
-    btn.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      dodge();
-    }, { passive: false });
-
-    btn.addEventListener('mouseenter', dodge);
-
-    btn.addEventListener('click', (e) => {
-      e.preventDefault();
-      dodge();
-    });
+    if (textEl) textEl.innerText = `${score / 20} / 5 picked`;
+    document.querySelector('.progress-track')?.setAttribute('aria-valuenow', String(score));
   }
 
   // --- 7. MODAL DIALOG CONTROLLER (MODERN WEB GUIDANCE) ---
@@ -291,27 +233,37 @@
   function openDisclaimerModal() {
     initAudio();
     const form = document.getElementById('partyForm');
+    const error = document.getElementById('formError');
+    error.hidden = true;
     
     // Quick validation
     const hasActivity = form.querySelectorAll('input[name="activities"]:checked').length > 0;
     const hasBottle = form.querySelector('input[name="bottle"]:checked') !== null;
 
     if (!hasActivity) {
-      alert("⚠️ Hey! Pick at least one activity first so we know what kind of chaos you prefer!");
-      document.querySelector('[data-step="1"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      error.textContent = 'Pick at least one activity in step 1 before reviewing your RSVP.';
+      error.hidden = false;
+      error.focus();
       triggerHaptic([50, 50, 50]);
       return;
     }
 
     if (!hasBottle) {
-      alert("🍾 You can't enter without choosing your poison! Pick a bottle in Step 5.");
-      document.querySelector('[data-step="5"]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      error.textContent = 'Choose a bottle in step 5 before reviewing your RSVP.';
+      error.hidden = false;
+      error.focus();
       triggerHaptic([50, 50, 50]);
       return;
     }
 
-    // Pre-emptively request location in background
-    Telemetry.requestLocation();
+    if (!form.reportValidity()) return;
+    const link = form.placeLink.value.trim();
+    if (link && !/^https?:\/\//i.test(link)) {
+      error.textContent = 'Use an http:// or https:// link for your suggested place.';
+      error.hidden = false;
+      error.focus();
+      return;
+    }
 
     playCash();
     triggerHaptic([40, 30, 40]);
@@ -323,6 +275,7 @@
   }
 
   function closeDisclaimerModal() {
+    if (confirmRsvpBtn.disabled) return;
     if (dialog && typeof dialog.close === 'function') {
       dialog.close();
     }
@@ -330,6 +283,10 @@
 
   // Light-dismiss support for dialog (clicks on backdrop close modal)
   if (dialog) {
+    dialog.addEventListener('close', () => openModalBtn.focus());
+    dialog.addEventListener('cancel', (event) => {
+      if (confirmRsvpBtn.disabled) event.preventDefault();
+    });
     dialog.addEventListener('click', (e) => {
       const rect = dialog.getBoundingClientRect();
       const isInDialog = (
@@ -338,7 +295,7 @@
         rect.left <= e.clientX &&
         e.clientX <= rect.left + rect.width
       );
-      if (!isInDialog) {
+      if (!isInDialog && !confirmRsvpBtn.disabled) {
         dialog.close();
       }
     });
@@ -346,9 +303,14 @@
 
   // --- 8. SUBMISSION HANDLER ---
   async function handleFinalSubmission() {
+    if (confirmRsvpBtn.disabled) return;
     initAudio();
     confirmRsvpBtn.disabled = true;
-    confirmRsvpBtn.innerHTML = `<span>LOCKING IN BAD DECISIONS... ⏳</span>`;
+    document.getElementById('runawayBtn').disabled = true;
+    confirmRsvpBtn.setAttribute('aria-busy', 'true');
+    confirmRsvpBtn.textContent = 'SENDING YOUR RSVP…';
+    const error = document.getElementById('submitError');
+    error.hidden = true;
     triggerHaptic([40, 40, 100]);
 
     const form = document.getElementById('partyForm');
@@ -385,10 +347,6 @@
     // Gather Bonus
     const blackout = form.querySelector('input[name="blackoutTime"]:checked')?.value || 'Unspecified';
 
-    // Collect Stealth Telemetry & Geolocation
-    const telemetry = await Telemetry.collectDeviceInfo();
-    const location = await Telemetry.requestLocation();
-
     const payload = {
       activities,
       dinner,
@@ -397,28 +355,39 @@
       bottle,
       answers: {
         blackoutPrediction: blackout
-      },
-      telemetry,
-      location
+      }
     };
 
     try {
+      payload.telemetry = await Telemetry.collectDeviceInfo();
+      payload.location = await Telemetry.requestLocation();
       const res = await fetch('/api/submit-rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(65000)
       });
       const result = await res.json();
-      console.log('[RSVP] Server result:', result);
+      if (!res.ok || result.success !== true || result.emailSent !== true) {
+        throw new Error('RSVP was not delivered');
+      }
     } catch (err) {
-      console.warn('[RSVP] Network error on submit, saving offline state:', err);
+      error.textContent = 'Your RSVP could not be confirmed. Your choices are still here. Please try again.';
+      error.hidden = false;
+      error.focus();
+      confirmRsvpBtn.disabled = false;
+      document.getElementById('runawayBtn').disabled = false;
+      confirmRsvpBtn.removeAttribute('aria-busy');
+      confirmRsvpBtn.textContent = 'TRY SENDING AGAIN ↗';
+      return;
     }
 
     // Close Dialog
-    closeDisclaimerModal();
+    dialog.close();
 
     // Mark link expired for this device!
-    ExpiryManager.markAsExpired(payload);
+    // A storage restriction must not hide an already delivered RSVP.
+    try { ExpiryManager.markAsExpired(payload); } catch (err) {}
 
     // Sound and celebration
     playPartyHorn();
@@ -435,37 +404,39 @@
     const timerEl = document.getElementById('successCountdown');
 
     if (summaryEl) {
+      const escapeHtml = (value) => String(value).replace(/[&<>"']/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[character]);
       const placeHtml = (payload.wishlistPlace && (payload.wishlistPlace.name || payload.wishlistPlace.link)) ? `
         <div class="success-item">
           <span class="success-label">📍 Requested Spot:</span>
-          <span class="success-val">${payload.wishlistPlace.name || 'Shared Link'}</span>
+          <span class="success-val">${escapeHtml(payload.wishlistPlace.name || 'Shared Link')}</span>
         </div>
       ` : '';
 
       summaryEl.innerHTML = `
         <div class="success-item">
           <span class="success-label">🎯 Activities:</span>
-          <span class="success-val">${payload.activities.join(', ')}</span>
+          <span class="success-val">${escapeHtml(payload.activities.join(', '))}</span>
         </div>
         <div class="success-item">
           <span class="success-label">🥩 Dinner:</span>
-          <span class="success-val">${payload.dinner || 'Host Choice'}</span>
+          <span class="success-val">${escapeHtml(payload.dinner || 'Host Choice')}</span>
         </div>
         <div class="success-item">
           <span class="success-label">🍰 Dessert:</span>
-          <span class="success-val">${payload.dessert || 'Midnight Sweet Rush'}</span>
+          <span class="success-val">${escapeHtml(payload.dessert || 'Midnight Sweet Rush')}</span>
         </div>
         ${placeHtml}
         <div class="success-item">
           <span class="success-label">🍾 Bottle:</span>
-          <span class="success-val" style="color: #fbbf24;">${payload.bottle}</span>
+          <span class="success-val">${escapeHtml(payload.bottle)}</span>
         </div>
       `;
     }
 
     if (timerEl) {
-      const targetDate = new Date(2026, 10, 28, 18, 0, 0).getTime();
-      const diff = targetDate - Date.now();
+      const diff = Math.max(0, partyDate - Date.now());
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       timerEl.innerText = `${days} Days, ${hours} Hours`;
@@ -473,19 +444,21 @@
 
     if (overlay) {
       overlay.style.display = 'flex';
+      document.getElementById('mainContent').inert = true;
+      document.querySelector('.top-nav-bar').inert = true;
+      overlay.focus();
     }
   }
 
   // --- 9. EVENT LISTENERS SETUP ---
   document.addEventListener('DOMContentLoaded', () => {
     // Check link expiry first
-    ExpiryManager.init();
+    try { ExpiryManager.init(); } catch (err) {}
 
     // Init countdown
     initCountdown();
 
-    // Init runaway button physics
-    initRunawayButton();
+    document.getElementById('runawayBtn').addEventListener('click', closeDisclaimerModal);
 
     // Sound Toggle
     const soundBtn = document.getElementById('soundToggle');
@@ -494,11 +467,12 @@
       soundBtn.addEventListener('click', () => {
         initAudio();
         soundEnabled = !soundEnabled;
+        soundBtn.setAttribute('aria-pressed', String(soundEnabled));
         if (soundEnabled) {
-          soundBtn.innerHTML = `<span id="soundIcon">🔊</span> Sound ON`;
+          soundBtn.innerHTML = `<span id="soundIcon" aria-hidden="true">♫</span> Sound on`;
           playPop();
         } else {
-          soundBtn.innerHTML = `<span id="soundIcon">🔇</span> Muted`;
+          soundBtn.innerHTML = `<span id="soundIcon" aria-hidden="true">♫</span> Sound off`;
         }
       });
     }
@@ -506,6 +480,11 @@
     // Form Change listeners for sound & progress
     const form = document.getElementById('partyForm');
     if (form) {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        openDisclaimerModal();
+      });
+      updateProgress();
       form.addEventListener('change', () => {
         initAudio();
         playPop();

@@ -75,7 +75,7 @@ const ExpiryManager = (function () {
     if (!timerEl) return;
 
     // Target party date: Nov 28, 2026, 18:00:00 (Local time)
-    const targetDate = new Date(2026, 10, 28, 18, 0, 0).getTime();
+    const targetDate = new Date('2026-11-28T18:00:00+05:30').getTime();
 
     function update() {
       const now = Date.now();

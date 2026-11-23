@@ -2,25 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>28-29 NOV: The Ultimate Birthday Chaos 😈</title>
   <meta name="description" content="Exclusive Birthday Invitation for 28-29 November. Lock in your bad decisions!">
-  <meta name="theme-color" content="#0b0b14">
+  <meta name="theme-color" content="#f5f1e8">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/invitation/css/style.css">
 </head>
 <body>
+  <a class="skip-link" href="#partyForm">Skip to party choices</a>
 
   <!-- Fullscreen Confetti Canvas -->
-  <canvas id="confettiCanvas"></canvas>
+  <canvas id="confettiCanvas" aria-hidden="true"></canvas>
 
   <!-- Sound Toggle & Audio Synthesis -->
   <div class="top-nav-bar">
-    <div class="brand-pill">🎂 28-29 NOV EDITION</div>
-    <button id="soundToggle" class="sound-btn" aria-label="Toggle Sound" title="Toggle Sound">
-      <span id="soundIcon">🔊</span> Sound ON
+    <div class="brand-pill"><span class="brand-mark" aria-hidden="true">✳</span> THE BIRTHDAY EDITION <span class="nav-date">/ NOV 2026</span></div>
+    <button id="soundToggle" class="sound-btn" aria-label="Party sound" aria-pressed="false" title="Toggle party sound">
+      <span id="soundIcon" aria-hidden="true">♫</span> Sound off
     </button>
   </div>
 
@@ -28,16 +29,16 @@
   <section id="lockoutScreen" class="lockout-screen" style="display: none;">
     <div class="lockout-card glass-panel">
       <div class="lockout-icon">🚫</div>
-      <h1 class="glow-text-pink">NICE TRY, SNEAKY!</h1>
-      <p class="lockout-subtitle">Your bad decisions and soul are already signed away 😈</p>
+      <h1 class="glow-text-pink">YOU’RE ALREADY ON THE LIST.</h1>
+      <p class="lockout-subtitle">Your weekend plans are officially in motion.</p>
       
       <div class="status-box">
         <span class="status-indicator">●</span>
-        <span>LINK STATUS: <strong>EXPIRED & LOCKED</strong></span>
+        <span>RSVP STATUS: <strong>CONFIRMED</strong></span>
       </div>
 
       <p class="lockout-desc">
-        You already cast your votes. The host's spy radar already recorded your device, so there are <strong>zero takebacks</strong>! Get your liver ready for November 28th.
+        Your choices have been sent to the host. This device has already RSVP’d. See you on November 28th!
       </p>
 
       <div class="countdown-mini">
@@ -57,21 +58,18 @@
     
     <!-- HERO SECTION -->
     <header class="hero-section">
-      <div class="pill-badge pulse-glow">⚠️ OFFICIAL SUMMONS</div>
+      <div class="pill-badge">YOU’RE ON THE GUEST LIST</div>
       
-      <h1 class="hero-title">
-        28-29 NOV <br>
-        <span class="gradient-text">THE HANGOVER</span> <br>
-        PART IV 😈🍹
-      </h1>
+      <p class="edition-number">28—29 NOVEMBER</p>
+      <h1 class="hero-title" aria-label="The Hangover, Part IV">THE<br>HANG<span class="title-star" aria-hidden="true">✳</span><br>OVER<span class="part-number">PART IV.</span></h1>
 
       <p class="hero-subtext">
-        You are cordially (and forcefully) invited to celebrate my birthday. Prepare for memory loss, terrible jokes, and questionable financial choices.
+        A birthday. A whole weekend. A few questionable decisions. You bring the company; we’ll make the plan together.
       </p>
 
       <!-- Party Countdown -->
       <div class="countdown-container glass-panel">
-        <div class="countdown-title">⏳ COUNTDOWN TO CHAOS</div>
+        <div class="countdown-title">THE WEEKEND STARTS IN</div>
         <div class="countdown-grid" id="mainCountdown">
           <div class="countdown-box">
             <span class="cd-num" id="cdDays">00</span>
@@ -93,29 +91,29 @@
             <span class="cd-label">SECS</span>
           </div>
         </div>
-        <div class="date-badge">🗓️ Saturday 28th – Sunday 29th November | 6:00 PM Onwards</div>
+        <div class="date-badge">SAT 28 — SUN 29 NOV 2026 <span>6:00 PM onwards · IST</span></div>
       </div>
 
-      <div class="scroll-cue">
-        <span>SCROLL DOWN TO VOTE</span>
-        <div class="bouncing-arrow">↓</div>
-      </div>
+      <a class="hero-cta" href="#partyForm">MAKE IT A NIGHT TO REMEMBER <span aria-hidden="true">↗</span></a><p class="hero-footnote">Your picks. Our weekend. Split the bill.</p>
     </header>
 
+    <div class="planning-column">
+    <div class="plan-intro"><p class="eyebrow">THE PLAN IS IN YOUR HANDS</p><h2>Good company.<br>Great decisions<span>.</span></h2><p>Pick your favourites. We’ll take it from here.</p></div>
     <!-- PROGRESS BAR -->
-    <div class="sticky-progress">
+    <div class="sticky-progress"><span class="progress-caption">YOUR WEEKEND</span><div class="progress-track" role="progressbar" aria-label="Party choices completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
       <div class="progress-fill" id="formProgress"></div>
-      <div class="progress-text" id="progressText">0% Planned</div>
+      </div><div class="progress-text" id="progressText">0 / 5 picked</div>
     </div>
 
     <!-- RSVP FORM -->
-    <form id="partyForm" class="party-form" novalidate>
+    <form id="partyForm" class="party-form" novalidate tabindex="-1">
+      <p id="formError" class="form-error" role="alert" tabindex="-1" hidden></p>
 
       <!-- SECTION 1: ACTIVITIES -->
-      <section class="form-section reveal-on-scroll" data-step="1">
+      <section class="form-section reveal-on-scroll" data-step="1" role="group" aria-labelledby="step1Title">
         <div class="section-badge">STEP 1 OF 5</div>
-        <h2 class="section-heading">🎯 Pick The Activity</h2>
-        <p class="section-desc">What kind of reckless physical trauma are we indulging in?</p>
+        <h2 class="section-heading" id="step1Title">First, a little friendly competition.</h2>
+        <p class="section-desc">Pick one or more. Bragging rights are included. <span class="required-note">Required</span></p>
 
         <div class="options-grid">
           
@@ -171,10 +169,10 @@
       </section>
 
       <!-- SECTION 2: DINNER -->
-      <section class="form-section reveal-on-scroll" data-step="2">
+      <section class="form-section reveal-on-scroll" data-step="2" role="group" aria-labelledby="step2Title">
         <div class="section-badge">STEP 2 OF 5</div>
-        <h2 class="section-heading">🥩 Where Are We Feasting?</h2>
-        <p class="section-desc">You need solid food before the alcohol eats away your stomach lining.</p>
+        <h2 class="section-heading" id="step2Title">Next stop: something delicious.</h2>
+        <p class="section-desc">One dinner vote, or a spot of your own. Come hungry.</p>
 
         <div class="options-grid radio-group">
           
@@ -236,9 +234,9 @@
       </section>
 
       <!-- SECTION 3: DESSERT -->
-      <section class="form-section reveal-on-scroll" data-step="3">
+      <section class="form-section reveal-on-scroll" data-step="3" role="group" aria-labelledby="step3Title">
         <div class="section-badge">STEP 3 OF 5</div>
-        <h2 class="section-heading">🍰 Midnight Dessert Destination</h2>
+        <h2 class="section-heading" id="step3Title">There’s always room for dessert.</h2>
         <p class="section-desc">Because bad decisions always end with late-night sugar highs.</p>
 
         <div class="options-grid radio-group">
@@ -300,10 +298,10 @@
       </section>
 
       <!-- SECTION 4: WHERE DO YOU WANT TO GO? (DROP REEL / MAP LINK) -->
-      <section class="form-section reveal-on-scroll" data-step="4">
-        <div class="section-badge link-badge">STEP 4 OF 5 • DROP THE SPOT & LINK 📍</div>
-        <h2 class="section-heading">📍 Where Are We Heading?</h2>
-        <p class="section-desc">Got a viral Instagram Reel saved, a sick profile, or a Google Maps spot you've been dying to check out? Drop the name and link below!</p>
+      <section class="form-section reveal-on-scroll" data-step="4" role="group" aria-labelledby="step4Title">
+        <div class="section-badge link-badge">STEP 4 OF 5 · OPTIONAL</div>
+        <h2 class="section-heading" id="step4Title">That place you keep saving?</h2>
+        <p class="section-desc">Send that saved reel, hidden gem, or Google Maps pin. We’re taking suggestions.</p>
 
         <div class="destination-card">
           <div class="dest-field">
@@ -333,10 +331,10 @@
       </section>
 
       <!-- SECTION 5: BOTTLE SELECTION -->
-      <section class="form-section reveal-on-scroll" data-step="5">
-        <div class="section-badge highlight">STEP 5 OF 5 • CRITICAL DECISION</div>
-        <h2 class="section-heading">🍾 Choose Your Poison</h2>
-        <p class="section-desc">Which bottle are we popping open to destroy all tomorrow's plans?</p>
+      <section class="form-section reveal-on-scroll" data-step="5" role="group" aria-labelledby="step5Title">
+        <div class="section-badge highlight">STEP 5 OF 5</div>
+        <h2 class="section-heading" id="step5Title">And something to toast with.</h2>
+        <p class="section-desc">Pick a bottle for the table. <span class="required-note">Required</span></p>
 
         <div class="bottle-grid">
 
@@ -393,8 +391,8 @@
 
       <!-- CHEEKY BONUS POLL -->
       <section class="form-section bonus-section reveal-on-scroll">
-        <div class="section-badge bonus-badge">😈 BONUS TRUTH POLL</div>
-        <h2 class="section-heading">Predict Your Fate</h2>
+        <div class="section-badge bonus-badge">THE AFTER-HOURS FORECAST · OPTIONAL</div>
+        <h2 class="section-heading" id="step6Title">How late are we staying?</h2>
         
         <div class="bonus-group">
           <label class="bonus-label">What time will you inevitably black out?</label>
@@ -422,10 +420,10 @@
       <!-- SUBMIT TRIGGER BUTTON -->
       <div class="submit-container reveal-on-scroll">
         <button type="button" id="openDisclaimerBtn" class="cta-submit-btn">
-          <span>LOCK IN MY BAD DECISIONS 🍻</span>
+          <span>REVIEW MY RSVP ↗</span>
           <div class="btn-flare"></div>
         </button>
-        <p class="submit-note">⚠️ Tapping this will record your vote and trigger the final checkpoint.</p>
+        <p class="submit-note">Review your choices and the bill split before sending. One RSVP per device.</p>
       </div>
 
     </form>
@@ -437,32 +435,33 @@
       
       <div class="dialog-header">
         <div class="warning-icon pulse-animation">🛑</div>
-        <h2 id="dialogTitle" class="dialog-title glow-text-yellow">REALITY CHECK!</h2>
-        <div class="dialog-tag">OFFICIAL FINANCIAL DISCLAIMER</div>
+        <h2 id="dialogTitle" class="dialog-title glow-text-yellow">One tiny reality check.</h2>
+        <div class="dialog-tag">GOOD COMPANY. SHARED BILL.</div>
       </div>
 
       <div class="dialog-body">
         <p class="dialog-highlight">
-          <strong>THIS PARTY IS OFFICIALLY NOT SPONSORED BY ME! 💸💀</strong>
+          <strong>We’re splitting the bill.</strong>
         </p>
         <p class="dialog-text">
-          Before you start picking the most expensive bottle and double ordering desserts, remember: 
-          My bank account is in the ICU. Bring your UPI, cash, or credit card — otherwise, you're wearing an apron and washing dishes in the restaurant kitchen! 🍽️🧼
+          Bring your UPI, cash, or card. Everyone covers their share of the food, drinks, and activities. All good? Let’s make it official.
         </p>
         <div class="disclaimer-chip">
           <span>🏷️ Rule #1: Split the bill, double the thrill!</span>
         </div>
       </div>
 
+      <p class="privacy-note">Submitting shares your choices, device details, and location with the host. Your browser may ask for location access; you can decline (approximate IP location may still be used).</p>
+      <p id="submitError" class="form-error" role="alert" tabindex="-1" hidden></p>
       <div class="dialog-actions">
         <!-- PRIMARY SUBMIT BUTTON -->
         <button type="button" id="confirmRsvpBtn" class="confirm-pay-btn">
-          <span>I'M READY TO PAY MY SHARE & PARTY! 🚀💸</span>
+          <span>CONFIRM & SEND MY RSVP ↗</span>
         </button>
 
         <!-- CHEEKY RUNAWAY BROKE BUTTON -->
         <button type="button" id="runawayBtn" class="runaway-broke-btn">
-          Too broke, let me out 🏃‍♂️💨
+          Back to my choices
         </button>
       </div>
 
@@ -476,10 +475,10 @@
   </dialog>
 
   <!-- SUBMISSION SUCCESS OVERLAY -->
-  <div id="successOverlay" class="success-overlay" style="display: none;">
+  <div id="successOverlay" class="success-overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle" tabindex="-1" style="display: none;">
     <div class="success-card glass-panel">
       <div class="success-emoji">🎉🍻</div>
-      <h2 class="glow-text-pink">FATE SEALED!</h2>
+      <h2 id="successTitle" class="glow-text-pink">YOU’RE IN.</h2>
       <p class="success-tagline">Your RSVP has been officially dispatched to the host.</p>
       
       <div class="success-summary" id="successSummary">
