@@ -100,6 +100,48 @@ button:disabled { opacity: .55; cursor: wait; }
 .cta-submit-btn, .confirm-pay-btn { width: 100%; min-height: 52px; background: var(--gold); color: var(--bg); border: 1px solid var(--gold); padding: .75rem; font-weight: 700; letter-spacing: .04em; font-size: .85rem; }
 .submit-note, .privacy-note, .dialog-text, .success-tagline { color: var(--muted); font-size: .84rem; margin-top: .7rem; }
 .page-footer { padding: 1.25rem 0 2rem; }
+.scene-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1.17fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 136px;
+  margin: 1rem 0 1.35rem;
+  border: 1px solid var(--line);
+  background: radial-gradient(ellipse at 27% 61%, #3b2a22, #1c1b22 67%);
+}
+.stage-art { position: relative; height: clamp(136px, 24vw, 220px); overflow: clip; }
+.stage-art canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.scene-stage .stage-art { cursor: grab; touch-action: pan-y; }
+.scene-stage .stage-art:active { cursor: grabbing; }
+.stage-placeholder {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  opacity: .75;
+  font: italic 2.4rem var(--serif);
+}
+.stage-art:has(canvas) .stage-placeholder { visibility: hidden; }
+.stage-info { padding: .55rem .7rem .55rem 0; min-width: 0; }
+.stage-kicker { display: block; color: var(--gold); font-size: .6rem; font-weight: 700; letter-spacing: .13em; }
+.stage-name { display: block; margin-top: .23rem; font: 400 clamp(1.4rem, 5vw, 2.45rem)/.99 var(--serif); }
+.stage-turn { display: grid; color: var(--muted); font-size: .7rem; margin-top: .55rem; }
+.stage-turn input { width: 100%; min-height: 44px; margin: 0; accent-color: var(--gold); cursor: ew-resize; touch-action: pan-y; }
+.stage-actions { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; gap: .25rem; }
+.stage-actions button { min-height: 44px; border: 1px solid #6e5a48; padding: 0 .27rem; color: var(--gold); font-size: .75rem; }
+.stage-actions button:nth-child(2):enabled { background: var(--gold); color: var(--bg); font-weight: 700; }
+.stage-actions button:disabled { cursor: default; }
+.hero-stage {
+  place-self: center;
+  width: clamp(128px, 19vw, 198px);
+  height: clamp(125px, 18vw, 185px);
+  margin: -.45rem 0 .4rem;
+  filter: drop-shadow(0 10px 22px #160d04a6);
+}
+.hero-stage .stage-art { height: 100%; }
+.hero-stage .stage-placeholder { visibility: hidden; }
+.success-overlay .scene-stage { margin-bottom: .75rem; }
 .choice-summary { margin: 1.25rem 0; }
 .choice-row, .success-item { display: grid; grid-template-columns: minmax(6rem, .5fr) minmax(0, 1fr); gap: .65rem; border-top: 1px solid var(--line); padding: .55rem 0; font-size: .83rem; }
 .choice-row dt, .success-label { color: var(--muted); }
@@ -139,6 +181,7 @@ body:has(.invite-intro[open], .reality-dialog[open], .success-overlay[style*="fl
 .envelope-seal { position: absolute; z-index: 4; inset: 49% auto auto 50%; translate: -50% 0; display: grid; place-items: center; width: 2.9rem; height: 2.9rem; border-radius: 50%; border: 3px double #d2a37e; background: #732d2c; color: #f4dfba; font: italic 1.25rem var(--serif); }
 .open-label { display: inline-flex; align-items: center; gap: .6rem; min-height: 44px; margin-top: 1.3rem; color: var(--gold); }
 @media (max-width: 560px) {
+  .scene-stage { grid-template-columns: minmax(0, .9fr) minmax(0, 1fr); }
   #activity .options-grid { grid-auto-flow: column; grid-auto-columns: 71%; grid-template-columns: none; overflow-x: auto; scroll-snap-type: x proximity; padding: .35rem .25rem .8rem; }
   #activity .option-card { scroll-snap-align: start; }
 }

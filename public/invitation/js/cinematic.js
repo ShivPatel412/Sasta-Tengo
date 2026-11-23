@@ -56,8 +56,8 @@
             scrollTrigger: {trigger: heading, start: 'top 88%', once: true}
           });
           for (const row of scene.querySelectorAll('.options-grid, .bottle-grid')) {
-            gsap.fromTo(row, {y: 12}, {
-              y: 0, duration: .52, clearProps: 'transform',
+            gsap.fromTo(row.children, {y: 15}, {
+              y: 0, duration: .48, stagger: .055, clearProps: 'transform',
               scrollTrigger: {trigger: row, start: 'top 91%', once: true}
             });
           }
@@ -119,6 +119,16 @@
         .fromTo('.hero-title em, .pill-badge, .hero-cta', {y: 9, opacity: 0}, {y: 0, opacity: 1, duration: .4, stagger: .09}, '-=.28');
     }
     trigger?.refresh();
+  });
+
+  document.getElementById('partyForm').addEventListener('change', event => {
+    const card = event.target.closest('label.option-card, label.bottle-card, label.pill-option');
+    if (!card || !gsap || motion.matches) return;
+    gsap.fromTo(card, {scale: event.target.checked ? .965 : 1.025}, {
+      scale: 1, duration: .42, ease: 'back.out(2.1)', overwrite: 'auto', clearProps: 'scale'
+    });
+    const fill = document.getElementById('formProgress');
+    gsap.fromTo(fill, {opacity: .55}, {opacity: 1, duration: .32, overwrite: true, clearProps: 'opacity'});
   });
 
   replay.addEventListener('click', () => { replaying = true; showIntro(); });
