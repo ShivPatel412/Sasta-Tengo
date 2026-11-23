@@ -6,7 +6,7 @@ import {webcrypto} from 'node:crypto';
 
 const source = readFileSync(new URL('../public/invitation/js/app.js', import.meta.url), 'utf8');
 
-function invitation(fetch) {
+function invitation(fetch, storage = new Map()) {
   const elements = new Map();
   function element(id) {
     if (!elements.has(id)) elements.set(id, {
@@ -35,6 +35,10 @@ function invitation(fetch) {
   const context = vm.createContext({
     document, window: { matchMedia: () => ({ matches: true }), addEventListener() {} },
     navigator: {}, crypto:webcrypto, setInterval() {}, Date, AbortSignal, fetch,
+    localStorage: {
+      getItem: key => storage.get(key),
+      setItem: (key, value) => storage.set(key, value)
+    },
     ExpiryManager: { init() {}, markAsExpired() { expired = true; } }
   });
   vm.runInContext(source, context);
@@ -78,6 +82,26 @@ test('invitation locks only after a durable receipt and renders suggestions as t
   assert.equal(page.element('mainContent').inert, true);
   assert.ok(page.element('successSummary').innerHTML.includes('&lt;img'));
   assert.ok(!page.element('successSummary').innerHTML.includes('<img'));
+});
+
+test('invitation keeps the idempotency key across a reload after an uncertain delivery', async () => {
+  const storage = new Map();
+  const requests = [];
+  const fetch = async (url, options) => {
+    const payload = JSON.parse(options.body);
+    requests.push(payload);
+    if (requests.length === 1) throw new TypeError('Connection closed after dispatch');
+    return Response.json({ accepted: true, request_id: payload.request_id, duplicate: true });
+  };
+  const first = invitation(fetch, storage);
+  first.form.placeNotes.value = 'Private draft note';
+  await first.submit();
+  const reloaded = invitation(fetch, storage);
+  reloaded.form.placeNotes.value = first.form.placeNotes.value;
+  await reloaded.submit();
+  assert.equal(requests[0].request_id, requests[1].request_id);
+  assert.equal(reloaded.expired(), true);
+  assert.deepEqual([...storage.values()], [requests[0].request_id]);
 });
 
 test('invitation rejects non-web links before confirmation', () => {

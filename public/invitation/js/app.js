@@ -1,12 +1,41 @@
 /**
  * app.js - Main Application Controller
- * Handles Audio synthesis, Haptics, Confetti particles, Live countdown,
- * Form progress tracking, Runaway button physics, Native modal, and RSVP dispatch.
+ * Handles sound, countdown, RSVP choices, review and submission.
  */
 
 (function () {
   'use strict';
-  let pendingRsvp=null;
+  let requestId;
+  let confirmed = false;
+  const draftKey = 'birthday-rsvp-choices-v1';
+  const requestKey = 'birthday-rsvp-request-v1';
+  const choiceSelector = 'input[type=checkbox], input[type=radio]';
+
+  function submissionId() {
+    if (!requestId) {
+      try { requestId = localStorage.getItem(requestKey); } catch {}
+      requestId ||= crypto.randomUUID();
+      try { localStorage.setItem(requestKey, requestId); } catch {}
+    }
+    return requestId;
+  }
+
+  function restoreDraft(form) {
+    try {
+      const choices = JSON.parse(sessionStorage.getItem(draftKey) || '{}');
+      form.querySelectorAll(choiceSelector).forEach(input => {
+        input.checked = Array.isArray(choices[input.name]) && choices[input.name].includes(input.value);
+      });
+    } catch {}
+  }
+
+  function saveDraft(form) {
+    const choices = {};
+    form.querySelectorAll(choiceSelector).forEach(input => {
+      if (input.checked) (choices[input.name] ??= []).push(input.value);
+    });
+    try { sessionStorage.setItem(draftKey, JSON.stringify(choices)); } catch {}
+  }
 
   // --- 1. WEB AUDIO SYNTHESIS ENGINE ---
   let audioCtx = null;
@@ -168,6 +197,13 @@
     function update() {
       const now = Date.now();
       const diff = targetDate - now;
+      const celebration = document.getElementById('successCountdown');
+      if (celebration) {
+        const minutes = Math.ceil(diff / 60000);
+        celebration.textContent = minutes > 0
+          ? Math.floor(minutes / 1440) + 'd ' + Math.floor(minutes / 60) % 24 + 'h ' + minutes % 60 + 'm'
+          : 'The weekend has started';
+      }
 
       const dEl = document.getElementById('cdDays');
       const hEl = document.getElementById('cdHours');
@@ -196,13 +232,18 @@
     }
 
     update();
-    setInterval(update, 1000);
+    let timer = setInterval(update, 1000);
+    window.addEventListener('pagehide', () => clearInterval(timer));
+    window.addEventListener('pageshow', event => {
+      if (event.persisted) { update(); timer = setInterval(update, 1000); }
+    });
   }
 
   // --- 5. PROGRESS BAR & INTERACTIVE FEEDBACK ---
   function updateProgress() {
     const form = document.getElementById('partyForm');
-    if (!form) return;
+    if (!form || confirmed) return;
+    renderReviews(readChoices(form));
 
     let score = 0;
     const hasActivity = form.querySelectorAll('input[name="activities"]:checked').length > 0;
@@ -232,7 +273,7 @@
   const confirmRsvpBtn = document.getElementById('confirmRsvpBtn');
 
   function openDisclaimerModal() {
-    initAudio();
+    if (confirmed || ExpiryManager.isExpired?.()) return;
     const form = document.getElementById('partyForm');
     const error = document.getElementById('formError');
     error.hidden = true;
@@ -242,33 +283,33 @@
     const hasBottle = form.querySelector('input[name="bottle"]:checked') !== null;
 
     if (!hasActivity) {
-      error.textContent = 'Pick at least one activity in step 1 before reviewing your RSVP.';
-      error.hidden = false;
-      error.focus();
+      const activityError = document.getElementById('activityError');
+      activityError.hidden = false;
+      activityError.focus();
       triggerHaptic([50, 50, 50]);
       return;
     }
 
     if (!hasBottle) {
-      error.textContent = 'Choose a bottle in step 5 before reviewing your RSVP.';
-      error.hidden = false;
-      error.focus();
+      const bottleError = document.getElementById('bottleError');
+      bottleError.hidden = false;
+      bottleError.focus();
       triggerHaptic([50, 50, 50]);
       return;
     }
 
-    if (!form.reportValidity()) return;
     const link = form.placeLink.value.trim();
-    if (link && !/^https?:\/\//i.test(link)) {
-      error.textContent = 'Use an http:// or https:// link for your suggested place.';
+    if (link && !safeLink(link)) {
+      error.textContent = 'Use an HTTP or HTTPS link without credentials for your suggested place.';
       error.hidden = false;
       error.focus();
       return;
     }
+    if (!form.reportValidity()) return;
 
+    if (soundEnabled) initAudio();
     playCash();
     triggerHaptic([40, 30, 40]);
-    fireConfetti(35);
 
     if (dialog && typeof dialog.showModal === 'function') {
       dialog.showModal();
@@ -302,20 +343,7 @@
     });
   }
 
-  // --- 8. SUBMISSION HANDLER ---
-  async function handleFinalSubmission() {
-    if (confirmRsvpBtn.disabled) return;
-    initAudio();
-    confirmRsvpBtn.disabled = true;
-    document.getElementById('runawayBtn').disabled = true;
-    confirmRsvpBtn.setAttribute('aria-busy', 'true');
-    confirmRsvpBtn.textContent = 'SENDING YOUR RSVP…';
-    const error = document.getElementById('submitError');
-    error.hidden = true;
-    triggerHaptic([40, 40, 100]);
-
-    const form = document.getElementById('partyForm');
-
+  function readChoices(form) {
     // Gather Activities
     const activities = Array.from(
       form.querySelectorAll('input[name="activities"]:checked')
@@ -343,12 +371,12 @@
     };
 
     // Gather Bottle
-    const bottle = form.querySelector('input[name="bottle"]:checked')?.value || 'Surprise Me';
+    const bottle = form.querySelector('input[name="bottle"]:checked')?.value || '';
 
     // Gather Bonus
     const blackout = form.querySelector('input[name="blackoutTime"]:checked')?.value || 'Unspecified';
 
-    const payload = {
+    return {
       activities,
       dinner,
       dessert,
@@ -358,18 +386,94 @@
         blackoutPrediction: blackout
       }
     };
+  }
+
+  function safeLink(value) {
+    try {
+      const url = new URL(value);
+      return ['https:', 'http:'].includes(url.protocol) && !url.username && !url.password ? url : null;
+    } catch { return null; }
+  }
+
+  function timingLabel(value) {
+    return ({
+      '10:00 PM (Weakling)': '10 PM',
+      'Midnight (Standard Soldier)': 'Midnight',
+      '3:00 AM (Surviving on sheer spite)': '3 AM',
+      'Never! I will be carrying everyone else home': 'I’ll play it by ear'
+    })[value] || 'No preference';
+  }
+
+  function dessertLabel(value) {
+    return value.replace(/^Drunk 1 AM Cheesecake Run(?=$| \(Custom:)/, 'Cheesecake Run');
+  }
+
+  function renderReviews(payload) {
+    if (!document.createElement) return;
+    const place = payload.wishlistPlace;
+    const url = safeLink(place.link);
+    const preview = document.getElementById('placePreview');
+    preview.hidden = !url;
+    if (url) {
+      preview.href = url.href;
+      preview.textContent = 'Open ' + url.hostname + ' ↗';
+    } else {
+      preview.removeAttribute('href');
+    }
+    const choices = [
+      ['Activities', payload.activities.join(', ') || 'Choose an activity'],
+      ['Dinner', payload.dinner || 'Host’s pick'],
+      ['Dessert', dessertLabel(payload.dessert) || 'Host’s pick'],
+      ['Place', [place.name, url?.hostname, place.notes].filter(Boolean).join(' · ') || 'No suggestion'],
+      ['Bottle', payload.bottle || 'Choose a bottle'],
+      ['Timing', timingLabel(payload.answers.blackoutPrediction)]
+    ];
+    for (const id of ['inlineReview', 'modalReview']) {
+      const rows = choices.map(([label, value]) => {
+        const row = document.createElement('div');
+        row.className = 'choice-row';
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = label;
+        dd.textContent = value;
+        row.append(dt, dd);
+        return row;
+      });
+      document.getElementById(id).replaceChildren(...rows);
+    }
+  }
+
+  function showConfirmed() {
+    confirmed = true;
+    document.getElementById('confirmedNotice').hidden = false;
+    document.getElementById('review').hidden = true;
+    document.getElementById('partyForm').querySelectorAll('input').forEach(input => {
+      input.disabled = true;
+    });
+    document.getElementById('progressText').textContent = 'RSVP confirmed';
+  }
+
+  async function handleFinalSubmission() {
+    if (confirmRsvpBtn.disabled || confirmed || ExpiryManager.isExpired?.()) return;
+    if (soundEnabled) initAudio();
+    confirmRsvpBtn.disabled = true;
+    document.getElementById('runawayBtn').disabled = true;
+    confirmRsvpBtn.setAttribute('aria-busy', 'true');
+    confirmRsvpBtn.textContent = 'SENDING YOUR RSVP…';
+    const error = document.getElementById('submitError');
+    error.hidden = true;
+    const payload = readChoices(document.getElementById('partyForm'));
 
     try {
-      const fingerprint=JSON.stringify(payload);
-      if(pendingRsvp?.body!==fingerprint)pendingRsvp={id:crypto.randomUUID(),body:fingerprint};
+      const id = submissionId();
       const res = await fetch('/api/submit-rsvp', {
         method: 'POST',credentials:'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({...payload,request_id:pendingRsvp.id}),
+        body: JSON.stringify({...payload,request_id:id}),
         signal: AbortSignal.timeout(15000)
       });
       const result = await res.json();
-      if (!res.ok || result.accepted !== true || result.request_id !== pendingRsvp.id) {
+      if (!res.ok || result.accepted !== true || result.request_id !== id) {
         throw new Error('RSVP was not saved');
       }
     } catch (err) {
@@ -393,25 +497,27 @@
     // Sound and celebration
     playPartyHorn();
     triggerHaptic([100, 50, 100, 50, 200]);
-    fireConfetti(120);
+    fireConfetti(36);
 
     // Render Success Overlay
     showSuccessOverlay(payload);
+    showConfirmed();
+    try { sessionStorage.removeItem(draftKey); } catch {}
   }
 
   function showSuccessOverlay(payload) {
     const overlay = document.getElementById('successOverlay');
     const summaryEl = document.getElementById('successSummary');
-    const timerEl = document.getElementById('successCountdown');
 
     if (summaryEl) {
       const escapeHtml = (value) => String(value).replace(/[&<>"']/g, character => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
       })[character]);
-      const placeHtml = (payload.wishlistPlace && (payload.wishlistPlace.name || payload.wishlistPlace.link)) ? `
+      const place = Object.values(payload.wishlistPlace).filter(Boolean).join(' · ');
+      const placeHtml = place ? `
         <div class="success-item">
           <span class="success-label">📍 Requested Spot:</span>
-          <span class="success-val">${escapeHtml(payload.wishlistPlace.name || 'Shared Link')}</span>
+          <span class="success-val">${escapeHtml(place)}</span>
         </div>
       ` : '';
 
@@ -426,21 +532,18 @@
         </div>
         <div class="success-item">
           <span class="success-label">🍰 Dessert:</span>
-          <span class="success-val">${escapeHtml(payload.dessert || 'Midnight Sweet Rush')}</span>
+          <span class="success-val">${escapeHtml(dessertLabel(payload.dessert) || 'Host’s pick')}</span>
         </div>
         ${placeHtml}
         <div class="success-item">
           <span class="success-label">🍾 Bottle:</span>
           <span class="success-val">${escapeHtml(payload.bottle)}</span>
         </div>
+        <div class="success-item">
+          <span class="success-label">Timing:</span>
+          <span class="success-val">${escapeHtml(timingLabel(payload.answers.blackoutPrediction))}</span>
+        </div>
       `;
-    }
-
-    if (timerEl) {
-      const diff = Math.max(0, partyDate - Date.now());
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      timerEl.innerText = `${days} Days, ${hours} Hours`;
     }
 
     if (overlay) {
@@ -453,8 +556,12 @@
 
   // --- 9. EVENT LISTENERS SETUP ---
   document.addEventListener('DOMContentLoaded', () => {
-    // Check link expiry first
-    try { ExpiryManager.init(); } catch (err) {}
+    if (ExpiryManager.isExpired?.()) showConfirmed();
+    window.addEventListener('storage', event => {
+      if (event.key !== 'birthday_rsvp_status_28nov' || !ExpiryManager.isExpired()) return;
+      if (dialog.open && !confirmRsvpBtn.disabled) dialog.close();
+      showConfirmed();
+    });
 
     // Init countdown
     initCountdown();
@@ -463,13 +570,12 @@
 
     // Sound Toggle
     const soundBtn = document.getElementById('soundToggle');
-    const soundIcon = document.getElementById('soundIcon');
     if (soundBtn) {
       soundBtn.addEventListener('click', () => {
-        initAudio();
         soundEnabled = !soundEnabled;
         soundBtn.setAttribute('aria-pressed', String(soundEnabled));
         if (soundEnabled) {
+          initAudio();
           soundBtn.innerHTML = `<span id="soundIcon" aria-hidden="true">♫</span> Sound on`;
           playPop();
         } else {
@@ -485,11 +591,16 @@
         event.preventDefault();
         openDisclaimerModal();
       });
+      if (!confirmed) restoreDraft(form);
       updateProgress();
       form.addEventListener('change', () => {
-        initAudio();
+        if (soundEnabled) initAudio();
         playPop();
         triggerHaptic([20]);
+        saveDraft(form);
+        const choices = readChoices(form);
+        if (choices.activities.length) document.getElementById('activityError').hidden = true;
+        if (choices.bottle) document.getElementById('bottleError').hidden = true;
         updateProgress();
       });
 
@@ -500,6 +611,13 @@
     }
 
     // Modal Triggers
+    document.getElementById('viewInvitation').addEventListener('click', () => {
+      document.getElementById('successOverlay').style.display = 'none';
+      document.getElementById('mainContent').inert = false;
+      document.querySelector('.top-nav-bar').inert = false;
+      document.getElementById('invitationHero').focus();
+      window.scrollTo(0, 0);
+    });
     if (openModalBtn) {
       openModalBtn.addEventListener('click', openDisclaimerModal);
     }

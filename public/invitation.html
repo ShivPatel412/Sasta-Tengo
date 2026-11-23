@@ -3,68 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>28-29 NOV: The Ultimate Birthday Chaos 😈</title>
-  <meta name="description" content="Exclusive Birthday Invitation for 28-29 November. Lock in your bad decisions!">
-  <meta name="theme-color" content="#f5f1e8">
+  <title>The Hangover Part IV · 28–29 November 2026</title>
+  <meta name="description" content="Shiv’s birthday weekend, 28–29 November 2026. Explore the invitation and make the plan together.">
+  <meta name="theme-color" content="#101014">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/invitation/css/style.css?v=20261123">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/invitation/css/style.css?v=cinematic-1">
+  <link rel="canonical" href="https://shivpatel.in/invitation">
 </head>
 <body>
   <a class="skip-link" href="#partyForm">Skip to party choices</a>
 
   <!-- Fullscreen Confetti Canvas -->
+  <dialog id="inviteIntro" class="invite-intro" aria-labelledby="introTitle">
+    <div class="intro-wrap">
+      <p class="eyebrow">A BIRTHDAY WEEKEND</p>
+      <h2 id="introTitle">You’ve been invited.</h2>
+      <button id="openEnvelope" class="envelope-button" type="button">
+        <span class="envelope" aria-hidden="true">
+          <span class="envelope-card">The Hangover<br><i>Part IV</i></span>
+          <span class="envelope-pocket"></span>
+          <span class="envelope-flap"></span>
+          <span class="envelope-seal">IV</span>
+        </span>
+        <span class="open-label">Tap to open <span aria-hidden="true">↗</span></span>
+      </button>
+    </div>
+  </dialog>
   <canvas id="confettiCanvas" aria-hidden="true"></canvas>
 
   <!-- Sound Toggle & Audio Synthesis -->
   <div class="top-nav-bar">
-    <div class="brand-pill"><span class="brand-mark" aria-hidden="true">✳</span> THE BIRTHDAY EDITION <span class="nav-date">/ NOV 2026</span></div>
+    <a class="brand-pill" href="#invitationHero" aria-label="Back to invitation">THE HANGOVER <i>IV</i></a><button id="replayIntro" type="button" class="replay-btn">Replay opening</button>
     <button id="soundToggle" class="sound-btn" aria-label="Party sound" aria-pressed="false" title="Toggle party sound">
       <span id="soundIcon" aria-hidden="true">♫</span> Sound off
     </button>
   </div>
 
-  <!-- LOCKOUT SCREEN (Active when form was already submitted) -->
-  <section id="lockoutScreen" class="lockout-screen" style="display: none;">
-    <div class="lockout-card glass-panel">
-      <div class="lockout-icon">🚫</div>
-      <h1 class="glow-text-pink">YOU’RE ALREADY ON THE LIST.</h1>
-      <p class="lockout-subtitle">Your weekend plans are officially in motion.</p>
-      
-      <div class="status-box">
-        <span class="status-indicator">●</span>
-        <span>RSVP STATUS: <strong>CONFIRMED</strong></span>
-      </div>
-
-      <p class="lockout-desc">
-        Your RSVP has been saved. Contact the host if you need to change your choices.
-      </p>
-
-      <div class="countdown-mini">
-        <div class="countdown-label">TIME REMAINING UNTIL PARTY MAYHEM</div>
-        <div class="countdown-timer" id="lockoutCountdown">Loading...</div>
-      </div>
-
-      <div class="lockout-footer">
-        <p>Need to reset for testing?</p>
-        <button id="resetLockoutBtn" class="secondary-btn">Reset Token (Host Testing Only)</button>
-      </div>
-    </div>
-  </section>
-
   <!-- MAIN INVITATION PAGE -->
   <main id="mainContent" class="main-container">
-    
+
     <!-- HERO SECTION -->
-    <header class="hero-section">
-      <div class="pill-badge">YOU’RE ON THE GUEST LIST</div>
-      
-      <p class="edition-number">28—29 NOVEMBER</p>
-      <h1 class="hero-title" aria-label="The Hangover, Part IV">THE<br>HANG<span class="title-star" aria-hidden="true">✳</span><br>OVER<span class="part-number">PART IV.</span></h1>
+    <header class="hero-section" id="invitationHero" data-scene="1" tabindex="-1">
+      <picture class="hero-photo">
+        <source media="(max-width: 600px)" srcset="/invitation/media/evening-mobile.webp">
+        <img src="/invitation/media/evening.webp" alt="" width="1200" height="800" fetchpriority="high">
+      </picture>
+      <p class="pill-badge">28–29 NOVEMBER 2026</p>
+
+      <h1 class="hero-title" aria-label="The Hangover Part IV"><span class="hero-words" aria-hidden="true">The Hangover</span><em>Part IV</em></h1>
 
       <p class="hero-subtext">
-        A birthday. A whole weekend. A few questionable decisions. You bring the company; we’ll make the plan together.
+        A birthday. A whole weekend. You make the plan.
       </p>
 
       <!-- Party Countdown -->
@@ -91,16 +82,16 @@
             <span class="cd-label">SECS</span>
           </div>
         </div>
-        <div class="date-badge">SAT 28 — SUN 29 NOV 2026 <span>6:00 PM onwards · IST</span></div>
+        <div class="date-badge"><time datetime="2026-11-28T18:00:00+05:30">Saturday from 6:00 PM IST</time></div>
       </div>
 
-      <a class="hero-cta" href="#partyForm">MAKE IT A NIGHT TO REMEMBER <span aria-hidden="true">↗</span></a><p class="hero-footnote">Your picks. Our weekend. Split the bill.</p>
+      <a class="hero-cta" href="#partyForm">Explore the weekend <span aria-hidden="true">↓</span></a><p class="hero-footnote">We’ll split the bill.</p>
     </header>
 
     <div class="planning-column">
-    <div class="plan-intro"><p class="eyebrow">THE PLAN IS IN YOUR HANDS</p><h2>Good company.<br>Great decisions<span>.</span></h2><p>Pick your favourites. We’ll take it from here.</p></div>
+    <p id="confirmedNotice" class="confirmed-notice" hidden>You’re on the list. Explore the invitation and share it with a friend.</p>
     <!-- PROGRESS BAR -->
-    <div class="sticky-progress"><span class="progress-caption">YOUR WEEKEND</span><div class="progress-track" role="progressbar" aria-label="Party choices completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="sticky-progress"><span id="sceneNumber" class="progress-caption" aria-hidden="true">01 / 07</span><div class="progress-track" role="progressbar" aria-label="Party choices completed" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
       <div class="progress-fill" id="formProgress"></div>
       </div><div class="progress-text" id="progressText">0 / 5 picked</div>
     </div>
@@ -110,13 +101,14 @@
       <p id="formError" class="form-error" role="alert" tabindex="-1" hidden></p>
 
       <!-- SECTION 1: ACTIVITIES -->
-      <section class="form-section reveal-on-scroll" data-step="1" role="group" aria-labelledby="step1Title">
-        <div class="section-badge">STEP 1 OF 5</div>
-        <h2 class="section-heading" id="step1Title">First, a little friendly competition.</h2>
-        <p class="section-desc">Pick one or more. Bragging rights are included. <span class="required-note">Required</span></p>
+      <section class="form-section reveal-on-scroll" id="activity" data-scene="2" data-step="1" role="group" aria-labelledby="step1Title">
+
+        <h2 class="section-heading" id="step1Title">First, the adventure.</h2>
+        <p id="activityError" class="form-error" role="alert" tabindex="-1" hidden>Pick at least one activity to continue.</p>
+        <p class="section-desc">Pick one or more. <span class="required-note">Required</span></p>
 
         <div class="options-grid">
-          
+
           <label class="option-card">
             <input type="checkbox" name="activities" value="Bowling 🎳" class="option-checkbox">
             <div class="card-inner">
@@ -147,7 +139,7 @@
               <div class="card-icon">🏎️</div>
               <div class="card-info">
                 <span class="card-title">GO-KARTING</span>
-                <span class="card-caption">40 MPH road rage with zero traffic cops to stop us</span>
+                <span class="card-caption">A few laps and some friendly rivalry</span>
               </div>
               <div class="check-indicator"></div>
             </div>
@@ -159,7 +151,7 @@
               <div class="card-icon">⛳</div>
               <div class="card-info">
                 <span class="card-title">GOLF</span>
-                <span class="card-caption">Drunk swinging and pretending we belong in high society</span>
+                <span class="card-caption">A relaxed round on the green</span>
               </div>
               <div class="check-indicator"></div>
             </div>
@@ -169,13 +161,13 @@
       </section>
 
       <!-- SECTION 2: DINNER -->
-      <section class="form-section reveal-on-scroll" data-step="2" role="group" aria-labelledby="step2Title">
-        <div class="section-badge">STEP 2 OF 5</div>
-        <h2 class="section-heading" id="step2Title">Next stop: something delicious.</h2>
+      <section class="form-section reveal-on-scroll" id="dinner" data-scene="3" data-step="2" role="group" aria-labelledby="step2Title">
+
+        <h2 class="section-heading" id="step2Title">Where are we eating?</h2>
         <p class="section-desc">One dinner vote, or a spot of your own. Come hungry.</p>
 
         <div class="options-grid radio-group">
-          
+
           <label class="option-card radio-card">
             <input type="radio" name="dinner" value="Sizzling Rooftop BBQ & Tandoori" class="option-radio">
             <div class="card-inner">
@@ -229,18 +221,18 @@
 
         <div class="custom-input-box">
           <label for="customDinner" class="input-label">Or suggest a specific restaurant/spot:</label>
-          <input type="text" id="customDinner" name="customDinner" placeholder="e.g. That spicy Korean joint or surprise me..." class="styled-text-input">
+          <input type="text" id="customDinner" name="customDinner" maxlength="430" placeholder="e.g. That spicy Korean joint or surprise me..." class="styled-text-input">
         </div>
       </section>
 
       <!-- SECTION 3: DESSERT -->
-      <section class="form-section reveal-on-scroll" data-step="3" role="group" aria-labelledby="step3Title">
-        <div class="section-badge">STEP 3 OF 5</div>
+      <section class="form-section reveal-on-scroll" id="dessert" data-scene="4" data-step="3" role="group" aria-labelledby="step3Title">
+
         <h2 class="section-heading" id="step3Title">There’s always room for dessert.</h2>
-        <p class="section-desc">Because bad decisions always end with late-night sugar highs.</p>
+        <p class="section-desc">Pick a sweet finish or suggest a favourite.</p>
 
         <div class="options-grid radio-group">
-          
+
           <label class="option-card radio-card">
             <input type="radio" name="dessert" value="Sizzling Brownie & Waffles" class="option-radio">
             <div class="card-inner">
@@ -270,7 +262,7 @@
             <div class="card-inner">
               <div class="card-icon">🍰</div>
               <div class="card-info">
-                <span class="card-title">1 AM CHEESECAKE RUN</span>
+                <span class="card-title">CHEESECAKE RUN</span>
                 <span class="card-caption">Sneaking into late night bakeries like bandits</span>
               </div>
               <div class="radio-indicator"></div>
@@ -293,27 +285,20 @@
 
         <div class="custom-input-box">
           <label for="customDessert" class="input-label">Or suggest your dream midnight dessert:</label>
-          <input type="text" id="customDessert" name="customDessert" placeholder="e.g. Kulfi falooda, churros, or whatever is open..." class="styled-text-input">
+          <input type="text" id="customDessert" name="customDessert" maxlength="430" placeholder="e.g. Kulfi falooda, churros, or whatever is open..." class="styled-text-input">
         </div>
-      </section>
-
-      <!-- SECTION 4: WHERE DO YOU WANT TO GO? (DROP REEL / MAP LINK) -->
-      <section class="form-section reveal-on-scroll" data-step="4" role="group" aria-labelledby="step4Title">
-        <div class="section-badge link-badge">STEP 4 OF 5 · OPTIONAL</div>
-        <h2 class="section-heading" id="step4Title">That place you keep saving?</h2>
-        <p class="section-desc">Send that saved reel, hidden gem, or Google Maps pin. We’re taking suggestions.</p>
-
+      <details class="place-details"><summary>Know a place we can’t miss? <span>Optional</span></summary>
         <div class="destination-card">
           <div class="dest-field">
             <label for="placeName" class="input-label">🏢 Name of the Place / Venue:</label>
-            <input type="text" id="placeName" name="placeName" placeholder="e.g. Club Toy Room, Bademiya, Sky Lounge, That Speakeasy..." class="styled-text-input">
+            <input type="text" id="placeName" name="placeName" maxlength="200" placeholder="e.g. Club Toy Room, Bademiya, Sky Lounge, That Speakeasy..." class="styled-text-input">
           </div>
 
           <div class="dest-field" style="margin-top: 14px;">
             <label for="placeLink" class="input-label">🔗 Link (Instagram Reel / Profile or Google Maps):</label>
             <div class="link-input-wrapper">
               <span class="link-icon">🔗</span>
-              <input type="url" id="placeLink" name="placeLink" placeholder="https://instagram.com/reel/... or Google Maps URL" class="styled-text-input with-icon">
+              <input type="url" id="placeLink" name="placeLink" maxlength="2048" placeholder="https://instagram.com/reel/... or Google Maps URL" class="styled-text-input with-icon">
             </div>
           </div>
 
@@ -325,67 +310,64 @@
 
           <div class="dest-field" style="margin-top: 14px;">
             <label for="placeNotes" class="input-label">💬 What's the vibe? (Specific food, drink, or reason to go):</label>
-            <input type="text" id="placeNotes" name="placeNotes" placeholder="e.g. Their LIIT is deadly, killer rooftop DJ, insane truffle fries..." class="styled-text-input">
+            <input type="text" id="placeNotes" name="placeNotes" maxlength="2000" placeholder="e.g. Great rooftop music or memorable truffle fries" class="styled-text-input">
           </div>
         </div>
+      <a id="placePreview" class="place-preview" target="_blank" rel="noopener noreferrer" hidden></a>
+      </details>
       </section>
+<!-- SECTION 5: BOTTLE SELECTION -->
+      <section class="form-section reveal-on-scroll" id="bottle" data-scene="5" data-step="5" role="group" aria-labelledby="step5Title">
 
-      <!-- SECTION 5: BOTTLE SELECTION -->
-      <section class="form-section reveal-on-scroll" data-step="5" role="group" aria-labelledby="step5Title">
-        <div class="section-badge highlight">STEP 5 OF 5</div>
         <h2 class="section-heading" id="step5Title">And something to toast with.</h2>
+        <p id="bottleError" class="form-error" role="alert" tabindex="-1" hidden>Choose one bottle to continue.</p>
         <p class="section-desc">Pick a bottle for the table. <span class="required-note">Required</span></p>
 
         <div class="bottle-grid">
-
-          <label class="bottle-card">
-            <input type="radio" name="bottle" value="Minti Jamun 🫐" class="bottle-radio">
-            <div class="bottle-inner">
-              <div class="bottle-glow jamun-glow"></div>
-              <div class="bottle-badge">28% VOL • DESI FUSION</div>
-              <div class="bottle-emoji">🫐</div>
-              <div class="bottle-name">MINTI JAMUN</div>
-              <div class="bottle-tagline">The Fruity Chaos Agent. Sweet, tangy, and turns your tongue purple while erasing memories.</div>
-              <div class="select-pill">POP THIS BOTTLE 🍾</div>
-            </div>
-          </label>
-
-          <label class="bottle-card">
+<label class="bottle-card">
             <input type="radio" name="bottle" value="Bacardi Lemon 🍋" class="bottle-radio">
             <div class="bottle-inner">
-              <div class="bottle-glow lemon-glow"></div>
-              <div class="bottle-badge">35% VOL • RETRO REWIND</div>
-              <div class="bottle-emoji">🍋</div>
+
+
+              <img class="bottle-photo" src="/invitation/media/citrus.webp" alt="" width="320" height="400" loading="lazy" decoding="async">
               <div class="bottle-name">BACARDI LEMON</div>
-              <div class="bottle-tagline">College flashbacks in a glass. Guarantees loud singing and nostalgic screaming.</div>
-              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+              <div class="bottle-tagline">Citrus profile</div>
+              <div class="select-pill">Select</div>
             </div>
           </label>
-
-          <label class="bottle-card">
-            <input type="radio" name="bottle" value="Smirnoff Vodka 🍸" class="bottle-radio">
+<label class="bottle-card">
+            <input type="radio" name="bottle" value="Minti Jamun 🫐" class="bottle-radio">
             <div class="bottle-inner">
-              <div class="bottle-glow smirnoff-glow"></div>
-              <div class="bottle-badge">40% VOL • CLASSIC WEAPON</div>
-              <div class="bottle-emoji">🍸</div>
-              <div class="bottle-name">SMIRNOFF</div>
-              <div class="bottle-tagline">Pure unadulterated regret fuel. Mixes with anything, forgives nothing.</div>
-              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+
+
+              <img class="bottle-photo" src="/invitation/media/jamun.webp" alt="" width="320" height="400" loading="lazy" decoding="async">
+              <div class="bottle-name">MINTI JAMUN</div>
+              <div class="bottle-tagline">Jamun</div>
+              <div class="select-pill">Select</div>
             </div>
           </label>
-
-          <label class="bottle-card">
+<label class="bottle-card">
             <input type="radio" name="bottle" value="Absolut Vodka 🧊" class="bottle-radio">
             <div class="bottle-inner">
-              <div class="bottle-glow absolut-glow"></div>
-              <div class="bottle-badge">40% VOL • LUXURY NUMBNESS</div>
-              <div class="bottle-emoji">🧊</div>
+
+
+              <img class="bottle-photo" src="/invitation/media/swedish.webp" alt="" width="320" height="400" loading="lazy" decoding="async">
               <div class="bottle-name">ABSOLUT VODKA</div>
-              <div class="bottle-tagline">For the purist who prefers high-class morning headaches with Scandinavian aesthetics.</div>
-              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+              <div class="bottle-tagline">Swedish vodka</div>
+              <div class="select-pill">Select</div>
             </div>
           </label>
+<label class="bottle-card">
+            <input type="radio" name="bottle" value="Smirnoff Vodka 🍸" class="bottle-radio">
+            <div class="bottle-inner">
 
+
+              <img class="bottle-photo" src="/invitation/media/classic.webp" alt="" width="320" height="400" loading="lazy" decoding="async">
+              <div class="bottle-name">SMIRNOFF</div>
+              <div class="bottle-tagline">Classic vodka</div>
+              <div class="select-pill">Select</div>
+            </div>
+          </label>
         </div>
       </section>
 
@@ -393,32 +375,33 @@
       <section class="form-section bonus-section reveal-on-scroll">
         <div class="section-badge bonus-badge">THE AFTER-HOURS FORECAST · OPTIONAL</div>
         <h2 class="section-heading" id="step6Title">How late are we staying?</h2>
-        
+
         <div class="bonus-group">
-          <label class="bonus-label">What time will you inevitably black out?</label>
           <div class="bonus-pills">
             <label class="pill-option">
               <input type="radio" name="blackoutTime" value="10:00 PM (Weakling)">
-              <span>10 PM (Weakling)</span>
+              <span>10 PM</span>
             </label>
             <label class="pill-option">
               <input type="radio" name="blackoutTime" value="Midnight (Standard Soldier)">
-              <span>12 AM (Standard)</span>
+              <span>Midnight</span>
             </label>
             <label class="pill-option">
               <input type="radio" name="blackoutTime" value="3:00 AM (Surviving on sheer spite)">
-              <span>3 AM (Spite Mode)</span>
+              <span>3 AM</span>
             </label>
             <label class="pill-option">
               <input type="radio" name="blackoutTime" value="Never! I will be carrying everyone else home">
-              <span>I'm the designated nurse 🚑</span>
+              <span>I’ll play it by ear</span>
             </label>
           </div>
         </div>
       </section>
 
       <!-- SUBMIT TRIGGER BUTTON -->
-      <div class="submit-container reveal-on-scroll">
+      <div class="submit-container reveal-on-scroll" id="review" data-scene="6">
+        <h2 class="section-heading">Your night. Your choices.</h2>
+        <dl id="inlineReview" class="choice-summary"></dl>
         <button type="button" id="openDisclaimerBtn" class="cta-submit-btn">
           <span>REVIEW MY RSVP ↗</span>
           <div class="btn-flare"></div>
@@ -427,18 +410,23 @@
       </div>
 
     </form>
+    <footer class="page-footer">
+      <button class="secondary-btn" type="button" data-share>Share invitation</button>
+    </footer>
+    </div>
   </main>
 
   <!-- NATIVE MODAL DIALOG: NOT SPONSORED DISCLAIMER -->
   <dialog id="sponsorshipModal" class="reality-dialog" aria-labelledby="dialogTitle">
     <div class="dialog-content glass-panel">
-      
+
       <div class="dialog-header">
         <div class="warning-icon pulse-animation">🛑</div>
-        <h2 id="dialogTitle" class="dialog-title glow-text-yellow">One tiny reality check.</h2>
-        <div class="dialog-tag">GOOD COMPANY. SHARED BILL.</div>
+        <h2 id="dialogTitle" class="dialog-title glow-text-yellow">Your night. Your choices.</h2>
+        <div class="dialog-tag">REVIEW & CONFIRM</div>
       </div>
 
+      <dl id="modalReview" class="choice-summary"></dl>
       <div class="dialog-body">
         <p class="dialog-highlight">
           <strong>We’re splitting the bill.</strong>
@@ -475,29 +463,31 @@
   </dialog>
 
   <!-- SUBMISSION SUCCESS OVERLAY -->
-  <div id="successOverlay" class="success-overlay" role="dialog" aria-modal="true" aria-labelledby="successTitle" tabindex="-1" style="display: none;">
+  <div id="successOverlay" class="success-overlay" data-scene="7" role="dialog" aria-modal="true" aria-labelledby="successTitle" tabindex="-1" style="display: none;">
     <div class="success-card glass-panel">
       <div class="success-emoji">🎉🍻</div>
-      <h2 id="successTitle" class="glow-text-pink">YOU’RE IN.</h2>
+      <h2 id="successTitle" class="glow-text-pink">YOU’RE ON THE LIST.</h2>
       <p class="success-tagline">Your RSVP has been saved for the host. Email notification may follow separately.</p>
-      
+
       <div class="success-summary" id="successSummary">
         <!-- Injected via JS -->
       </div>
 
-      <div class="lockout-alert">
-        <strong>RSVP saved.</strong> Contact the host if your plans change.
-      </div>
+      <div class="celebration-actions"><button class="secondary-btn" type="button" data-share>Share invitation</button><button id="viewInvitation" class="secondary-btn" type="button">View invitation</button></div>
 
       <div class="countdown-mini">
         <div class="countdown-label">TIME UNTIL THE HANGOVER BEGINS:</div>
-        <div class="countdown-timer" id="successCountdown">00d 00h 00m</div>
+        <div class="countdown-timer" id="successCountdown"></div>
       </div>
     </div>
   </div>
 
+  <p id="shareStatus" class="sr-only" role="status"></p>
   <!-- SCRIPTS -->
-  <script src="/invitation/js/expiry.js?v=20261123-safe"></script>
-  <script src="/invitation/js/app.js?v=20261123-safe"></script>
+  <script src="/invitation/vendor/gsap.min.js" defer></script>
+  <script src="/invitation/vendor/ScrollTrigger.min.js" defer></script>
+  <script src="/invitation/js/expiry.js?v=cinematic-1"></script>
+  <script src="/invitation/js/app.js?v=cinematic-1"></script>
+  <script src="/invitation/js/cinematic.js?v=cinematic-1" defer></script>
 </body>
 </html>
