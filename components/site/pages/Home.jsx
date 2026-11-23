@@ -1,7 +1,7 @@
 'use client';
 import CornerFrame from '../../CornerFrame';
 import StackMap from '../../../app/(portfolio)/stack-map';
-import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import api from '../services/api';
 import Header from '../components/Header';
@@ -58,33 +58,6 @@ const Home = () => {
 
     window.addEventListener('focus', refreshProjects);
     return () => window.removeEventListener('focus', refreshProjects);
-  }, []);
-
-  useLayoutEffect(() => {
-    // Prevent browser scroll restoration from jumping to the end
-    if ("scrollRestoration" in window.history) {
-      window.history.scrollRestoration = "manual";
-    }
-
-    // Remove any hash that might force scroll to a section
-    if (window.location.hash) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
-    }
-
-    const scrollToTop = () => {
-      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-    };
-
-    scrollToTop();
-    requestAnimationFrame(scrollToTop);
-    setTimeout(scrollToTop, 50);
-    window.addEventListener("load", scrollToTop);
-    window.addEventListener("pageshow", scrollToTop);
-
-    return () => {
-      window.removeEventListener("load", scrollToTop);
-      window.removeEventListener("pageshow", scrollToTop);
-    };
   }, []);
 
   const fetchData = async () => {
@@ -227,8 +200,8 @@ const Home = () => {
                       variant="light"
                     />
                     <AnimatedBorderButton
-                      text="Download CV"
-                      href="/cv.pdf"
+                      text="Request my CV"
+                      href="mailto:info@shivpatel.in?subject=CV%20request"
                       variant="light"
                     />
                   </div>

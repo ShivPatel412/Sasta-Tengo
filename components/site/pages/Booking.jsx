@@ -91,7 +91,7 @@ const ContactPanel = () => (
 );
 
 const ProgressStepper = ({ step, onStepChange }) => (
-  <ol className="booking-progress" aria-label="Form progress">
+  <ol className="booking-progress" aria-label="Form progress" tabIndex={0}>
     {steps.map((label, index) => {
       const number = index + 1;
       const complete = number < step;
