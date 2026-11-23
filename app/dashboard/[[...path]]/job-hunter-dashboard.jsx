@@ -1,937 +1,133 @@
 'use client';
-import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { adminApi as api, jsonRequest } from '../../../lib/dashboard-client.mjs';
-import { dateLabel } from '../../../lib/dashboard.mjs';
-import {
-  Briefcase,
-  Search,
-  Check,
-  X,
-  ExternalLink,
-  RefreshCw,
-  Sparkles,
-  ShieldCheck,
-  Bot,
-  FileText
-} from './dashboard-icons';
-import './control-room-neon.css';
+import {useEffect,useRef,useState} from 'react';
+import {adminApi as api,jsonRequest} from '../../../lib/dashboard-client.mjs';
+import {JOB_PAGE_SIZE,JOB_STATUSES,jobLabel,jobScore,jobUrl,jobsQuery,draftText,jobActivity,localDateInput} from '../../../lib/job-hunter-view.mjs';
+import {Briefcase,Search,Check,X,ExternalLink,RefreshCw,Sparkles,ShieldCheck,Bot,FileText,MapPin,ChevronLeft,ChevronRight,CalendarDays} from './dashboard-icons';
+import {Bell} from '@phosphor-icons/react/dist/csr/Bell';
+import {DownloadSimple} from '@phosphor-icons/react/dist/csr/DownloadSimple';
+import {Clock} from '@phosphor-icons/react/dist/csr/Clock';
+import './job-hunter.css';
 
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'jobs', label: 'All Jobs' },
-  { id: 'review', label: 'Review Queue' },
-  { id: 'tracker', label: 'Applications Tracker' },
-  { id: 'documents', label: 'CV & Documents' },
-  { id: 'agent', label: 'AI Agent' }
-];
+const sources=['all','linkedin','indeed','wellfound','remoteok','weworkremotely','greenhouse','lever','rss','manual'];
+const tabs=['Overview','Match Analysis','Documents','Activity'];
+const date = value => value && Number.isFinite(Date.parse(value)) ? new Date(value).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : 'Not reported';
+function CompanyMark({company}) { return <span className="jh-company" aria-hidden="true">{(company||'?').slice(0,2).toUpperCase()}</span>; }
+function Score({job}) {const score=jobScore(job);return <span className={`jh-match ${score && score.score>=80?'high':''}`}>{score ? <><Sparkles size={13}/>{score.score}% match</>:'Not scored'}</span>;}
+function Empty({title,children}) {return <div className="jh-empty"><Briefcase size={27}/><h3>{title}</h3><p>{children}</p></div>;}
 
-const SOURCES = [
-  'all', 'linkedin', 'indeed', 'wellfound', 'remoteok', 'weworkremotely', 'greenhouse', 'lever', 'manual'
-];
+export default function JobHunterDashboard({readOnly,refresh,jobId,user}) {
+  const [stats,setStats]=useState(null),[jobs,setJobs]=useState([]),[total,setTotal]=useState(0);
+  const [page,setPage]=useState(1),[search,setSearch]=useState(''),[query,setQuery]=useState('');
+  const [source,setSource]=useState('all'),[status,setStatus]=useState(''),[match,setMatch]=useState('');
+  const [selectedId,setSelectedId]=useState(jobId||null),[details,setDetails]=useState(null),[tab,setTab]=useState('Overview');
+  const [loading,setLoading]=useState(true),[detailLoading,setDetailLoading]=useState(false),[configured,setConfigured]=useState(null);
+  const [listError,setListError]=useState(''),[detailError,setDetailError]=useState(''),[statsError,setStatsError]=useState(''),[error,setError]=useState(''),[notice,setNotice]=useState('');
+  const [revision,setRevision]=useState(0),[busy,setBusy]=useState(false),[agentOpen,setAgentOpen]=useState(false),[prompt,setPrompt]=useState(''),[tasks,setTasks]=useState([]),[taskError,setTaskError]=useState('');
+  const [applyOpen,setApplyOpen]=useState(false),[appliedDate,setAppliedDate]=useState(()=>localDateInput());
+  const [editing,setEditing]=useState(null),[draftInput,setDraftInput]=useState('');
+  const actionLock=useRef(false),detailRef=useRef(null),applyRef=useRef(null),applyTrigger=useRef(null);
+  const selected=details?.id===selectedId?details:jobs.find(j=>j.id===selectedId);
+  const score=jobScore(selected),writable=!readOnly && configured===true;
+  const pageCount=Math.max(1,Math.ceil(total/JOB_PAGE_SIZE));
 
-export default function JobHunterDashboard({ readOnly, refresh, jobId }) {
-  const [activeTab, setActiveTab] = useState(jobId ? 'jobs' : 'overview');
-  const [stats, setStats] = useState(null);
-  const [jobs, setJobs] = useState([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [notice, setNotice] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [configured, setConfigured] = useState(true);
+  useEffect(()=>{if(search===query)return;const timer=setTimeout(()=>{setQuery(search);setPage(1);},300);return()=>clearTimeout(timer);},[search,query]);
+  useEffect(()=>{
+    const controller=new AbortController();setStatsError('');
+    api('jobs?view=stats',{signal:controller.signal}).then(setStats).catch(e=>{if(!controller.signal.aborted){setStats(null);setStatsError(e.message);}});
+    return()=>controller.abort();
+  },[refresh,revision]);
+  useEffect(()=>{
+    const controller=new AbortController();setLoading(true);setListError('');
+    api(jobsQuery({page,search:query,source,status,match}),{signal:controller.signal}).then(data=>{
+      if(controller.signal.aborted)return;
+      setConfigured(data.configured!==false);setJobs(data.jobs||[]);setTotal(data.total||0);
+      if(page>1 && page>Math.max(1,Math.ceil((data.total||0)/JOB_PAGE_SIZE))){setPage(Math.max(1,Math.ceil((data.total||0)/JOB_PAGE_SIZE)));return;}
+      setSelectedId(current=>data.jobs?.some(j=>j.id===current)?current:jobId===current?current:data.jobs?.[0]?.id||null);
+    }).catch(e=>{if(!controller.signal.aborted){setListError(e.message);setJobs([]);setTotal(0);setConfigured(null);setSelectedId(null);}}).finally(()=>{if(!controller.signal.aborted)setLoading(false);});
+    return()=>controller.abort();
+  },[page,query,source,status,match,refresh,revision,jobId]);
+  useEffect(()=>{
+    setDetails(null);setDetailError('');setEditing(null);setApplyOpen(false);
+    if(!selectedId){setDetailLoading(false);return;}
+    const controller=new AbortController();setDetailLoading(true);
+    api(`jobs?job_id=${encodeURIComponent(selectedId)}`,{signal:controller.signal}).then(data=>{
+      if(controller.signal.aborted)return;
+      if(!data.job)throw new Error('Job details are not available.');setDetails(data.job);
+    }).catch(e=>{if(!controller.signal.aborted)setDetailError(e.message);}).finally(()=>{if(!controller.signal.aborted)setDetailLoading(false);});
+    return()=>controller.abort();
+  },[selectedId,refresh,revision]);
+  useEffect(()=>{
+    if(!agentOpen)return;const controller=new AbortController();setTaskError('');
+    api('jobs?view=tasks',{signal:controller.signal}).then(data=>setTasks(data.tasks||[])).catch(e=>{if(!controller.signal.aborted)setTaskError(e.message);});
+    return()=>controller.abort();
+  },[agentOpen,refresh,revision]);
+  useEffect(()=>{
+    if(!applyOpen)return;applyRef.current?.showModal();
+    return()=>{applyRef.current?.close();applyTrigger.current?.focus();};
+  },[applyOpen]);
 
-  // Filters
-  const [search, setSearch] = useState('');
-  const [sourceFilter, setSourceFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [scoreFilter, setScoreFilter] = useState('');
-
-  // Selected Job for AI Analysis & Documents modal/panel
-  const [selectedJob, setSelectedJob] = useState(null);
-  const [jobDetails, setJobDetails] = useState(null);
-  const [detailsLoading, setDetailsLoading] = useState(false);
-
-  // Agent command prompt
-  const [agentPrompt, setAgentPrompt] = useState('');
-
-  // Mark as applied modal/dialog state
-  const [appliedModalJob, setAppliedModalJob] = useState(null);
-  const [appliedDate, setAppliedDate] = useState(new Date().toISOString().slice(0, 10));
-  const [appliedNotes, setAppliedNotes] = useState('');
-
-  // Editing draft state
-  const [editingDraft, setEditingDraft] = useState(null);
-  const [draftContentText, setDraftContentText] = useState('');
-
-  useEffect(() => {
-    let active = true;
-    async function loadData() {
-      try {
-        setLoading(true);
-        // Load stats
-        const statsData = await api('jobs?view=stats');
-        if (active) {
-          setStats(statsData);
-          if (statsData.configured === false) setConfigured(false);
-        }
-
-        // Load jobs
-        let url = `jobs?page=${page}&limit=25`;
-        if (search) url += `&search=${encodeURIComponent(search)}`;
-        if (sourceFilter && sourceFilter !== 'all') url += `&source=${encodeURIComponent(sourceFilter)}`;
-        if (statusFilter) url += `&status=${encodeURIComponent(statusFilter)}`;
-        if (scoreFilter === 'high') url += '&score_min=80';
-        else if (scoreFilter === 'moderate') url += '&score_min=60&score_max=79';
-        else if (scoreFilter === 'low') url += '&score_max=59';
-
-        const jobsData = await api(url);
-        if (active) {
-          setJobs(jobsData.jobs || []);
-          setTotal(jobsData.total || 0);
-          setError('');
-        }
-
-        // Load tasks if in agent tab
-        if (activeTab === 'agent') {
-          const tasksData = await api('jobs?view=tasks');
-          if (active) setTasks(tasksData.tasks || []);
-        }
-      } catch (err) {
-        if (active) setError(err.message);
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-    loadData();
-    return () => { active = false; };
-  }, [page, search, sourceFilter, statusFilter, scoreFilter, activeTab, refresh]);
-
-  // Load job details when selected
-  async function selectJob(job) {
-    setSelectedJob(job);
-    setJobDetails(null);
-    if (!job?.id) return;
+  async function mutate(payload,message) {
+    if(!writable||actionLock.current)return false;
+    actionLock.current=true;setBusy(true);setError('');setNotice('');
     try {
-      setDetailsLoading(true);
-      const details = await api(`jobs?job_id=${encodeURIComponent(job.id)}`);
-      setJobDetails(details);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setDetailsLoading(false);
-    }
+      const result=await api('jobs',jsonRequest(payload.action==='agent_task'||payload.action==='analyze_job'?'POST':'PATCH',payload));
+      if(result.configured===false || result.success===false)throw new Error('This action is not configured. No change was confirmed.');
+      setNotice(result.message||message);setRevision(n=>n+1);return true;
+    }catch(e){setError(e.message);return false;}
+    finally{actionLock.current=false;setBusy(false);}
   }
-
-  // Update status
-  async function changeStatus(id, newStatus) {
-    if (readOnly || busy) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      await api('jobs', jsonRequest('PATCH', { action: 'update_status', job_id: id, status: newStatus }));
-      setNotice(`Job status updated to ${newStatus}.`);
-      setJobs(prev => prev.map(j => j.id === id ? { ...j, status: newStatus } : j));
-      if (selectedJob?.id === id) {
-        setSelectedJob(prev => ({ ...prev, status: newStatus }));
-      }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+  function choose(job){setSelectedId(job.id);setTab('Overview');if(window.innerWidth<1100)requestAnimationFrame(()=>detailRef.current?.scrollIntoView({behavior:'instant',block:'start'}));}
+  function reset(){setSearch('');setQuery('');setSource('all');setStatus('');setMatch('');setPage(1);}
+  function download(draft){
+    const url=URL.createObjectURL(new Blob([draftText(draft)],{type:'text/plain;charset=utf-8'}));
+    const a=document.createElement('a');a.href=url;a.download=`${jobLabel(draft.kind)}-${(selected?.company||'job').replace(/[^a-z0-9-]/gi,'-')}.txt`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+    setNotice('Draft downloaded as text. Review it before sending.');
   }
-
-  // Confirm Mark as Applied
-  async function confirmApplied(e) {
-    e.preventDefault();
-    if (!appliedModalJob || readOnly || busy) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      await api('jobs', jsonRequest('PATCH', {
-        action: 'mark_applied',
-        job_id: appliedModalJob.id,
-        applied_at: new Date(appliedDate).toISOString(),
-        notes: appliedNotes
-      }));
-      setNotice(`Job ${appliedModalJob.title} marked as APPLIED on ${appliedDate}.`);
-      setJobs(prev => prev.map(j => j.id === appliedModalJob.id ? { ...j, status: 'applied', applied_at: appliedDate } : j));
-      setAppliedModalJob(null);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+  function print(draft){
+    const win=window.open('','_blank','width=850,height=900');
+    if(!win){setError('Allow the print window to save this document as PDF.');return;}
+    win.opener=null;win.document.title=`${jobLabel(draft.kind)} draft`;const pre=win.document.createElement('pre');pre.style.cssText='white-space:pre-wrap;font:14px/1.6 system-ui;padding:32px;color:#222';pre.textContent=draftText(draft);win.document.body.append(pre);win.document.close();win.focus();win.print();
   }
-
-  // Trigger AI analysis
-  async function analyzeJob(id) {
-    if (readOnly || busy) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      await api('jobs', jsonRequest('POST', { action: 'analyze_job', job_id: id }));
-      setNotice('AI scoring task queued for analysis.');
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
+  function handleTabs(event,index){
+    let next;if(event.key==='ArrowRight')next=(index+1)%tabs.length;if(event.key==='ArrowLeft')next=(index+tabs.length-1)%tabs.length;if(event.key==='Home')next=0;if(event.key==='End')next=tabs.length-1;
+    if(next!==undefined){event.preventDefault();setTab(tabs[next]);document.getElementById(`jh-tab-${next}`)?.focus();}
   }
-
-  // Trigger Agent Command
-  async function sendAgentCommand(cmd) {
-    const prompt = cmd || agentPrompt;
-    if (!prompt.trim() || readOnly || busy) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      await api('jobs', jsonRequest('POST', {
-        action: 'agent_task',
-        message: prompt,
-        reason: 'Dashboard command trigger'
-      }));
-      setNotice(`Agent task queued: "${prompt}"`);
-      setAgentPrompt('');
-      const updatedTasks = await api('jobs?view=tasks');
-      setTasks(updatedTasks.tasks || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // Save edited draft
-  async function saveDraft() {
-    if (!editingDraft || readOnly || busy) return;
-    setBusy(true); setError(''); setNotice('');
-    try {
-      let parsed = editingDraft.content;
-      try {
-        parsed = JSON.parse(draftContentText);
-      } catch {
-        parsed = { ...editingDraft.content, raw_text: draftContentText };
-      }
-      await api('jobs', jsonRequest('PATCH', {
-        action: 'update_draft',
-        draft_id: editingDraft.id,
-        content: parsed
-      }));
-      setNotice('Draft updated successfully.');
-      setEditingDraft(null);
-      if (selectedJob) selectJob(selectedJob);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  // Export Resume as PDF via window.print
-  function exportPDF(draft) {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    const content = draft.content || {};
-    const html = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Shiv Patel - Resume</title>
-        <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.5; color: #111; padding: 40px; }
-          h1 { margin-bottom: 4px; font-size: 26px; }
-          .headline { font-size: 16px; color: #444; margin-bottom: 20px; font-weight: 600; }
-          .summary { margin-bottom: 24px; font-size: 14px; color: #333; }
-          h2 { font-size: 16px; border-bottom: 1px solid #ccc; padding-bottom: 4px; margin-top: 24px; text-transform: uppercase; letter-spacing: 0.05em; }
-          .skills { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
-          .skill { background: #eee; padding: 3px 8px; border-radius: 4px; font-size: 12px; }
-          .experience { margin-bottom: 12px; }
-          .employer { font-weight: 700; font-size: 14px; }
-          .bullet { font-size: 13px; color: #333; margin-left: 16px; }
-        </style>
-      </head>
-      <body>
-        <h1>Shiv Patel</h1>
-        <div class="headline">${content.headline || 'Senior Full-Stack & Automation Engineer'}</div>
-        <p class="summary">${content.summary || ''}</p>
-        <h2>Core Skills</h2>
-        <div class="skills">
-          ${(content.ordered_skills || []).map(s => `<span class="skill">${s}</span>`).join('')}
+  const metrics=[['Jobs found',stats?.total,Briefcase,'Across your connected sources'],['Ready to review',stats?.review_queue,FileText,'Your next opportunities'],['Applied',stats?.applications_submitted,Check,'Applications you’ve recorded'],['Interviews',stats?.interviews_scheduled,CalendarDays,'A step closer to what’s next']];
+  return <section className="job-hunter-dashboard" aria-label="Job Hunter workspace">
+    <header className="jh-heading"><div><span className="jh-eyebrow">YOUR NEXT CHAPTER</span><h1>Job Hunter<span>.</span></h1><p>A little less searching. A better next opportunity.</p></div><div className="jh-header-actions"><button className="jh-button" aria-label="Refresh jobs" onClick={()=>setRevision(n=>n+1)} disabled={loading||busy}><RefreshCw size={16}/><span>Refresh</span></button><details className="jh-notifications"><summary aria-label="Notifications"><Bell size={21}/></summary><div><strong>Workspace updates</strong><p>{notice||'No new notifications in this session.'}</p><small>Application history is in each job’s Activity tab.</small></div></details><a className="jh-avatar" href="/dashboard/settings" aria-label="Open profile settings">{(user?.name||'Shiv Patel').split(' ').map(s=>s[0]).slice(0,2).join('')}</a></div></header>
+    <div className="jh-summary">{metrics.map(([label,value,Icon,caption],i)=><article className={`jh-stat jh-stat-${i}`} key={label}><div><span>{label}</span><Icon size={19}/></div><strong>{value??'—'}</strong><small>{caption}</small></article>)}</div>
+    {statsError&&<div className="jh-feedback" role="status">Summary unavailable: {statsError} <button onClick={()=>setRevision(n=>n+1)}>Retry</button></div>}
+    {configured===false&&<div className="jh-feedback" role="status"><ShieldCheck size={18}/><span>Job storage isn’t connected yet. Your jobs will appear here once the existing integration is configured.</span></div>}
+    {readOnly&&<div className="jh-feedback"><ShieldCheck size={18}/> Review mode — you can browse and download; changes are paused.</div>}
+    {notice&&<div className="jh-feedback success" role="status"><Check size={17}/>{notice}<button aria-label="Dismiss notification" onClick={()=>setNotice('')}><X size={16}/></button></div>}
+    {error&&<div className="jh-feedback error" role="alert">{error}<button aria-label="Dismiss error" onClick={()=>setError('')}><X size={16}/></button></div>}
+    <div className="jh-section-heading"><div><h2>Your opportunities <span>{loading?'…':total}</span></h2><p>Find the right fit. Make your next move.</p></div><button className={`jh-button ${agentOpen?'selected':''}`} aria-expanded={agentOpen} aria-controls="jh-agent" onClick={()=>setAgentOpen(v=>!v)}><Bot size={18}/> AI assistant</button></div>
+    {agentOpen&&<section className="jh-agent" id="jh-agent"><div><h3>A hand with the next step</h3><p>Save a request for your existing agent. Execution still depends on the connected runner.</p></div><form onSubmit={async e=>{e.preventDefault();if(await mutate({action:'agent_task',message:prompt,reason:'Job Hunter workspace'},'Request saved for review.'))setPrompt('');}}><label className="sr-only" htmlFor="jh-prompt">Agent request</label><input id="jh-prompt" value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="e.g. Prepare interview questions for this role" required maxLength={4000}/><button className="jh-button primary" disabled={!writable||busy||!prompt.trim()}>Save request</button></form>{taskError&&<p role="alert">{taskError}</p>}<ul>{tasks.slice(0,5).map(t=><li key={t.id}><span>{t.message}</span><span className="jh-status">{jobLabel(t.status)}</span></li>)}</ul></section>}
+    <div className="jh-workspace">
+      <section className="jh-list-panel" id="jh-listings" tabIndex={-1} aria-label="Job listings">
+        <div className="jh-list-toolbar"><label className="jh-search"><Search size={18}/><span className="sr-only">Search jobs</span><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search title, company or location…" type="search"/></label><div className="jh-filters"><label><span>Source</span><select aria-label="Source" value={source} onChange={e=>{setSource(e.target.value);setPage(1);}}>{sources.map(s=><option key={s} value={s}>{s==='all'?'All sources':jobLabel(s)}</option>)}</select></label><label><span>Status</span><select aria-label="Status" value={status} onChange={e=>{setStatus(e.target.value);setPage(1);}}><option value="">All statuses</option>{JOB_STATUSES.map(s=><option key={s} value={s}>{jobLabel(s)}</option>)}</select></label><label><span>AI match</span><select aria-label="AI match" value={match} onChange={e=>{setMatch(e.target.value);setPage(1);}}><option value="">Any match</option><option value="high">High · 80%+</option><option value="moderate">60–79%</option><option value="low">Below 60%</option></select></label></div></div>
+        <div className="jh-results-label"><span>{loading?'Finding your opportunities…':`${total} ${total===1?'opportunity':'opportunities'}`}</span>{(search||source!=='all'||status||match)&&<button onClick={reset}>Clear filters</button>}</div>
+        <div className="jh-job-list" aria-busy={loading}>
+          {loading?<div className="jh-skeletons" role="status" aria-label="Loading jobs">{[1,2,3,4].map(n=><div className="jh-skeleton" key={n}><i/><i/><i/></div>)}</div>:listError?<div className="jh-empty" role="alert"><h3>Jobs couldn’t load</h3><p>{listError}</p><button className="jh-button" onClick={()=>setRevision(n=>n+1)}>Try again</button></div>:jobs.length===0?<Empty title={query||source!=='all'||status||match?'No matching opportunities':'Your next opportunity starts here'}>{query||source!=='all'||status||match?<><span>Try another search or broaden your filters.</span><button className="jh-button" onClick={reset}>Clear filters</button></>:'New jobs will appear here when your connected sources find them.'}</Empty>:jobs.map(job=><button type="button" className={`jh-job ${selectedId===job.id?'active':''}`} key={job.id} aria-pressed={selectedId===job.id} onClick={()=>choose(job)}><div className="jh-job-top"><CompanyMark company={job.company}/><span className="jh-job-title"><strong>{job.title}</strong><span>{job.company||'Company not reported'}</span></span><ChevronRight size={17}/></div><div className="jh-job-meta"><span><MapPin size={13}/>{job.location||'Location not reported'}</span><span>{jobLabel(job.source)}</span></div><div className="jh-job-bottom"><Score job={job}/><span className="jh-status">{jobLabel(job.status)}</span></div></button>)}
         </div>
-        <h2>Professional Experience</h2>
-        ${(content.experience_bullets || []).map(b => `
-          <div class="experience">
-            <div class="employer">${b.employer}</div>
-            <div class="bullet">• ${b.bullet}</div>
-          </div>
-        `).join('')}
-        <script>window.onload = function() { window.print(); };</script>
-      </body>
-      </html>
-    `;
-    printWindow.document.write(html);
-    printWindow.document.close();
-  }
-
-  // Export as DOCX (formatted text blob download)
-  function exportDOCX(draft) {
-    const content = draft.content || {};
-    let textDoc = `SHIV PATEL - RESUME\n\n`;
-    textDoc += `Headline: ${content.headline || ''}\n\n`;
-    textDoc += `Summary:\n${content.summary || ''}\n\n`;
-    textDoc += `Skills: ${(content.ordered_skills || []).join(', ')}\n\n`;
-    textDoc += `Experience:\n`;
-    (content.experience_bullets || []).forEach(b => {
-      textDoc += `${b.employer}: ${b.bullet}\n`;
-    });
-    const blob = new Blob([textDoc], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Shiv-Patel-Resume-${selectedJob?.company || 'Job'}.docx`;
-    a.click();
-  }
-
-  // Copy to clipboard helper
-  function copyText(str, label) {
-    navigator.clipboard.writeText(str);
-    setNotice(`${label} copied to clipboard!`);
-    setTimeout(() => setNotice(''), 3000);
-  }
-
-  return (
-    <div className="job-hunter-dashboard">
-      {/* Top Banner & Navigation */}
-      <section className="neon-panel">
-        <div className="neon-header">
-          <div className="neon-title-group">
-            <span className="mini-label">AI CAREER ACCELERATOR</span>
-            <h2><Briefcase size={28} color="#98FF02" /> SHIV OS Job Hunter</h2>
-            <p>AI job scoring, verified CV tailoring, application materials and external submission tracking.</p>
-          </div>
-          <div className="neon-actions">
-            <span className={`neon-badge ${configured ? 'live' : 'paused'}`}>
-              <span className={`neon-dot ${configured ? 'live' : 'paused'}`} />
-              {configured ? 'Supabase Connected' : 'Configuration Pending'}
-            </span>
-          </div>
-        </div>
-
-        {/* Configuration Notice if Supabase not configured */}
-        {!configured && (
-          <div className="neon-delay-banner" style={{ borderColor: 'rgba(255, 170, 0, 0.4)', background: 'rgba(255, 170, 0, 0.05)' }}>
-            <ShieldCheck size={20} color="#ffaa00" />
-            <div>
-              <strong style={{ color: '#ffaa00' }}>Supabase Storage:</strong> Server-side credentials (<code>SUPABASE_URL</code> and <code>SUPABASE_SECRET_KEY</code>) are required in production Vercel to store and score job records.
-            </div>
-          </div>
-        )}
-
-        {/* Tabs Bar */}
-        <nav className="forms-source-tabs" style={{ marginTop: '1rem' }} aria-label="Job Hunter Sections">
-          {TABS.map(tab => (
-            <button
-              key={tab.id}
-              type="button"
-              className="tab-button"
-              aria-current={activeTab === tab.id ? 'page' : undefined}
-              onClick={() => { setActiveTab(tab.id); setSelectedJob(null); }}
-              style={{
-                background: activeTab === tab.id ? '#1e1e1e' : 'transparent',
-                color: activeTab === tab.id ? '#98FF02' : '#aaa',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '0.88rem'
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        <nav className="jh-pagination" aria-label="Job pages"><span>{total?`${(page-1)*JOB_PAGE_SIZE+1}–${Math.min(page*JOB_PAGE_SIZE,total)} of ${total}`:'0 opportunities'}</span><div><button aria-label="Previous page" disabled={loading||page<=1} onClick={()=>setPage(p=>p-1)}><ChevronLeft size={16}/></button><span>Page {page} of {pageCount}</span><button aria-label="Next page" disabled={loading||page>=pageCount} onClick={()=>setPage(p=>p+1)}><ChevronRight size={16}/></button></div></nav>
       </section>
-
-      {notice && <p role="status" style={{ color: '#98FF02', background: 'rgba(152, 255, 2, 0.08)', padding: '0.65rem 1rem', borderRadius: '4px', marginBottom: '1rem', border: '1px solid rgba(152, 255, 2, 0.3)' }}>{notice}</p>}
-      {error && <p role="alert" style={{ color: '#ff6666', background: 'rgba(255, 68, 68, 0.08)', padding: '0.65rem 1rem', borderRadius: '4px', marginBottom: '1rem', border: '1px solid rgba(255, 68, 68, 0.3)' }}>{error}</p>}
-
-      {/* ==================== SECTION A: OVERVIEW ==================== */}
-      {activeTab === 'overview' && (
-        <section className="neon-panel">
-          <div className="neon-header">
-            <div className="neon-title-group">
-              <span className="mini-label">JOB INTELLIGENCE METRICS</span>
-              <h2>Job Hunter Ecosystem Overview</h2>
-            </div>
-            <button type="button" className="neon-button secondary small" disabled={busy} onClick={() => setPage(1)}>
-              <RefreshCw size={14} /> Refresh Stats
-            </button>
+      <section className="jh-detail-panel" ref={detailRef} aria-label="Selected job details">
+        {!selectedId?<Empty title="A closer look at your next move">Select an opportunity to explore the role, your match and application documents.</Empty>:<>
+          <div className="jh-detail-heading"><button className="jh-back-to-jobs" onClick={()=>{document.getElementById('jh-listings')?.focus({preventScroll:true});document.getElementById('jh-listings')?.scrollIntoView({behavior:'instant',block:'start'});}}><ChevronLeft size={14}/> Back to listings</button><div className="jh-detail-company"><CompanyMark company={selected?.company}/><div><span className="jh-eyebrow">{selected?.company||'JOB DETAILS'}</span><h2>{selected?.title||'Loading opportunity…'}</h2><p><MapPin size={14}/>{selected?.location||'Location not reported'}<span>·</span>{jobLabel(selected?.source)}</p></div></div><div className="jh-detail-badges"><span className="jh-status">{jobLabel(selected?.status)||'Loading'}</span><span><Clock size={13}/> Found {date(selected?.created_at)}</span></div></div>
+          <div className="jh-tabs" role="tablist" aria-label="Job details">{tabs.map((name,i)=><button key={name} id={`jh-tab-${i}`} role="tab" aria-selected={tab===name} aria-controls="jh-tab-panel" tabIndex={tab===name?0:-1} onKeyDown={e=>handleTabs(e,i)} onClick={()=>setTab(name)}>{name}{name==='Documents'&&details?.drafts?.length>0&&<span>{details.drafts.length}</span>}</button>)}</div>
+          <div className="jh-detail-body" id="jh-tab-panel" role="tabpanel" aria-labelledby={`jh-tab-${tabs.indexOf(tab)}`} tabIndex={0} aria-busy={detailLoading}>
+            {detailLoading?<div className="jh-skeletons" role="status">Loading job details…<div className="jh-skeleton"><i/><i/><i/></div></div>:detailError?<div className="jh-empty" role="alert"><h3>Details couldn’t load</h3><p>{detailError}</p><button className="jh-button" onClick={()=>setRevision(n=>n+1)}>Retry details</button></div>:details&&<>
+              {tab==='Overview'&&<><div className="jh-match-banner"><div><span className="jh-ai-icon"><Sparkles size={23}/></span><div><strong>{score?score.score>=80?'This could be a great fit': 'Your match at a glance':'Get to know your fit'}</strong><p>{score?'Based on your saved AI match analysis.':'Request an analysis against your verified profile.'}</p></div></div><button onClick={()=>setTab('Match Analysis')} aria-label="View match analysis">{score?<><strong>{score.score}<small>%</small></strong><span>AI match</span></>:<Sparkles size={24}/>}</button></div><h3>About the role</h3><div className="jh-description">{details.description||'This source hasn’t provided a job description yet. Open the original listing for more information.'}</div>{score?.matched_skills?.length>0&&<><h3>Skills in common</h3><div className="jh-skills">{score.matched_skills.map(s=><span key={s}><Check size={12}/>{s}</span>)}</div></>}<div className="jh-role-facts"><div><span>Source</span><strong>{jobLabel(details.source)}</strong></div><div><span>Posted</span><strong>{date(details.published_at)}</strong></div><div><span>Application status</span><strong>{jobLabel(details.status)}</strong></div><div><span>Location</span><strong>{details.location||'Not reported'}</strong></div></div></>}
+              {tab==='Match Analysis'&&(score?<><div className="jh-analysis-title"><div><span className="jh-eyebrow">AI MATCH ANALYSIS</span><h3>Your fit, a little clearer.</h3><p>Use this as a guide. Review the role yourself.</p></div><strong>{score.score}<small>%</small></strong></div><h3>Score breakdown</h3><div className="jh-breakdown">{Object.entries(score.breakdown||{}).map(([key,value])=><div key={key}><div><span>{jobLabel(key)}</span><strong>{value}%</strong></div><meter min="0" max="100" value={value} aria-label={`${jobLabel(key)} score`}/></div>)}</div><h3>Matched skills</h3><div className="jh-skills">{(score.matched_skills||[]).map(s=><span key={s}><Check size={12}/>{s}</span>)}{!score.matched_skills?.length&&<p>No matched skills reported.</p>}</div>{score.gaps?.length>0&&<><h3>Room to grow</h3><ul className="jh-bullets">{score.gaps.map(s=><li key={s}>{s}</li>)}</ul></>}<h3>Why this match?</h3><ul className="jh-bullets">{(score.reasons||[]).map(r=><li key={r}>{r}</li>)}</ul><p className="jh-footnote">Eligibility: {jobLabel(score.eligibility)} · Salary fit: {jobLabel(score.salary_fit)}</p></>:<Empty title="This job hasn’t been scored yet">Request an AI analysis below. A saved request does not mean the runner has started.</Empty>)}
+              {tab==='Documents'&&<><div className="jh-docs-intro"><h3>A thoughtful first impression.</h3><p>Your tailored drafts, ready for a human review.</p></div>{!details.drafts?.length?<Empty title="No documents yet">Ask your existing agent to prepare a tailored CV and application draft.</Empty>:details.drafts.map(d=><article className="jh-document" key={d.id}><div><span className="jh-doc-icon"><FileText size={23}/></span><div><h4>{jobLabel(d.kind)} draft</h4><p>{date(d.created_at)} · Review required</p></div></div><p>{d.content?.headline||d.content?.summary||d.content?.cover_letter?.slice(0,180)||'Prepared draft — review before sending.'}</p><div className="jh-document-actions"><button className="jh-button" onClick={()=>download(d)}><DownloadSimple size={15}/> Download TXT</button><button className="jh-button" onClick={()=>print(d)}>Print / PDF</button><button className="jh-text-button" disabled={!writable||busy} onClick={()=>{setEditing(d);setDraftInput(JSON.stringify(d.content,null,2));}}>Edit draft</button></div>{editing?.id===d.id&&<form className="jh-draft-editor" onSubmit={async e=>{e.preventDefault();let content;try{content=JSON.parse(draftInput);}catch{setError('Enter valid draft JSON before saving. Your edits are kept.');return;}if(await mutate({action:'update_draft',draft_id:d.id,content},'Draft saved. Review is still required.'))setEditing(null);}}><label htmlFor="jh-draft-input">Draft content (JSON)</label><textarea id="jh-draft-input" value={draftInput} onChange={e=>setDraftInput(e.target.value)} rows={12} required/><div><button className="jh-button primary" disabled={busy||!writable}>Save draft</button><button type="button" className="jh-button" onClick={()=>setEditing(null)}>Cancel</button></div></form>}</article>)}<button className="jh-button" disabled={!writable||busy} onClick={()=>mutate({action:'agent_task',job_id:selectedId,message:`Prepare tailored CV and application drafts for job ${selectedId}`,reason:'Dashboard document request'},'Draft request saved. Workflow execution is not confirmed.')}><Bot size={16}/> Request tailored drafts</button></>}
+              {tab==='Activity'&&<><h3>The story so far</h3><p className="jh-subtle">Recorded events for this opportunity.</p><ol className="jh-timeline">{jobActivity(details).map(e=><li key={e.id}><span><Check size={12}/></span><div><strong>{e.title}</strong><time dateTime={e.at}>{date(e.at)}</time></div></li>)}</ol>{jobActivity(details).length===0&&<p>No timestamped activity is available.</p>}<label className="jh-status-control">Application status<select value={details.status} disabled={!writable||busy} onChange={e=>{if(e.target.value==='applied')setApplyOpen(true);else mutate({action:'update_status',job_id:selectedId,status:e.target.value},'Application status updated.');}}>{JOB_STATUSES.map(s=><option key={s} value={s}>{jobLabel(s)}</option>)}</select></label><p className="jh-footnote">Applications are recorded here after you submit externally.</p></>}
+            </>}
           </div>
-
-          <div className="neon-grid">
-            <div className="neon-card">
-              <span className="mini-label">TOTAL JOBS DISCOVERED</span>
-              <strong className="neon-stat">{stats?.total ?? 0}</strong>
-              <small style={{ color: '#888' }}>Across 7 supported job portals</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">SCORED BY AI</span>
-              <strong className="neon-stat">{stats?.scored ?? 0}</strong>
-              <small style={{ color: '#888' }}>Evaluated against master profile</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">HIGH MATCH (80–100)</span>
-              <strong className="neon-stat" style={{ color: '#98FF02' }}>{stats?.high_match ?? 0}</strong>
-              <small style={{ color: '#888' }}>Recommended for immediate application</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">AWAITING REVIEW</span>
-              <strong className="neon-stat" style={{ color: '#ffaa00' }}>{stats?.review_queue ?? 0}</strong>
-              <small style={{ color: '#888' }}>Drafts or scores ready for human check</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">RESUME DRAFTS GENERATED</span>
-              <strong className="neon-stat">{stats?.resumes_generated ?? 0}</strong>
-              <small style={{ color: '#888' }}>Verified CV adaptations</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">APPLICATIONS SUBMITTED</span>
-              <strong className="neon-stat" style={{ color: '#98FF02' }}>{stats?.applications_submitted ?? 0}</strong>
-              <small style={{ color: '#888' }}>Externally verified submissions</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">INTERVIEWS SCHEDULED</span>
-              <strong className="neon-stat" style={{ color: '#98FF02' }}>{stats?.interviews_scheduled ?? 0}</strong>
-              <small style={{ color: '#888' }}>Active interview pipeline</small>
-            </div>
-            <div className="neon-card">
-              <span className="mini-label">REJECTED / ARCHIVED</span>
-              <strong className="neon-stat" style={{ color: '#888' }}>{stats?.rejected_archived ?? 0}</strong>
-              <small style={{ color: '#888' }}>Pass or filtered out positions</small>
-            </div>
-          </div>
-
-          {/* Portal Distribution */}
-          <div style={{ marginTop: '1.5rem', background: '#101010', padding: '1rem', borderRadius: '6px', border: '1px solid #222' }}>
-            <h3 style={{ fontSize: '0.95rem', color: '#ccc', marginBottom: '0.75rem' }}>Discovery Sources Distribution</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-              {Object.entries(stats?.sources || {}).map(([src, count]) => (
-                <span key={src} className="neon-badge neutral" style={{ fontSize: '0.82rem', padding: '0.35rem 0.75rem' }}>
-                  {src.toUpperCase()}: <strong>{count}</strong>
-                </span>
-              ))}
-              {Object.keys(stats?.sources || {}).length === 0 && (
-                <span style={{ color: '#666', fontSize: '0.85rem' }}>No source data recorded yet.</span>
-              )}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ==================== SECTION B: ALL JOBS ==================== */}
-      {(activeTab === 'jobs' || activeTab === 'review' || activeTab === 'tracker') && (
-        <section className="neon-panel">
-          <div className="neon-header">
-            <div className="neon-title-group">
-              <span className="mini-label">JOB REPOSITORY</span>
-              <h2>
-                {activeTab === 'review' ? 'Application Review Queue' :
-                 activeTab === 'tracker' ? 'Application Submission Tracker' :
-                 `Discovered Jobs (${total})`}
-              </h2>
-            </div>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <select
-                className="neon-input"
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.82rem' }}
-                value={sourceFilter}
-                onChange={e => { setSourceFilter(e.target.value); setPage(1); }}
-              >
-                {SOURCES.map(s => <option key={s} value={s}>{s === 'all' ? 'All Portals' : s.toUpperCase()}</option>)}
-              </select>
-
-              <select
-                className="neon-input"
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.82rem' }}
-                value={scoreFilter}
-                onChange={e => { setScoreFilter(e.target.value); setPage(1); }}
-              >
-                <option value="">All Scores</option>
-                <option value="high">High Match (80+)</option>
-                <option value="moderate">Moderate (60–79)</option>
-                <option value="low">Low Match (&lt;60)</option>
-              </select>
-
-              {activeTab === 'jobs' && (
-                <select
-                  className="neon-input"
-                  style={{ padding: '0.35rem 0.65rem', fontSize: '0.82rem' }}
-                  value={statusFilter}
-                  onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                >
-                  <option value="">All Statuses</option>
-                  <option value="discovered">Discovered</option>
-                  <option value="scored">Scored</option>
-                  <option value="draft_ready">Draft Ready</option>
-                  <option value="approved">Approved</option>
-                  <option value="applied">Applied</option>
-                  <option value="interview">Interview</option>
-                  <option value="offer">Offer</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="archived">Archived</option>
-                </select>
-              )}
-            </div>
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <input
-              type="search"
-              className="neon-input"
-              style={{ width: '100%', maxWidth: '400px' }}
-              placeholder="Search by job title, company, or location…"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-
-          {jobs.length === 0 ? (
-            <p style={{ color: '#777', padding: '1.5rem 0' }}>No job records matching the selected filters.</p>
-          ) : (
-            <div className="neon-table-wrapper">
-              <table className="neon-table">
-                <thead>
-                  <tr>
-                    <th>Job Title & Company</th>
-                    <th>Portal</th>
-                    <th>Location / Remote</th>
-                    <th>Score</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {jobs.map(job => {
-                    const score = job.scores?.[0]?.score;
-                    const isHigh = score >= 80;
-                    const isMod = score >= 60 && score < 80;
-
-                    return (
-                      <tr key={job.id}>
-                        <td>
-                          <strong>{job.title}</strong>
-                          <div style={{ fontSize: '0.78rem', color: '#999' }}>
-                            {job.company || 'Unknown Employer'}
-                          </div>
-                          {job.url && (
-                            <a href={job.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: '#98FF02', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '3px', marginTop: '2px' }}>
-                              Original posting <ExternalLink size={11} />
-                            </a>
-                          )}
-                        </td>
-                        <td>
-                          <span className="neon-badge neutral">{job.source}</span>
-                        </td>
-                        <td>
-                          <small>{job.location || 'Remote'}</small>
-                        </td>
-                        <td>
-                          {score !== undefined ? (
-                            <span className={`neon-badge ${isHigh ? 'live' : isMod ? 'paused' : 'neutral'}`} style={{ fontWeight: 800 }}>
-                              {score}/100
-                            </span>
-                          ) : (
-                            <button
-                              className="neon-button secondary small"
-                              style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem' }}
-                              disabled={readOnly || busy}
-                              onClick={() => analyzeJob(job.id)}
-                            >
-                              <Sparkles size={12} /> Score
-                            </button>
-                          )}
-                        </td>
-                        <td>
-                          <span className={`neon-badge ${job.status === 'applied' ? 'live' : job.status === 'interview' ? 'live' : job.status === 'approved' ? 'paused' : 'neutral'}`}>
-                            {job.status ? job.status.toUpperCase() : 'DISCOVERED'}
-                          </span>
-                        </td>
-                        <td>
-                          <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                            <button
-                              className="neon-button secondary small"
-                              style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
-                              onClick={() => selectJob(job)}
-                            >
-                              Analysis & CV
-                            </button>
-
-                            {/* Applied Action */}
-                            {job.status !== 'applied' && job.status !== 'interview' && job.status !== 'offer' && (
-                              <button
-                                className="neon-button primary small"
-                                style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
-                                disabled={readOnly || busy}
-                                onClick={() => setAppliedModalJob(job)}
-                              >
-                                Mark Applied
-                              </button>
-                            )}
-
-                            {job.status === 'discovered' && (
-                              <button
-                                className="neon-button secondary small"
-                                style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
-                                disabled={readOnly || busy}
-                                onClick={() => changeStatus(job.id, 'approved')}
-                              >
-                                Approve
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1rem', fontSize: '0.85rem', color: '#888' }}>
-            <span>Showing page {page}</span>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <button className="neon-button secondary small" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>Previous</button>
-              <button className="neon-button secondary small" disabled={jobs.length < 25} onClick={() => setPage(p => p + 1)}>Next</button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* ==================== SECTION C & D: AI MATCH ANALYSIS & DOCUMENTS (MODAL / DETAIL) ==================== */}
-      {selectedJob && (
-        <section className="neon-panel" style={{ borderColor: '#98FF02', boxShadow: '0 0 20px rgba(152, 255, 2, 0.15)' }}>
-          <div className="neon-header">
-            <div className="neon-title-group">
-              <span className="mini-label">JOB DOSSIER</span>
-              <h2>{selectedJob.title} — {selectedJob.company}</h2>
-              <p>Source: {selectedJob.source?.toUpperCase()} · Posted: {dateLabel(selectedJob.published_at || selectedJob.created_at, true)}</p>
-            </div>
-            <button className="neon-button secondary small" onClick={() => setSelectedJob(null)}>
-              <X size={16} /> Close Dossier
-            </button>
-          </div>
-
-          {detailsLoading ? (
-            <p style={{ color: '#aaa', padding: '1rem 0' }}>Loading job analysis and drafts from Supabase…</p>
-          ) : (
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) 1.2fr', gap: '1.5rem', alignItems: 'start' }}>
-              {/* Left Column: AI Match Breakdown */}
-              <div style={{ background: '#101010', padding: '1.25rem', borderRadius: '6px', border: '1px solid #222' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '1.1rem', color: '#fff', margin: 0 }}>AI Compatibility Analysis</h3>
-                  {jobDetails?.scores?.[0] ? (
-                    <span className="neon-badge live" style={{ fontSize: '1rem', fontWeight: 800 }}>
-                      {jobDetails.scores[0].score}/100
-                    </span>
-                  ) : (
-                    <button className="neon-button primary small" disabled={readOnly || busy} onClick={() => analyzeJob(selectedJob.id)}>
-                      <Sparkles size={14} /> Run Analysis
-                    </button>
-                  )}
-                </div>
-
-                {jobDetails?.scores?.[0] ? (
-                  <div>
-                    {/* Breakdown bars */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1.25rem' }}>
-                      {Object.entries(jobDetails.scores[0].breakdown || {}).map(([k, val]) => (
-                        <div key={k}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#bbb' }}>
-                            <span style={{ textTransform: 'capitalize' }}>{k}</span>
-                            <span>{val} pts</span>
-                          </div>
-                          <div className="neon-progress-bar">
-                            <div className="neon-progress-fill" style={{ width: `${val}%` }} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <strong style={{ fontSize: '0.82rem', color: '#98FF02', display: 'block', marginBottom: '4px' }}>MATCHED SKILLS</strong>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {(jobDetails.scores[0].matched_skills || []).map((s, idx) => (
-                          <span key={idx} className="neon-badge live" style={{ fontSize: '0.72rem' }}>{s}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div style={{ marginBottom: '1rem' }}>
-                      <strong style={{ fontSize: '0.82rem', color: '#ffaa00', display: 'block', marginBottom: '4px' }}>MISSING GAPS</strong>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                        {(jobDetails.scores[0].gaps || []).map((s, idx) => (
-                          <span key={idx} className="neon-badge paused" style={{ fontSize: '0.72rem' }}>{s}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <strong style={{ fontSize: '0.82rem', color: '#ccc', display: 'block', marginBottom: '4px' }}>AI RECOMMENDATION</strong>
-                      <p style={{ fontSize: '0.85rem', color: '#ddd', background: '#0a0a0a', padding: '0.75rem', borderRadius: '4px', border: '1px solid #1a1a1a' }}>
-                        Recommendation: <strong>{jobDetails.scores[0].recommendation?.toUpperCase()}</strong>. {(jobDetails.scores[0].reasons || []).join(' ')}
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <p style={{ color: '#777', fontSize: '0.85rem' }}>This position has not been scored yet. Click "Run Analysis" to evaluate compatibility.</p>
-                )}
-              </div>
-
-              {/* Right Column: Tailored Resume & Application Documents */}
-              <div style={{ background: '#101010', padding: '1.25rem', borderRadius: '6px', border: '1px solid #222' }}>
-                <h3 style={{ fontSize: '1.1rem', color: '#fff', marginBottom: '1rem' }}>Tailored Application Documents</h3>
-
-                {(jobDetails?.drafts || []).length === 0 ? (
-                  <div>
-                    <p style={{ color: '#777', fontSize: '0.85rem' }}>No AI drafts generated for this job yet.</p>
-                    <button
-                      className="neon-button secondary small"
-                      style={{ marginTop: '0.5rem' }}
-                      disabled={readOnly || busy}
-                      onClick={() => sendAgentCommand(`Prepare tailored CV and cover letter for job ${selectedJob.id}`)}
-                    >
-                      <Bot size={14} /> Request Tailored Drafts from Agent
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    {jobDetails.drafts.map(draft => (
-                      <div key={draft.id} style={{ background: '#141414', padding: '1rem', borderRadius: '6px', border: '1px solid #282828' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                          <span className="neon-badge live">{draft.kind?.toUpperCase()} DRAFT</span>
-                          <span style={{ fontSize: '0.75rem', color: '#888' }}>{dateLabel(draft.created_at, true)}</span>
-                        </div>
-
-                        {/* Resume preview */}
-                        {draft.kind === 'resume' && (
-                          <div>
-                            <strong style={{ color: '#98FF02', fontSize: '0.95rem' }}>{draft.content?.headline}</strong>
-                            <p style={{ fontSize: '0.85rem', color: '#ccc', margin: '0.5rem 0' }}>{draft.content?.summary}</p>
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                              <button className="neon-button secondary small" onClick={() => exportPDF(draft)}>
-                                <FileText size={14} /> Export PDF
-                              </button>
-                              <button className="neon-button secondary small" onClick={() => exportDOCX(draft)}>
-                                <FileText size={14} /> Export DOCX
-                              </button>
-                              <button className="neon-button secondary small" onClick={() => { setEditingDraft(draft); setDraftContentText(JSON.stringify(draft.content, null, 2)); }}>
-                                Edit Draft
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Application / Cover letter preview */}
-                        {draft.kind === 'application' && (
-                          <div>
-                            <strong style={{ color: '#fff', fontSize: '0.88rem' }}>Cover Letter (Verified Facts):</strong>
-                            <div style={{ background: '#0a0a0a', padding: '0.75rem', borderRadius: '4px', margin: '0.5rem 0', fontSize: '0.85rem', color: '#ddd', whiteSpace: 'pre-wrap' }}>
-                              {draft.content?.cover_letter}
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.5rem' }}>
-                              <button className="neon-button secondary small" onClick={() => copyText(draft.content?.cover_letter || '', 'Cover letter')}>
-                                Copy Cover Letter
-                              </button>
-                              {draft.content?.recruiter_message && (
-                                <button className="neon-button secondary small" onClick={() => copyText(draft.content.recruiter_message, 'Recruiter message')}>
-                                  Copy Recruiter DM
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Interview pack preview */}
-                        {draft.kind === 'interview' && (
-                          <div>
-                            <strong style={{ color: '#fff', fontSize: '0.88rem' }}>Targeted Interview Prep:</strong>
-                            <p style={{ fontSize: '0.85rem', color: '#aaa', margin: '0.4rem 0' }}>
-                              {draft.content?.questions?.length || 0} tailored interview questions and outlines prepared.
-                            </p>
-                            <button className="neon-button secondary small" onClick={() => copyText(JSON.stringify(draft.content?.questions || [], null, 2), 'Interview questions')}>
-                              Copy Question Outlines
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* ==================== SECTION F: AI AGENT CONTROL CENTER ==================== */}
-      {activeTab === 'agent' && (
-        <section className="neon-panel">
-          <div className="neon-header">
-            <div className="neon-title-group">
-              <span className="mini-label">AUTONOMOUS ORCHESTRATION</span>
-              <h2><Bot size={28} color="#98FF02" /> AI Job Hunter Agent Control</h2>
-              <p>Instruct the specialist n8n agent orchestrator (<code>JOB-00</code>) to discover, score, or tailor materials.</p>
-            </div>
-          </div>
-
-          {/* Quick command buttons */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.25rem' }}>
-            {[
-              'Find matching WordPress jobs.',
-              'Show my top 10 remote developer jobs.',
-              'Prepare a CV for this job.',
-              'Generate interview questions.',
-              'Run daily discovery scan across all portals.'
-            ].map(prompt => (
-              <button
-                key={prompt}
-                type="button"
-                className="neon-button secondary small"
-                disabled={busy || readOnly}
-                onClick={() => sendAgentCommand(prompt)}
-              >
-                "{prompt}"
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Command Bar */}
-          <form onSubmit={e => { e.preventDefault(); sendAgentCommand(agentPrompt); }} style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
-            <input
-              type="text"
-              className="neon-input"
-              style={{ flex: 1 }}
-              placeholder="Enter instruction for Job Hunter Agent (e.g. Find remote Next.js roles paying $120k+)…"
-              value={agentPrompt}
-              onChange={e => setAgentPrompt(e.target.value)}
-            />
-            <button type="submit" className="neon-button primary" disabled={busy || readOnly}>
-              <Sparkles size={16} /> Send Command
-            </button>
-          </form>
-
-          {/* Agent Activity History */}
-          <h3 style={{ fontSize: '1rem', color: '#ccc', marginBottom: '0.75rem' }}>Task Execution History</h3>
-          {tasks.length === 0 ? (
-            <p style={{ color: '#777', padding: '1rem 0' }}>No agent task history recorded yet.</p>
-          ) : (
-            <div className="neon-table-wrapper">
-              <table className="neon-table">
-                <thead>
-                  <tr>
-                    <th>Skill</th>
-                    <th>Instruction / Message</th>
-                    <th>Reason</th>
-                    <th>Status</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {tasks.map(t => (
-                    <tr key={t.id}>
-                      <td><span className="neon-badge neutral">{t.skill?.toUpperCase()}</span></td>
-                      <td><strong>{t.message}</strong></td>
-                      <td><small style={{ color: '#aaa' }}>{t.reason}</small></td>
-                      <td>
-                        <span className={`neon-badge ${t.status === 'completed' ? 'live' : t.status === 'queued' ? 'paused' : 'neutral'}`}>
-                          {t.status}
-                        </span>
-                      </td>
-                      <td><small>{dateLabel(t.created_at, true)}</small></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
-
-      {/* ==================== MARK AS APPLIED CONFIRMATION MODAL ==================== */}
-      {appliedModalJob && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="neon-panel" style={{ maxWidth: '500px', width: '100%', background: '#121212', border: '1px solid #98FF02' }}>
-            <h3 style={{ color: '#fff', fontSize: '1.2rem', marginBottom: '0.5rem' }}>Mark Job as Applied</h3>
-            <p style={{ fontSize: '0.85rem', color: '#aaa', marginBottom: '1rem' }}>
-              Confirm that you have externally submitted your application for <strong>{appliedModalJob.title}</strong> at <strong>{appliedModalJob.company}</strong>.
-            </p>
-
-            <form onSubmit={confirmApplied}>
-              <div className="neon-input-group">
-                <label>Date Applied (UTC)</label>
-                <input
-                  type="date"
-                  className="neon-input"
-                  required
-                  value={appliedDate}
-                  onChange={e => setAppliedDate(e.target.value)}
-                />
-              </div>
-
-              <div className="neon-input-group">
-                <label>Optional Notes / Referral Details</label>
-                <textarea
-                  className="neon-input"
-                  rows={3}
-                  placeholder="e.g. Applied via Lever, contacted recruiter Jane on LinkedIn"
-                  value={appliedNotes}
-                  onChange={e => setAppliedNotes(e.target.value)}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1.25rem' }}>
-                <button type="button" className="neon-button secondary" onClick={() => setAppliedModalJob(null)}>
-                  Cancel
-                </button>
-                <button type="submit" className="neon-button primary" disabled={busy || readOnly}>
-                  <Check size={16} /> Confirm Applied
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ==================== DRAFT EDITING MODAL ==================== */}
-      {editingDraft && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' }}>
-          <div className="neon-panel" style={{ maxWidth: '640px', width: '100%', background: '#121212', border: '1px solid #333' }}>
-            <h3 style={{ color: '#fff', fontSize: '1.1rem', marginBottom: '0.5rem' }}>Edit {editingDraft.kind?.toUpperCase()} Draft</h3>
-            <p style={{ fontSize: '0.82rem', color: '#aaa', marginBottom: '1rem' }}>
-              Only verified master CV facts are allowed. Never fabricate dates or employers.
-            </p>
-
-            <textarea
-              className="neon-input"
-              rows={12}
-              style={{ width: '100%', fontFamily: 'monospace', fontSize: '0.85rem' }}
-              value={draftContentText}
-              onChange={e => setDraftContentText(e.target.value)}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '1rem' }}>
-              <button type="button" className="neon-button secondary" onClick={() => setEditingDraft(null)}>
-                Cancel
-              </button>
-              <button type="button" className="neon-button primary" disabled={busy || readOnly} onClick={saveDraft}>
-                <Check size={16} /> Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          {details&&!detailLoading&&!detailError&&<footer className="jh-detail-footer"><div className="jh-primary-actions">{jobUrl(details.url)?<a className="jh-button primary" href={jobUrl(details.url)} target="_blank" rel="noopener noreferrer">Open application <ExternalLink size={16}/></a>:<span className="jh-subtle">No application link available.</span>}<button className="jh-button" ref={applyTrigger} disabled={!writable||busy||details.status==='applied'} onClick={()=>setApplyOpen(true)}><Check size={16}/>{details.status==='applied'?'Applied':'Mark as applied'}</button></div><div className="jh-secondary-actions"><button disabled={!writable||busy} onClick={()=>mutate({action:'update_status',job_id:selectedId,status:'approved'},'Saved for review. No application was submitted.')}><Check size={14}/>Save for review</button><button disabled={!writable||busy} onClick={()=>mutate({action:'analyze_job',job_id:selectedId},'Analysis request saved. Workflow execution is not confirmed.')}><Sparkles size={14}/>Analyze match</button><button disabled={!writable||busy} onClick={()=>mutate({action:'update_status',job_id:selectedId,status:'archived'},'Job archived.')}><X size={14}/>Archive</button></div><p><ShieldCheck size={12}/> You’re in control. Applications are never sent by these buttons.</p></footer>}
+        </>}
+      </section>
     </div>
-  );
+    {applyOpen&&<dialog className="jh-dialog" ref={applyRef} onCancel={()=>setApplyOpen(false)} aria-labelledby="jh-apply-title"><form onSubmit={async e=>{e.preventDefault();if(await mutate({action:'mark_applied',job_id:selectedId,applied_at:new Date(`${appliedDate}T12:00:00`).toISOString()},'Application recorded. No external application was submitted.'))setApplyOpen(false);}}><h2 id="jh-apply-title">Already sent your application?</h2><p>This records an application you submitted on the employer’s website.</p><label htmlFor="jh-applied-date">Application date</label><input type="date" id="jh-applied-date" value={appliedDate} max={localDateInput()} onChange={e=>setAppliedDate(e.target.value)} required/><div><button type="button" className="jh-button" onClick={()=>setApplyOpen(false)}>Cancel</button><button className="jh-button primary" disabled={busy||!writable}>Confirm application</button></div></form></dialog>}
+  </section>;
 }
