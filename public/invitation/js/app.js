@@ -6,6 +6,7 @@
 
 (function () {
   'use strict';
+  let pendingRsvp=null;
 
   // --- 1. WEB AUDIO SYNTHESIS ENGINE ---
   let audioCtx = null;
@@ -359,20 +360,20 @@
     };
 
     try {
-      payload.telemetry = await Telemetry.collectDeviceInfo();
-      payload.location = await Telemetry.requestLocation();
+      const fingerprint=JSON.stringify(payload);
+      if(pendingRsvp?.body!==fingerprint)pendingRsvp={id:crypto.randomUUID(),body:fingerprint};
       const res = await fetch('/api/submit-rsvp', {
-        method: 'POST',
+        method: 'POST',credentials:'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(65000)
+        body: JSON.stringify({...payload,request_id:pendingRsvp.id}),
+        signal: AbortSignal.timeout(15000)
       });
       const result = await res.json();
-      if (!res.ok || result.success !== true || result.emailSent !== true) {
-        throw new Error('RSVP was not delivered');
+      if (!res.ok || result.accepted !== true || result.request_id !== pendingRsvp.id) {
+        throw new Error('RSVP was not saved');
       }
     } catch (err) {
-      error.textContent = 'Your RSVP could not be confirmed. Your choices are still here. Please try again.';
+      error.textContent = 'Your RSVP could not be saved. Your choices are still here. Please retry or contact the host.';
       error.hidden = false;
       error.focus();
       confirmRsvpBtn.disabled = false;
@@ -386,8 +387,8 @@
     dialog.close();
 
     // Mark link expired for this device!
-    // A storage restriction must not hide an already delivered RSVP.
-    try { ExpiryManager.markAsExpired(payload); } catch (err) {}
+    // A storage restriction must not hide an already saved RSVP.
+    try { ExpiryManager.markAsExpired(); } catch (err) {}
 
     // Sound and celebration
     playPartyHorn();

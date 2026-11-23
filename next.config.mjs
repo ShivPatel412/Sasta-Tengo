@@ -14,7 +14,7 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https: https://*.vercel-storage.com https://*.googleusercontent.com https://opengraph.githubassets.com",
       "media-src 'self' blob: data: https:",
-      "connect-src 'self' https://api.github.com https://*.supabase.co https://n8n.shivpatel.in https://*.vercel-storage.com https://ipapi.co",
+      "connect-src 'self' https://api.github.com https://*.supabase.co https://n8n.shivpatel.in https://*.vercel-storage.com",
       "frame-ancestors 'none'",
       "base-uri 'self'",
       "form-action 'self'",

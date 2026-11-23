@@ -29,3 +29,8 @@ test('activity uses actual timestamps and never invents status history',()=>{
  assert.equal(events.length,3);assert.equal(events[0].title,'Marked as applied');assert.equal(events[2].title,'Job discovered');assert(!events.some(e=>/Interview/.test(e.title)));
  assert.deepEqual(jobActivity(null),[]);
 });
+
+test('activity uses the score timestamp from the committed database schema',()=>{
+ const events=jobActivity({scores:[{job_id:'fixture',score:92,updated_at:'2026-11-23T12:00:00Z'}]});
+ assert.equal(events.length,1);assert.equal(events[0].title,'Match analysis saved');assert.equal(events[0].at,'2026-11-23T12:00:00Z');
+});

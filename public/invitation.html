@@ -38,7 +38,7 @@
       </div>
 
       <p class="lockout-desc">
-        Your choices have been sent to the host. This device has already RSVP’d. See you on November 28th!
+        Your RSVP has been saved. Contact the host if you need to change your choices.
       </p>
 
       <div class="countdown-mini">
@@ -451,7 +451,7 @@
         </div>
       </div>
 
-      <p class="privacy-note">Submitting shares your choices, device details, and location with the host. Your browser may ask for location access; you can decline (approximate IP location may still be used).</p>
+      <p class="privacy-note">Only your party choices and optional place information are saved. We do not request location or collect device details. <a href="/privacy-policy">Privacy information</a>.</p>
       <p id="submitError" class="form-error" role="alert" tabindex="-1" hidden></p>
       <div class="dialog-actions">
         <!-- PRIMARY SUBMIT BUTTON -->
@@ -479,14 +479,14 @@
     <div class="success-card glass-panel">
       <div class="success-emoji">🎉🍻</div>
       <h2 id="successTitle" class="glow-text-pink">YOU’RE IN.</h2>
-      <p class="success-tagline">Your RSVP has been officially dispatched to the host.</p>
+      <p class="success-tagline">Your RSVP has been saved for the host. Email notification may follow separately.</p>
       
       <div class="success-summary" id="successSummary">
         <!-- Injected via JS -->
       </div>
 
       <div class="lockout-alert">
-        🔒 <strong>Link has now expired for your device.</strong> No changes allowed. See you on 28th Nov!
+        <strong>RSVP saved.</strong> Contact the host if your plans change.
       </div>
 
       <div class="countdown-mini">
@@ -497,8 +497,7 @@
   </div>
 
   <!-- SCRIPTS -->
-  <script src="/invitation/js/telemetry.js?v=20261123"></script>
-  <script src="/invitation/js/expiry.js?v=20261123"></script>
-  <script src="/invitation/js/app.js?v=20261123"></script>
+  <script src="/invitation/js/expiry.js?v=20261123-safe"></script>
+  <script src="/invitation/js/app.js?v=20261123-safe"></script>
 </body>
 </html>

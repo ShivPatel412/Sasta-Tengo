@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
+import {webcrypto} from 'node:crypto';
 
 const source = readFileSync(new URL('../public/invitation/js/app.js', import.meta.url), 'utf8');
 
@@ -33,8 +34,7 @@ function invitation(fetch) {
   };
   const context = vm.createContext({
     document, window: { matchMedia: () => ({ matches: true }), addEventListener() {} },
-    navigator: {}, setInterval() {}, Date, AbortSignal, fetch,
-    Telemetry: { collectDeviceInfo: async () => ({}), requestLocation: async () => ({ source: 'none' }) },
+    navigator: {}, crypto:webcrypto, setInterval() {}, Date, AbortSignal, fetch,
     ExpiryManager: { init() {}, markAsExpired() { expired = true; } }
   });
   vm.runInContext(source, context);
@@ -61,14 +61,14 @@ for (const [name, fetch] of [
   });
 }
 
-test('invitation locks only after delivery and renders suggestions as text', async () => {
+test('invitation locks only after a durable receipt and renders suggestions as text', async () => {
   let payload;
   const page = invitation(async (url, options) => {
     assert.equal(url, '/api/submit-rsvp');
     assert.equal(page.expired(), false);
     assert.equal(page.element('confirmRsvpBtn').disabled, true);
     payload = JSON.parse(options.body);
-    return Response.json({ success: true, emailSent: true });
+    return Response.json({ accepted:true, request_id:payload.request_id });
   });
   page.form.customDinner.value = '<img src=x onerror=alert(1)>';
   await page.submit();

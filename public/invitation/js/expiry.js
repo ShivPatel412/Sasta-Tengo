@@ -6,7 +6,6 @@
 
 const ExpiryManager = (function () {
   const STORAGE_KEY = 'birthday_rsvp_status_28nov';
-  const SUMMARY_KEY = 'birthday_rsvp_summary_28nov';
 
   function init() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -34,27 +33,16 @@ const ExpiryManager = (function () {
   }
 
   function isExpired() {
-    return localStorage.getItem(STORAGE_KEY) === 'completed';
+    try{return localStorage.getItem(STORAGE_KEY)==='completed';}catch{return false;}
   }
 
-  function markAsExpired(summaryData = {}) {
-    localStorage.setItem(STORAGE_KEY, 'completed');
-    localStorage.setItem(SUMMARY_KEY, JSON.stringify(summaryData));
-    document.cookie = "party_rsvp_completed=true; max-age=2592000; path=/; SameSite=Lax";
-  }
-
-  function getSavedSummary() {
-    try {
-      const data = localStorage.getItem(SUMMARY_KEY);
-      return data ? JSON.parse(data) : null;
-    } catch (e) {
-      return null;
-    }
+  function markAsExpired() {
+    // Storage is optional; a confirmed server receipt must still show success when storage is blocked.
+    try{localStorage.setItem(STORAGE_KEY,'completed');}catch{}
   }
 
   function resetExpiry() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(SUMMARY_KEY);
+    try{localStorage.removeItem(STORAGE_KEY);}catch{}
     document.cookie = "party_rsvp_completed=; max-age=0; path=/;";
     console.log('[ExpiryManager] Session cleared. Link is active again.');
   }
@@ -102,7 +90,6 @@ const ExpiryManager = (function () {
     init,
     isExpired,
     markAsExpired,
-    getSavedSummary,
     resetExpiry,
     showLockoutScreen
   };

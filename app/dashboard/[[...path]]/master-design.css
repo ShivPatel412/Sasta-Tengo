@@ -179,3 +179,6 @@
 }
 @media(prefers-reduced-motion:reduce){.master-workspace *,.master-login *{animation:none!important;transition:none!important;scroll-behavior:auto!important}.master-workspace .metric-card:hover{transform:none}}
 @media(max-width:600px){.master-workspace .review-banner span{display:none}.master-workspace .connection-notice p{font:var(--body-6)}.master-workspace .heading-actions{position:static}.master-workspace .cloud-card .cloud-card-top{margin-bottom:24px}}
+
+.master-login .login-story .workspace-brand{color:#f4f6ef}
+.master-login .login-form-side :is(.mini-label,.login-back,form>p){color:#596352}
