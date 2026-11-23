@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>28-29 NOV: The Ultimate Birthday Chaos 😈</title>
+  <meta name="description" content="Exclusive Birthday Invitation for 28-29 November. Lock in your bad decisions!">
+  <meta name="theme-color" content="#0b0b14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/invitation/css/style.css">
+</head>
+<body>
+
+  <!-- Fullscreen Confetti Canvas -->
+  <canvas id="confettiCanvas"></canvas>
+
+  <!-- Sound Toggle & Audio Synthesis -->
+  <div class="top-nav-bar">
+    <div class="brand-pill">🎂 28-29 NOV EDITION</div>
+    <button id="soundToggle" class="sound-btn" aria-label="Toggle Sound" title="Toggle Sound">
+      <span id="soundIcon">🔊</span> Sound ON
+    </button>
+  </div>
+
+  <!-- LOCKOUT SCREEN (Active when form was already submitted) -->
+  <section id="lockoutScreen" class="lockout-screen" style="display: none;">
+    <div class="lockout-card glass-panel">
+      <div class="lockout-icon">🚫</div>
+      <h1 class="glow-text-pink">NICE TRY, SNEAKY!</h1>
+      <p class="lockout-subtitle">Your bad decisions and soul are already signed away 😈</p>
+      
+      <div class="status-box">
+        <span class="status-indicator">●</span>
+        <span>LINK STATUS: <strong>EXPIRED & LOCKED</strong></span>
+      </div>
+
+      <p class="lockout-desc">
+        You already cast your votes. The host's spy radar already recorded your device, so there are <strong>zero takebacks</strong>! Get your liver ready for November 28th.
+      </p>
+
+      <div class="countdown-mini">
+        <div class="countdown-label">TIME REMAINING UNTIL PARTY MAYHEM</div>
+        <div class="countdown-timer" id="lockoutCountdown">Loading...</div>
+      </div>
+
+      <div class="lockout-footer">
+        <p>Need to reset for testing?</p>
+        <button id="resetLockoutBtn" class="secondary-btn">Reset Token (Host Testing Only)</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- MAIN INVITATION PAGE -->
+  <main id="mainContent" class="main-container">
+    
+    <!-- HERO SECTION -->
+    <header class="hero-section">
+      <div class="pill-badge pulse-glow">⚠️ OFFICIAL SUMMONS</div>
+      
+      <h1 class="hero-title">
+        28-29 NOV <br>
+        <span class="gradient-text">THE HANGOVER</span> <br>
+        PART IV 😈🍹
+      </h1>
+
+      <p class="hero-subtext">
+        You are cordially (and forcefully) invited to celebrate my birthday. Prepare for memory loss, terrible jokes, and questionable financial choices.
+      </p>
+
+      <!-- Party Countdown -->
+      <div class="countdown-container glass-panel">
+        <div class="countdown-title">⏳ COUNTDOWN TO CHAOS</div>
+        <div class="countdown-grid" id="mainCountdown">
+          <div class="countdown-box">
+            <span class="cd-num" id="cdDays">00</span>
+            <span class="cd-label">DAYS</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-box">
+            <span class="cd-num" id="cdHours">00</span>
+            <span class="cd-label">HOURS</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-box">
+            <span class="cd-num" id="cdMins">00</span>
+            <span class="cd-label">MINS</span>
+          </div>
+          <div class="countdown-divider">:</div>
+          <div class="countdown-box">
+            <span class="cd-num" id="cdSecs">00</span>
+            <span class="cd-label">SECS</span>
+          </div>
+        </div>
+        <div class="date-badge">🗓️ Saturday 28th – Sunday 29th November | 6:00 PM Onwards</div>
+      </div>
+
+      <div class="scroll-cue">
+        <span>SCROLL DOWN TO VOTE</span>
+        <div class="bouncing-arrow">↓</div>
+      </div>
+    </header>
+
+    <!-- PROGRESS BAR -->
+    <div class="sticky-progress">
+      <div class="progress-fill" id="formProgress"></div>
+      <div class="progress-text" id="progressText">0% Planned</div>
+    </div>
+
+    <!-- RSVP FORM -->
+    <form id="partyForm" class="party-form" novalidate>
+
+      <!-- SECTION 1: ACTIVITIES -->
+      <section class="form-section reveal-on-scroll" data-step="1">
+        <div class="section-badge">STEP 1 OF 5</div>
+        <h2 class="section-heading">🎯 Pick The Activity</h2>
+        <p class="section-desc">What kind of reckless physical trauma are we indulging in?</p>
+
+        <div class="options-grid">
+          
+          <label class="option-card">
+            <input type="checkbox" name="activities" value="Bowling 🎳" class="option-checkbox">
+            <div class="card-inner">
+              <div class="card-icon">🎳</div>
+              <div class="card-info">
+                <span class="card-title">BOWLING</span>
+                <span class="card-caption">Strikes, gutter balls & blaming the greasy rental shoes</span>
+              </div>
+              <div class="check-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="activities" value="Trampoline Park 🤸‍♂️" class="option-checkbox">
+            <div class="card-inner">
+              <div class="card-icon">🤸‍♂️</div>
+              <div class="card-info">
+                <span class="card-title">TRAMPOLINE PARK</span>
+                <span class="card-caption">Bounce away your dignity and test your orthopedic health</span>
+              </div>
+              <div class="check-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="activities" value="Go-Karting 🏎️" class="option-checkbox">
+            <div class="card-inner">
+              <div class="card-icon">🏎️</div>
+              <div class="card-info">
+                <span class="card-title">GO-KARTING</span>
+                <span class="card-caption">40 MPH road rage with zero traffic cops to stop us</span>
+              </div>
+              <div class="check-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card">
+            <input type="checkbox" name="activities" value="Golf ⛳" class="option-checkbox">
+            <div class="card-inner">
+              <div class="card-icon">⛳</div>
+              <div class="card-info">
+                <span class="card-title">GOLF</span>
+                <span class="card-caption">Drunk swinging and pretending we belong in high society</span>
+              </div>
+              <div class="check-indicator"></div>
+            </div>
+          </label>
+
+        </div>
+      </section>
+
+      <!-- SECTION 2: DINNER -->
+      <section class="form-section reveal-on-scroll" data-step="2">
+        <div class="section-badge">STEP 2 OF 5</div>
+        <h2 class="section-heading">🥩 Where Are We Feasting?</h2>
+        <p class="section-desc">You need solid food before the alcohol eats away your stomach lining.</p>
+
+        <div class="options-grid radio-group">
+          
+          <label class="option-card radio-card">
+            <input type="radio" name="dinner" value="Sizzling Rooftop BBQ & Tandoori" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🥩</div>
+              <div class="card-info">
+                <span class="card-title">ROOFTOP BBQ & TANDOORI</span>
+                <span class="card-caption">Smoky meats, spicy tikka & sky view vibes</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dinner" value="Woodfired Pizza & Craft Burgers" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🍕</div>
+              <div class="card-info">
+                <span class="card-title">PIZZA & LOADED BURGERS</span>
+                <span class="card-caption">Carb overload, dripping cheese & zero regrets</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dinner" value="Spicy Asian Hotpot & Dumplings" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🥟</div>
+              <div class="card-info">
+                <span class="card-title">ASIAN HOTPOT & DUMPLINGS</span>
+                <span class="card-caption">Spicy broth, slurping noodles & burning tongues</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dinner" value="Tacos & Street Food Fiesta" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🌮</div>
+              <div class="card-info">
+                <span class="card-title">TACOS & STREET FIESTA</span>
+                <span class="card-caption">Crunchy tacos, nachos & messy street gluttony</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+        </div>
+
+        <div class="custom-input-box">
+          <label for="customDinner" class="input-label">Or suggest a specific restaurant/spot:</label>
+          <input type="text" id="customDinner" name="customDinner" placeholder="e.g. That spicy Korean joint or surprise me..." class="styled-text-input">
+        </div>
+      </section>
+
+      <!-- SECTION 3: DESSERT -->
+      <section class="form-section reveal-on-scroll" data-step="3">
+        <div class="section-badge">STEP 3 OF 5</div>
+        <h2 class="section-heading">🍰 Midnight Dessert Destination</h2>
+        <p class="section-desc">Because bad decisions always end with late-night sugar highs.</p>
+
+        <div class="options-grid radio-group">
+          
+          <label class="option-card radio-card">
+            <input type="radio" name="dessert" value="Sizzling Brownie & Waffles" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🧇</div>
+              <div class="card-info">
+                <span class="card-title">SIZZLING BROWNIE & WAFFLES</span>
+                <span class="card-caption">Molten chocolate sauce & warm vanilla ice cream</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dessert" value="Artisanal Italian Gelato" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🍨</div>
+              <div class="card-info">
+                <span class="card-title">ARTISANAL GELATO</span>
+                <span class="card-caption">Belgian dark chocolate, pistachio & mango sorbet</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dessert" value="Drunk 1 AM Cheesecake Run" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🍰</div>
+              <div class="card-info">
+                <span class="card-title">1 AM CHEESECAKE RUN</span>
+                <span class="card-caption">Sneaking into late night bakeries like bandits</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+          <label class="option-card radio-card">
+            <input type="radio" name="dessert" value="Warm Churros & Nutella Drizzle" class="option-radio">
+            <div class="card-inner">
+              <div class="card-icon">🍩</div>
+              <div class="card-info">
+                <span class="card-title">WARM CHURROS & NUTELLA</span>
+                <span class="card-caption">Cinnamon sugar perfection & pure happiness</span>
+              </div>
+              <div class="radio-indicator"></div>
+            </div>
+          </label>
+
+        </div>
+
+        <div class="custom-input-box">
+          <label for="customDessert" class="input-label">Or suggest your dream midnight dessert:</label>
+          <input type="text" id="customDessert" name="customDessert" placeholder="e.g. Kulfi falooda, churros, or whatever is open..." class="styled-text-input">
+        </div>
+      </section>
+
+      <!-- SECTION 4: WHERE DO YOU WANT TO GO? (DROP REEL / MAP LINK) -->
+      <section class="form-section reveal-on-scroll" data-step="4">
+        <div class="section-badge link-badge">STEP 4 OF 5 • DROP THE SPOT & LINK 📍</div>
+        <h2 class="section-heading">📍 Where Are We Heading?</h2>
+        <p class="section-desc">Got a viral Instagram Reel saved, a sick profile, or a Google Maps spot you've been dying to check out? Drop the name and link below!</p>
+
+        <div class="destination-card">
+          <div class="dest-field">
+            <label for="placeName" class="input-label">🏢 Name of the Place / Venue:</label>
+            <input type="text" id="placeName" name="placeName" placeholder="e.g. Club Toy Room, Bademiya, Sky Lounge, That Speakeasy..." class="styled-text-input">
+          </div>
+
+          <div class="dest-field" style="margin-top: 14px;">
+            <label for="placeLink" class="input-label">🔗 Link (Instagram Reel / Profile or Google Maps):</label>
+            <div class="link-input-wrapper">
+              <span class="link-icon">🔗</span>
+              <input type="url" id="placeLink" name="placeLink" placeholder="https://instagram.com/reel/... or Google Maps URL" class="styled-text-input with-icon">
+            </div>
+          </div>
+
+          <div class="link-pills">
+            <span class="link-pill">📸 Instagram Reel</span>
+            <span class="link-pill">👤 IG Profile</span>
+            <span class="link-pill">🗺️ Google Maps</span>
+          </div>
+
+          <div class="dest-field" style="margin-top: 14px;">
+            <label for="placeNotes" class="input-label">💬 What's the vibe? (Specific food, drink, or reason to go):</label>
+            <input type="text" id="placeNotes" name="placeNotes" placeholder="e.g. Their LIIT is deadly, killer rooftop DJ, insane truffle fries..." class="styled-text-input">
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 5: BOTTLE SELECTION -->
+      <section class="form-section reveal-on-scroll" data-step="5">
+        <div class="section-badge highlight">STEP 5 OF 5 • CRITICAL DECISION</div>
+        <h2 class="section-heading">🍾 Choose Your Poison</h2>
+        <p class="section-desc">Which bottle are we popping open to destroy all tomorrow's plans?</p>
+
+        <div class="bottle-grid">
+
+          <label class="bottle-card">
+            <input type="radio" name="bottle" value="Minti Jamun 🫐" class="bottle-radio">
+            <div class="bottle-inner">
+              <div class="bottle-glow jamun-glow"></div>
+              <div class="bottle-badge">28% VOL • DESI FUSION</div>
+              <div class="bottle-emoji">🫐</div>
+              <div class="bottle-name">MINTI JAMUN</div>
+              <div class="bottle-tagline">The Fruity Chaos Agent. Sweet, tangy, and turns your tongue purple while erasing memories.</div>
+              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+            </div>
+          </label>
+
+          <label class="bottle-card">
+            <input type="radio" name="bottle" value="Bacardi Lemon 🍋" class="bottle-radio">
+            <div class="bottle-inner">
+              <div class="bottle-glow lemon-glow"></div>
+              <div class="bottle-badge">35% VOL • RETRO REWIND</div>
+              <div class="bottle-emoji">🍋</div>
+              <div class="bottle-name">BACARDI LEMON</div>
+              <div class="bottle-tagline">College flashbacks in a glass. Guarantees loud singing and nostalgic screaming.</div>
+              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+            </div>
+          </label>
+
+          <label class="bottle-card">
+            <input type="radio" name="bottle" value="Smirnoff Vodka 🍸" class="bottle-radio">
+            <div class="bottle-inner">
+              <div class="bottle-glow smirnoff-glow"></div>
+              <div class="bottle-badge">40% VOL • CLASSIC WEAPON</div>
+              <div class="bottle-emoji">🍸</div>
+              <div class="bottle-name">SMIRNOFF</div>
+              <div class="bottle-tagline">Pure unadulterated regret fuel. Mixes with anything, forgives nothing.</div>
+              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+            </div>
+          </label>
+
+          <label class="bottle-card">
+            <input type="radio" name="bottle" value="Absolut Vodka 🧊" class="bottle-radio">
+            <div class="bottle-inner">
+              <div class="bottle-glow absolut-glow"></div>
+              <div class="bottle-badge">40% VOL • LUXURY NUMBNESS</div>
+              <div class="bottle-emoji">🧊</div>
+              <div class="bottle-name">ABSOLUT VODKA</div>
+              <div class="bottle-tagline">For the purist who prefers high-class morning headaches with Scandinavian aesthetics.</div>
+              <div class="select-pill">POP THIS BOTTLE 🍾</div>
+            </div>
+          </label>
+
+        </div>
+      </section>
+
+      <!-- CHEEKY BONUS POLL -->
+      <section class="form-section bonus-section reveal-on-scroll">
+        <div class="section-badge bonus-badge">😈 BONUS TRUTH POLL</div>
+        <h2 class="section-heading">Predict Your Fate</h2>
+        
+        <div class="bonus-group">
+          <label class="bonus-label">What time will you inevitably black out?</label>
+          <div class="bonus-pills">
+            <label class="pill-option">
+              <input type="radio" name="blackoutTime" value="10:00 PM (Weakling)">
+              <span>10 PM (Weakling)</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="blackoutTime" value="Midnight (Standard Soldier)">
+              <span>12 AM (Standard)</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="blackoutTime" value="3:00 AM (Surviving on sheer spite)">
+              <span>3 AM (Spite Mode)</span>
+            </label>
+            <label class="pill-option">
+              <input type="radio" name="blackoutTime" value="Never! I will be carrying everyone else home">
+              <span>I'm the designated nurse 🚑</span>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- SUBMIT TRIGGER BUTTON -->
+      <div class="submit-container reveal-on-scroll">
+        <button type="button" id="openDisclaimerBtn" class="cta-submit-btn">
+          <span>LOCK IN MY BAD DECISIONS 🍻</span>
+          <div class="btn-flare"></div>
+        </button>
+        <p class="submit-note">⚠️ Tapping this will record your vote and trigger the final checkpoint.</p>
+      </div>
+
+    </form>
+  </main>
+
+  <!-- NATIVE MODAL DIALOG: NOT SPONSORED DISCLAIMER -->
+  <dialog id="sponsorshipModal" class="reality-dialog" aria-labelledby="dialogTitle">
+    <div class="dialog-content glass-panel">
+      
+      <div class="dialog-header">
+        <div class="warning-icon pulse-animation">🛑</div>
+        <h2 id="dialogTitle" class="dialog-title glow-text-yellow">REALITY CHECK!</h2>
+        <div class="dialog-tag">OFFICIAL FINANCIAL DISCLAIMER</div>
+      </div>
+
+      <div class="dialog-body">
+        <p class="dialog-highlight">
+          <strong>THIS PARTY IS OFFICIALLY NOT SPONSORED BY ME! 💸💀</strong>
+        </p>
+        <p class="dialog-text">
+          Before you start picking the most expensive bottle and double ordering desserts, remember: 
+          My bank account is in the ICU. Bring your UPI, cash, or credit card — otherwise, you're wearing an apron and washing dishes in the restaurant kitchen! 🍽️🧼
+        </p>
+        <div class="disclaimer-chip">
+          <span>🏷️ Rule #1: Split the bill, double the thrill!</span>
+        </div>
+      </div>
+
+      <div class="dialog-actions">
+        <!-- PRIMARY SUBMIT BUTTON -->
+        <button type="button" id="confirmRsvpBtn" class="confirm-pay-btn">
+          <span>I'M READY TO PAY MY SHARE & PARTY! 🚀💸</span>
+        </button>
+
+        <!-- CHEEKY RUNAWAY BROKE BUTTON -->
+        <button type="button" id="runawayBtn" class="runaway-broke-btn">
+          Too broke, let me out 🏃‍♂️💨
+        </button>
+      </div>
+
+      <div class="dialog-close-row">
+        <button type="button" id="closeDialogBtn" class="simple-close-btn" aria-label="Cancel and review options">
+          ← Wait, let me change my choices
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- SUBMISSION SUCCESS OVERLAY -->
+  <div id="successOverlay" class="success-overlay" style="display: none;">
+    <div class="success-card glass-panel">
+      <div class="success-emoji">🎉🍻</div>
+      <h2 class="glow-text-pink">FATE SEALED!</h2>
+      <p class="success-tagline">Your RSVP has been officially dispatched to the host.</p>
+      
+      <div class="success-summary" id="successSummary">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="lockout-alert">
+        🔒 <strong>Link has now expired for your device.</strong> No changes allowed. See you on 28th Nov!
+      </div>
+
+      <div class="countdown-mini">
+        <div class="countdown-label">TIME UNTIL THE HANGOVER BEGINS:</div>
+        <div class="countdown-timer" id="successCountdown">00d 00h 00m</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="/invitation/js/telemetry.js"></script>
+  <script src="/invitation/js/expiry.js"></script>
+  <script src="/invitation/js/app.js"></script>
+</body>
+</html>

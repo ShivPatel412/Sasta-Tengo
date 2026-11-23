@@ -16,7 +16,8 @@
     "audit:data": "node --env-file=.env.local scripts/audit-data.mjs",
     "db:init": "node --env-file=.env.local scripts/setup-database.mjs",
     "db:admin": "node --env-file=.env.local scripts/create-admin.mjs",
-    "db:admin:sql": "node --env-file=.env.local scripts/create-admin.mjs --sql"
+    "db:admin:sql": "node --env-file=.env.local scripts/create-admin.mjs --sql",
+    "test:smtp": "node scripts/test-smtp.mjs"
   },
   "dependencies": {
     "@phosphor-icons/react": "2.1.10",
