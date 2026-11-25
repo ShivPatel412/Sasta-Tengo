@@ -1,90 +1,136 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { adminApi as api } from '../../../lib/dashboard-client.mjs';
-import { jobTracking, REEL_STEPS, safeReelLink } from '../../../lib/funny-reels-tracking.mjs';
-import { ReelSubmission, ReelTimeline } from './reel-job-panels';
-import { RefreshCw, ExternalLink } from './dashboard-icons';
-import './control-room-neon.css';
-import './funny-reels-tracking.css';
 
-const TABS = [['overview', 'Start here'], ['jobs', 'Track videos'], ['clips', 'Clips'], ['published', 'Published posts'], ['automation', 'Automation']];
-const HELP = {
-  'MEDIA-API': 'Saves one request, acknowledges its ID, and starts the linked video worker.',
-  'FUNNY-02': 'Downloads an authorized video, uses Gemini to select moments, creates clips, and hands them to the next step.',
-  'REELS-04': 'Creates a cover and prepares each selected clip for platform upload.',
-  'REELS-02': 'Uploads a clip to Instagram. An upload is not yet a public Reel.',
-  'REELS-03': 'Checks Instagram uploads and publishes eligible clips. A successful check may find nothing to publish.',
-  'YT-01': 'Uploads a Short privately and records its release intent.',
-  'YT-02': 'Checks YouTube processing and releases eligible Shorts. A successful check may find nothing to publish.'
-};
-function time(value) {
-  const date = new Date(value);
-  return value && Number.isFinite(date.getTime()) ? new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' }).format(date) + ' IST' : 'Not reported';
-}
-function Link({ href, children }) {
-  const safe = safeReelLink(href);
-  return safe ? <a href={safe} target="_blank" rel="noopener noreferrer">{children} <ExternalLink size={14} aria-hidden="true" /></a> : null;
-}
-function Status({ tone = 'neutral', children }) { return <span className={`neon-badge ${tone}`}>{children}</span>; }
+import {useEffect,useState} from 'react';
+import {Activity,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
+import {adminApi} from '../../../lib/dashboard-client.mjs';
+import {isProcessing,isQueued,newerGamingSnapshot,stages} from '../../../lib/gaming-studio.mjs';
+import './gaming-studio.css';
 
-export default function FunnyReelsStudio({ refresh, readOnly }) {
-  const [data, setData] = useState(null);
-  const [tab, setTab] = useState('overview');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [request, setRequest] = useState(0);
-  const [search, setSearch] = useState('');
-  const [selected, setSelected] = useState(null);
-  const [now, setNow] = useState(Date.now());
-  const [pendingJob, setPendingJob] = useState(null);
-  useEffect(() => {
-    let active = true, inFlight = false;
-    async function load() {
-      if (inFlight) return;
-      inFlight = true;
-      try { const result = await api('funny-reels'); if (active) { setData(result); setError(''); } }
-      catch (err) { if (active) setError(err.message); }
-      finally { inFlight = false; if (active) { setLoading(false); setNow(Date.now()); } }
+const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'});
+const time = value => Number.isFinite(Date.parse(value)) ? date.format(new Date(value)) : 'Not reported';
+const label = value => value ? String(value).toLowerCase().replaceAll('_',' ') : 'Not reported';
+const videoId = id => /^[\w-]{11}$/.test(id || '') ? id : null;
+const sourceLink = id => videoId(id) && 'https://www.youtube.com/watch?v='+id;
+function runLink(row) {
+  if (!/^\d+$/.test(row?.execution_id || '')) return null;
+  const workflow = /^[\w-]+$/.test(row.n8n_workflow_id || '') ? row.n8n_workflow_id : null;
+  return workflow ? 'https://n8n.shivpatel.in/workflow/'+workflow+'/executions/'+row.execution_id
+    : 'https://n8n.shivpatel.in/execution/'+row.execution_id;
+}
+function External({href,children}) {
+  return href && <a href={href} target="_blank" rel="noopener noreferrer">{children} <ExternalLink size={13} aria-hidden="true"/></a>;
+}
+function Thumbnail({id}) {
+  return videoId(id) ? <img className="gaming-thumbnail" src={'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'} alt="" loading="lazy"/> :
+    <div className="gaming-thumbnail gaming-placeholder"><Clapperboard size={26} aria-hidden="true"/></div>;
+}
+function Progress({name,value,waiting}) {
+  return <label className="gaming-progress"><span>{name}<strong>{waiting ? 'Awaiting fresh data' : value == null ? 'Not measured' : value+'%'}</strong></span>
+    {!waiting && <progress max={100} value={value ?? undefined}/>}</label>;
+}
+function Execution({job,events,fresh,now}) {
+  if (!job) return <section className="gaming-card"><h2>Current execution</h2><p>No active execution appears in the collected jobs.</p></section>;
+  const completed = job.segments_processed;
+  const total = job.segments_total > 0 ? job.segments_total : null;
+  const age = now-Date.parse(job.last_heartbeat_at);
+  const heartbeatFresh = Number.isFinite(age) && age >= -30000 && age < 900000;
+  const started = Date.parse(job.started_at);
+  const elapsed = fresh && Number.isFinite(started) && now >= started ? Math.floor((now-started)/60000)+' min' : 'Not reported';
+  const current = stages.findIndex(([,keys])=>keys.includes(job.stage));
+  return <section className="gaming-card"><div className="gaming-row"><h2>Current execution</h2><span className="gaming-pill">{job.failed?'Needs attention':fresh&&heartbeatFresh?'Processing':'Last reported'}</span></div>
+    <div className="gaming-source"><Thumbnail id={job.video_id}/><div><h3>{job.title || job.video_id || job.job_id}</h3><p>{label(job.stage)} · {job.workflow_version || 'Version not reported'}</p><External href={sourceLink(job.video_id)}>Source video</External></div></div>
+    <Progress name="Overall progress" value={job.overall} waiting={!fresh || !heartbeatFresh}/>
+    <Progress name="Current stage" value={job.stageProgress} waiting={!fresh || !heartbeatFresh}/>
+    <dl className="gaming-facts">
+      <div><dt>Segments completed</dt><dd>{completed ?? '—'}{total ? ' / '+total : ''}</dd></div>
+      <div><dt>Segments remaining</dt><dd>{total && completed != null ? Math.max(0,total-completed) : '—'}</dd></div>
+      <div><dt>Elapsed</dt><dd>{elapsed}</dd></div><div><dt>Last heartbeat</dt><dd>{time(job.last_heartbeat_at)}</dd></div>
+      <div><dt>Execution</dt><dd>{job.execution_id || '—'}</dd></div><div><dt>Retries</dt><dd>{job.retry_count ?? '—'}</dd></div>
+    </dl>
+    <details><summary>Processing timeline</summary>
+      <ol className="gaming-timeline">{stages.map(([name,keys],index)=>{
+        const reported=events.some(event=>keys.includes(event.stage));
+        return <li key={name}><span>{name}</span><strong>{current===index ? 'Current' : reported ? 'Reported' : 'No event'}</strong></li>;
+      })}</ol>
+      <dl className="gaming-facts">
+        <div><dt>Current step</dt><dd>{job.current_node || job.current_step || 'Not reported'}</dd></div>
+        <div><dt>Current segment</dt><dd>{job.current_segment ?? 'Not reported'}</dd></div>
+        <div><dt>Duration / resolution</dt><dd>{job.duration_seconds ? job.duration_seconds+' s' : '—'} / {job.resolution || '—'}</dd></div>
+        <div><dt>Size / downloaded</dt><dd>{job.size_bytes ? Math.round(job.size_bytes/1e6)+' MB' : '—'} / {job.downloaded_mb != null ? job.downloaded_mb+' MB' : '—'}</dd></div>
+        <div><dt>Source</dt><dd>{job.source_reused === true ? 'Existing source reused' : 'Reuse not reported'}</dd></div>
+        <div><dt>Download speed / ETA</dt><dd>{job.download_speed || '—'} / {job.download_eta || '—'}</dd></div>
+        <div><dt>Selected / limit</dt><dd>{job.clips_selected ?? '—'} / {job.max_clips ?? '—'}</dd></div>
+        <div><dt>Latest reported milestone</dt><dd>{events[0] ? label(events[0].stage)+' · '+time(events[0].created_at || events[0].createdAt) : 'Not reported'}</dd></div>
+      </dl>
+    </details>
+    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External><span>Pause, resume and retry require worker support.</span></div>
+  </section>;
+}
+function Reel({clip}) {
+  const [failedCover,setFailedCover]=useState([]);
+  const thumbnail = clip.youtube ? 'https://i.ytimg.com/vi/'+clip.youtube.id+'/mqdefault.jpg' : null;
+  const cover = [clip.cover,thumbnail].find(url=>url&&!failedCover.includes(url));
+  return <article className="gaming-reel">
+    {cover ? <img src={cover} alt="" loading="lazy" onError={()=>setFailedCover(previous=>[...previous,cover])}/> : <div className="gaming-placeholder"><Clapperboard size={24} aria-hidden="true"/></div>}
+    <h3>{clip.title || 'Generated reel'}</h3>
+    <p>{[clip.category,clip.duration_seconds && clip.duration_seconds+' s',clip.quality_score != null && clip.quality_score+'/100',clip.editing_engine].filter(Boolean).join(' · ') || 'Details from collected records'}</p>
+    <ul>{['instagram','youtube'].map(platform=><li key={platform}>{clip[platform] ? <External href={clip[platform].url}>{label(platform)} receipt</External> : label(platform)+' receipt pending'}</li>)}</ul>
+    <details><summary>Reel details</summary>
+      {clip.preview && <External href={clip.preview}>Open private preview</External>}
+      {clip.caption && <p>{clip.caption}</p>}{clip.hashtags && <p>{clip.hashtags}</p>}
+      {clip.streamer && <p>Creator: {clip.streamer}</p>}
+      {clip.start_seconds != null && <p>Source: {clip.start_seconds}–{clip.end_seconds ?? '—'} s</p>}
+      {clip.created_at && <p>{time(clip.created_at)}</p>}
+    </details>
+  </article>;
+}
+export default function FunnyReelsStudio({initial,refresh}) {
+  const [data,setData]=useState(initial),[error,setError]=useState(''),[now,setNow]=useState(0);
+  const [filter,setFilter]=useState('All'),[limit,setLimit]=useState(8),[severity,setSeverity]=useState('All'),[revision,reload]=useState(0);
+  useEffect(()=>{
+    let disposed=false, timer, controller;
+    async function poll(){
+      if(disposed || controller || document.hidden)return;
+      controller=new AbortController();
+      try {
+        const snapshot=await adminApi('funny-reels',{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8000)])});
+        if(!disposed){setData(previous=>newerGamingSnapshot(previous,snapshot));setError('');}
+      } catch {
+        if(!disposed)setError('Could not refresh collector data. Showing the last available records.');
+      } finally {
+        controller=null;
+        if(!disposed){setNow(Date.now());timer=setTimeout(poll,10000);}
+      }
     }
-    load();
-    const timer = setInterval(() => { if (!document.hidden) load(); }, 10000);
-    return () => { active = false; clearInterval(timer); };
-  }, [refresh, request]);
-  const fresh = source => !error && data?.source_status?.[source] === true && now - Date.parse(data?.source_updated_at?.[source === 'jobs' ? 'automations' : 'n8n'] || data?.updated_at) < 120000;
-  const jobsFresh = fresh('jobs'), workflowsFresh = fresh('workflows');
-  const jobs = [...(pendingJob && !data?.jobs?.some(job => job.job_id === pendingJob.job_id) ? [pendingJob] : []), ...(data?.jobs || []), ...(data?.streams || [])].sort((a, b) => (Date.parse(b.requested_at || b.createdAt) || 0) - (Date.parse(a.requested_at || a.createdAt) || 0));
-  const visibleJobs = jobs.filter(job => [job.job_id, job.video_id, job.source_url].some(value => String(value || '').toLowerCase().includes(search.toLowerCase())));
-  const currentJob = visibleJobs.find(job => (job.job_id || job.stream_id || job.video_id) === selected) || visibleJobs[0];
-  const current = currentJob && jobTracking(currentJob, now);
-  const workflows = data?.workflows || [], stats = data?.stats || {};
-  function checkAgain() { setLoading(true); setRequest(value => value + 1); }
-  function submitted(job) { setPendingJob(job); setSelected(job.job_id); setTab('overview'); checkAgain(); }
-  return <div className="funny-tracker">
-    <section className="neon-panel">
-      <div className="neon-header"><div className="neon-title-group"><span className="mini-label">FUNNY REELS STUDIO</span><h2>Your video, from link to public post</h2><p>See what has happened, what is waiting, and what needs your attention.</p></div><button className="neon-button secondary" onClick={checkAgain} disabled={loading}><RefreshCw size={16} aria-hidden="true" /> {loading ? 'Checking…' : 'Check for updates'}</button></div>
-      <div className="reel-connection" role="status"><Status tone={jobsFresh && workflowsFresh ? 'live' : 'paused'}>{loading && !data ? 'Checking connection' : jobsFresh && workflowsFresh ? 'Recent status available' : 'Status needs checking'}</Status><span>Last collected: {time(data?.updated_at)} · Checks every 10 seconds while visible.</span></div>
-      {error && <p role="alert" className="reel-error">Could not refresh: {error}. Previously loaded records may be out of date. <button onClick={checkAgain}>Try again</button></p>}
-      <div className="reel-callout"><strong>{data?.actions_available ? 'Connected: generate clips and publish automatically' : 'Checking the video worker connection'}</strong><p>{data?.action_message || 'Loading the latest worker status…'}</p><p>Instagram: @{data?.accounts?.instagram?.verified_username || 'checking'} · YouTube: {data?.accounts?.youtube?.channel || 'checking'} · Always tag @sastatengo</p></div>
-      <nav aria-label="Reel studio views" className="reel-tabs">{TABS.map(([id, label]) => <button key={id} aria-current={tab === id ? 'page' : undefined} onClick={() => setTab(id)}>{label}</button>)}</nav>
+    function visible(){if(!document.hidden){clearTimeout(timer);poll();}}
+    document.addEventListener('visibilitychange',visible);
+    poll();
+    return ()=>{disposed=true;controller?.abort();clearTimeout(timer);document.removeEventListener('visibilitychange',visible);};
+  },[refresh,revision]);
+  const age=now-Date.parse(data?.version);
+  const fresh=Boolean(data?.fresh && !error && (!now || age >= -30000 && age < 120000));
+  const active=(data?.jobs || []).filter(isProcessing),queue=(data?.jobs || []).filter(isQueued).sort((a,b)=>(a.priority ?? Infinity)-(b.priority ?? Infinity) || Date.parse(a.requested_at || a.createdAt)-Date.parse(b.requested_at || b.createdAt));
+  const job=active[0];
+  const clips=(data?.clips || []).filter(clip=>filter==='All' || filter==='Published'&&clip.published || filter==='Ready'&&clip.render_status==='RENDERED'&&!clip.published || filter==='Failed'&&/FAILED|ERROR/i.test(clip.render_status) || filter==='Processing'&&/PROCESSING|RENDERING/i.test(clip.render_status));
+  const activity=(data?.events || []).filter(event=>severity==='All' || (severity==='Errors'&&/FAIL|ERROR/i.test(event.event_type)) ||
+    (severity==='Warnings'&&/WARN|RETRY/i.test(event.event_type)) || (severity==='Milestones'&&!/FAIL|ERROR|WARN|RETRY/i.test(event.event_type)));
+  return <div className="gaming-studio">
+    <div className="gaming-row gaming-status" role="status"><span className="gaming-pill">{fresh?'Collector online':data?'Collector stale':error?'Collector unavailable':'Connecting to collector'}</span><span>Last collected {time(data?.version)} IST</span><button type="button" onClick={()=>reload(value=>value+1)}><RefreshCw size={15} aria-hidden="true"/> Refresh</button></div>
+    {error && <p className="gaming-alert" role="alert">{error}</p>}
+    <section className="gaming-card"><h2>Add new video</h2><div className="gaming-intake"><input type="url" aria-label="YouTube source URL" placeholder="Paste a YouTube video or livestream URL" disabled/><button disabled>Add to queue</button></div><p>Intake is paused until the dispatcher can safely queue sources without starting another worker. Permission to edit and republish is required.</p></section>
+    <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',data?.clips?.filter(clip=>clip.published).length||0]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
+    <div className="gaming-grid">
+      <Execution job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id)} fresh={fresh} now={now}/>
+      <div className="gaming-side"><section className="gaming-card"><h2>Upcoming queue</h2>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued items appear in the collected records.</p>}<p>Reordering and removal require dispatcher support.</p></section>
+        <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['WSL / collector',fresh?'Reporting':'Awaiting update'],['Docker / n8n container',fresh&&data?.resources.docker?'Running':'Not confirmed'],['GPU / CPU / RAM','No telemetry feed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources.disk} waiting={!fresh || data?.resources.disk==null}/></section>
+      </div>
+    </div>
+    <section className="gaming-card"><div className="gaming-row"><h2>Generated reels</h2><select aria-label="Filter reels" value={filter} onChange={event=>{setFilter(event.target.value);setLimit(8);}}>{['All','Processing','Ready','Published','Failed'].map(value=><option key={value}>{value}</option>)}</select></div>
+      {clips.length ? <div className="gaming-library">{clips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip}/>)}</div>:<p>No collected reels match this view.</p>}
+      {clips.length>limit && <button onClick={()=>setLimit(n=>n+8)}>Show more reels</button>}
     </section>
-    {tab === 'overview' && <>
-      <div className="reel-workspace"><ReelSubmission ready={data?.actions_available === true && jobsFresh && workflowsFresh} readOnly={readOnly} onSubmitted={submitted} /><ReelTimeline job={currentJob} time={time} now={now} fresh={jobsFresh} /></div>
-      <section className="neon-panel"><h3>How this works</h3><p>You provide a video you have permission to use. The worker finds moments and creates clips. Instagram and YouTube process and publish them separately.</p><ol className="reel-steps">{REEL_STEPS.map(([key, label, description]) => <li key={key}><strong>{label}</strong><p>{description}</p></li>)}</ol><p className="reel-muted">The pipeline beside the form shows your actual job. Expand its activity list to see recorded milestones.</p></section>
-      <div className="reel-metrics">{[['Saved requests', jobs.length], ['Need attention', jobs.filter(job => ['error', 'paused'].includes(jobTracking(job, now).tone)).length], ['Instagram posts', stats.instagram_published ?? 0], ['Public YouTube Shorts', stats.youtube_published ?? 0]].map(([label, count]) => <div className="neon-panel" key={label}><span>{label}</span><strong>{data ? count : '—'}</strong><small>{jobsFresh ? 'In collected records' : 'Unverified / last collected records'}</small></div>)}</div>
-      <section className="neon-panel"><h3>Your next step</h3><p>{jobs.length ? 'Open Track videos, choose a request, and read its last reported step and next action.' : 'Submit your first video using the form above. Its worker milestones and platform results will appear beside it.'}</p><div className="reel-actions"><button className="neon-button primary" onClick={() => setTab(jobs.length ? 'jobs' : 'overview')}>{jobs.length ? 'Track my videos' : 'Create a video job'}</button><button className="neon-button secondary" onClick={() => setTab('published')}>View published posts</button></div><p className="reel-muted">Counts cover recent records only. A successful run may be an empty publisher check; it does not prove a new post exists.</p></section>
-    </>}
-    {tab === 'jobs' && <section className="neon-panel"><h3>Track your videos</h3><p>Choose a video for its last reported step. Progress appears only when supplied by the worker.</p><label>Find a video <input className="neon-input" value={search} onChange={event => setSearch(event.target.value)} placeholder="Video link or request ID" /></label>{!jobsFresh && <p className="reel-warning">These records may be out of date. They do not confirm what is running now.</p>}
-      {!visibleJobs.length ? <p>No requests match this view. An empty list does not confirm the worker is idle.</p> : <div className="reel-job-layout"><div className="reel-job-list">{visibleJobs.map((job, index) => { const key = job.job_id || job.stream_id || job.video_id; const tracking = jobTracking(job, now); return <button key={key || index} className={currentJob === job ? 'selected' : ''} aria-pressed={currentJob === job} onClick={() => setSelected(key)}><strong>{job.video_id || 'Video request'}</strong><Status tone={tracking.tone}>{tracking.label}</Status><small>Submitted {time(job.requested_at || job.createdAt)}</small></button>; })}</div>
-      {current && <article className="reel-job-detail"><h4>{currentJob.video_id || 'Video request'}</h4><Status tone={current.tone}>{current.label}</Status><p>{current.detail}</p><strong>What to do next</strong><p>{current.next}</p>{current.progress !== null ? <label>Processing milestones: {current.progress}%<progress max="100" value={current.progress} /></label> : <p className="reel-muted">Progress percentage has not been reported.</p>}<dl><dt>Last job update</dt><dd>{time(current.updated)}</dd><dt>Segments reviewed</dt><dd>{currentJob.segments_processed ?? 'Not reported'} / {currentJob.segments_total || 'Not reported'}</dd><dt>Clips selected</dt><dd>{currentJob.clips_selected ?? 'Not reported'}</dd><dt>Request ID</dt><dd>{currentJob.job_id || 'Not reported'}</dd></dl><div className="reel-actions"><Link href={currentJob.source_url}>Open source video</Link>{/^\d+$/.test(String(currentJob.execution_id || '')) && <Link href={`https://n8n.shivpatel.in/execution/${currentJob.execution_id}`}>Open this worker run</Link>}</div><details><summary>Reported details</summary><p>State: {currentJob.state || 'Not reported'} · Step: {currentJob.stage || 'Not reported'} · Worker: {currentJob.worker_status || 'Not reported'}</p><p>A missing execution link means the worker has not attached its run ID to this request.</p></details></article>}</div>}
-    </section>}
-    {tab === 'jobs' && currentJob && <ReelTimeline job={currentJob} time={time} now={now} fresh={jobsFresh} />}
-    {tab === 'clips' && <section className="neon-panel"><h3>Collected clips</h3><p>A reported file alone does not verify AI selection, captions, video quality, or publication.</p><div className="reel-card-grid">{(data?.highlights || []).map((clip, index) => <article className="reel-job-detail" key={clip.id || index}><h4>{clip.title}</h4><p>{clip.video_id || 'Source not reported'}</p>{safeReelLink(clip.preview_url) ? <video controls playsInline preload="none" poster={safeReelLink(clip.cover_url) || undefined} src={safeReelLink(clip.preview_url)} /> : <p className="reel-muted">Video preview is not connected for this file.</p>}<p>{clip.selection_reason || 'AI selection reason not reported.'}</p><details><summary>Caption and hashtags</summary><p>{clip.instagram_caption || 'Not reported yet'}</p></details></article>)}</div>{!data?.highlights?.length && <p>No clip files have been reported. Check the video worker under Automation.</p>}</section>}
-    {tab === 'published' && <section className="neon-panel"><h3>Published posts</h3><p>Instagram and YouTube are tracked separately. Private YouTube uploads are not public posts.</p>{!jobsFresh && <p className="reel-warning">Records may be out of date. Open the platform link to check.</p>}<div className="reel-card-grid">{(data?.published || []).map((post, index) => <article className="reel-job-detail" key={post.id || index}><h4>{post.title}</h4><p>Instagram: {post.instagram_status === 'PUBLISHED' ? 'publication receipt recorded' : 'no matched publication receipt'}</p><Link href={post.instagram_permalink}>View Instagram Reel</Link><p>YouTube: {post.youtube_status === 'PUBLISHED' ? 'public release recorded' : post.youtube_status === 'PRIVATE_UPLOADED' ? 'uploaded privately' : 'no matched public release'}</p><Link href={post.youtube_url}>Open YouTube video</Link><p><Link href={post.original_source_url}>Original video</Link></p></article>)}</div>{!data?.published?.length && <p>No confirmed publication receipts appear in collected records.</p>}</section>}
-    {tab === 'automation' && <>
-      <section className="neon-panel"><h3>Your automatic publishing setup</h3><p>The dashboard saves your request and starts the video worker. The worker records download, analysis, selection, rendering, cover creation, and upload milestones under that same request.</p><p>Instagram publishes after Meta confirms processing. YouTube uploads privately, waits for completed processing, applies the cover, then becomes public. Publication checks run every two minutes.</p><p>A failed or uncertain platform operation needs inspection before retrying. Other clips may already be public.</p></section>
-      <section className="neon-panel"><h3>What each automation does</h3><p>{workflowsFresh ? 'Latest collected workflow status.' : 'Workflow status is missing or out of date. Check n8n before relying on it.'} “Called by another step” is normal for a sub-workflow; it does not need a schedule.</p><div className="reel-card-grid">{workflows.map(workflow => <article key={workflow.id} className="reel-job-detail"><h4>{workflow.code} · {workflow.code === 'FUNNY-02' ? 'Video worker' : workflow.code === 'MEDIA-API' ? 'Save and list requests' : workflow.role}</h4><Status tone={workflow.status === 'ACTIVE' && workflowsFresh ? 'live' : 'neutral'}>{workflow.status_label || 'Status not reported'}{!workflowsFresh ? ' · last reported' : ''}</Status><p>{HELP[workflow.code]}</p><p className="reel-muted">Last run: {time(workflow.last_execution)}<br />Result: {workflow.last_status === 'idle' ? 'No recent run reported' : workflow.last_status}</p><Link href={workflow.n8n_url}>Inspect in n8n</Link></article>)}</div></section>
-      <section className="neon-panel"><h3>Recent runs</h3><p>Runs are collected separately from video requests. A successful scheduled check may process zero videos.</p>{!data?.executions?.length ? <p>No recent runs reported.</p> : <div className="reel-run-list">{data.executions.slice(0, 20).map(run => <div key={run.id}><strong>{workflows.find(workflow => workflow.id === run.workflow_id)?.code || 'Automation'} · {run.status || 'Not reported'}</strong><span>{time(run.started_at)}</span><Link href={run.n8n_url}>Inspect run #{run.id}</Link></div>)}</div>}</section>
-      <section className="neon-panel"><h3>Verified publishing destinations</h3><p>Instagram: @{data?.accounts?.instagram?.verified_username || 'Not reported'}. The upload workflow checks this exact account again before creating a Reel.</p><p>YouTube: {data?.accounts?.youtube?.channel || 'Not reported'} ({data?.accounts?.youtube?.handle || 'handle not reported'}).</p><p>Every Reel includes an @sastatengo caption mention and user tag. Every Short credits @sastatengo in its description. Sources receive verified creator credit.</p></section>
-    </>}
+    <section className="gaming-card"><div className="gaming-row"><h2>Recent activity</h2><select aria-label="Filter activity" value={severity} onChange={event=>setSeverity(event.target.value)}>{['All','Errors','Warnings','Milestones'].map(value=><option key={value}>{value}</option>)}</select></div>
+      {activity.length ? <details open><summary>{activity.length} collected events</summary><ol className="gaming-activity">{activity.slice(0,20).map(event=><li key={event.id}><strong>{label(event.stage)}</strong><span>{label(event.event_type)}</span><time>{time(event.created_at || event.createdAt)}</time><External href={runLink(event)}>Run {event.execution_id}</External></li>)}</ol></details> : <p>No events match this view.</p>}
+    </section>
   </div>;
 }

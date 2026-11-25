@@ -29,13 +29,13 @@ const icons={forms:FileText,tasks:Layers3,crm:Inbox,overview:LayoutDashboard,con
 function Login({credentials,setCredentials,busy,error,onSubmit,appearance,master}){
   return <main className={`workspace-login glass-login${master?' master-login':''}`} style={appearanceVariables(appearance)}><section className="login-story"><Link href="/" className="workspace-brand"><span className="brand-monogram">sp<span/></span>SHIV / WORKSPACE</Link><div><span className="mini-label">BEHIND THE WORK</span><h1>{master?'Your whole ecosystem.':'Your portfolio.'}<br/>One workspace.</h1><p>{master?'Projects, conversations, workflows and AI agents. One private home.':'A place for new conversations, your latest projects and the story you’re building.'}</p><div className="login-story-tags"><span><Inbox size={16}/>Inquiries</span><span><Folder size={16}/>Projects</span><span><Briefcase size={16}/>Experience</span></div></div><p className="login-story-foot">Thoughtful work starts with a little clarity.</p><span className="login-orbit"/></section><section className="login-form-side"><form onSubmit={onSubmit}><div className="login-lock"><ShieldCheck size={23}/></div><span className="mini-label">YOUR PRIVATE WORKSPACE</span><h2>Welcome back.</h2><p>{master?'Sign in once to your projects, automation and personal workspace.':'Sign in to manage your website and new opportunities.'}</p><label htmlFor="login-email">Email address</label><input id="login-email" type="email" autoComplete="username" required placeholder="you@example.com" value={credentials.email} onChange={e=>setCredentials({...credentials,email:e.target.value})}/><label htmlFor="login-password">Password</label><input id="login-password" type="password" autoComplete="current-password" required value={credentials.password} onChange={e=>setCredentials({...credentials,password:e.target.value})}/>{error&&<p role="alert" className="feedback error">{error}</p>}<button className="button primary" disabled={busy}>{busy?'Signing in…':<>Sign in to workspace <ArrowRight size={17}/></>}</button>{!master&&<a className="login-back" href="https://dashboard.shivpatel.in">Open control room <ArrowUpRight size={14}/></a>}<a className="login-back" href={master?'https://www.shivpatel.in':'/'}>Back to website <ArrowUpRight size={14}/></a></form></section></main>;
 }
-export default function Dashboard({section,recordId,master=false,local=false}){
+export default function Dashboard({section,recordId,master=false,local=false,gamingInitial=null}){
   const funnyReels=section==='funny-reels';
   const youtube=section==='youtube';
   const jobs=section==='jobs';
   const management=['tasks','crm','workflows','forms'].includes(section);
   const sections=master?{
-    'funny-reels':{label:'Funny Reels Studio',description:'AI-powered clip extraction from YouTube videos and live streams.'},
+    'funny-reels':{label:'Gaming Studio',description:'Monitor gaming video production from source to publication.'},
     youtube:{label:'YouTube Shorts',description:'Monitor upload queue, scheduled publishing and video processing.'},
     jobs:{label:'Job Hunter',description:'AI-assisted job discovery, scoring, tailored applications and tracking.'},
     ...websiteSections,...controlSections
@@ -170,7 +170,7 @@ export default function Dashboard({section,recordId,master=false,local=false}){
       {loaded&&ready&&projectSection&&<nav className="project-section-tabs" aria-label="Project sections"><Link href="/dashboard/projects" aria-current={section==='projects'?'page':undefined}>Projects</Link><Link href="/dashboard/tasks" aria-current={section==='tasks'?'page':undefined}>Project management</Link><Link href="/dashboard/types" aria-current={section==='types'?'page':undefined}>Project types</Link><Link href="/dashboard/approvals" aria-current={section==='approvals'?'page':undefined}>Project approvals</Link></nav>}
       {loaded&&ready&&section==='overview'&&stats&&<Overview stats={stats} onNew={startNew}/>}
       {loaded&&ready&&management&&<ManagementPanels source={section==='forms'?(recordId||''):undefined} section={section} readOnly={readOnly} refresh={refresh}/>}
-      {loaded&&ready&&funnyReels&&<FunnyReelsStudio readOnly={readOnly} refresh={refresh}/>}
+      {loaded&&ready&&funnyReels&&<FunnyReelsStudio initial={gamingInitial} refresh={refresh}/>}
       {loaded&&ready&&youtube&&<YouTubeStudio readOnly={readOnly} refresh={refresh}/>}
       {loaded&&ready&&jobs&&<JobHunterDashboard readOnly={readOnly} refresh={refresh} jobId={recordId} user={session.user}/>}
       {loaded&&ready&&approvals&&<ProjectApprovals readOnly={readOnly} local={local}/>}

@@ -18,15 +18,14 @@ test('social panels do not invent verified accounts or manual-publishing enforce
   assert(!funny.includes('>VERIFIED</span>'));
   assert(!funny.includes('>60FPS RENDERED</span>'));
   for(const identity of ['17841467420993171','UCjixoELED6wc8keo98Txa8w','shiv__412__','@its.tango69'])assert(!funny.includes(identity),identity);
-  assert(funny.includes('Verified publishing destinations'));
-  assert(funny.includes('checks this exact account again before creating a Reel'));
   assert(youtube.includes("status || 'NOT_VERIFIED'"));
   assert(!youtube.includes('no video is set to public automatically'));
 });
 
-test('reels submission retains an explicit permission checkbox and readiness gate',async()=>{
- const source=await readFile(new URL('../app/dashboard/[[...path]]/reel-job-panels.jsx',import.meta.url),'utf8');
- assert(source.includes('rights_confirmed: rights'));
- assert(source.includes('if (!ready || readOnly || busy || uncertain) return;'));
- assert(source.includes('Generate and auto-publish'));
+test('gaming intake is unavailable until the dispatcher can safely queue',async()=>{
+ const source=await readFile(new URL('../app/dashboard/[[...path]]/funny-reels-studio.jsx',import.meta.url),'utf8');
+ const api=await readFile(new URL('../app/api/admin/funny-reels/route.js',import.meta.url),'utf8');
+ assert(source.includes('<button disabled>Add to queue'));
+ assert(api.includes('reelSubmission.parse'));
+ assert(!api.includes('submitReelJob('));
 });
