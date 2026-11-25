@@ -129,7 +129,7 @@ function Progress({name,value,detail,waiting}) {
   if (waiting || value == null) return <p className="gaming-progress"><span>{name}<strong>{status}</strong></span></p>;
   return <label className="gaming-progress"><span>{name}<strong>{status}</strong></span><progress max={100} value={value}/></label>;
 }
-const segmentLabels = {completed:'Completed',processing:'Processing',failed:'Failed',pending:'Pending',unknown:'Unknown'};
+const segmentLabels = {starting:'Starting',completed:'Completed',processing:'Processing',retried:'Retried',failed:'Failed',pending:'Pending',unknown:'Unknown'};
 function SegmentList({segments,live}) {
   const currentRow=useRef(null);
   if (!segments) return <p>Segment details unavailable.</p>;
@@ -318,7 +318,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
         </section>
       </Tabs>}
       {section==='logs' && <section className="gaming-card"><div className="gaming-row"><h2>Logs</h2><select aria-label="Filter logs" value={severity} onChange={event=>setSeverity(event.target.value)}>{['All','Errors','Warnings','Milestones'].map(value=><option key={value}>{value}</option>)}</select></div>
-        {activity.length ? <ol className="gaming-activity">{activity.slice(0,20).map(event=><li key={event.id}><strong>{label(event.stage)}</strong><span>{label(event.event_type)}</span><time dateTime={event.created_at || event.createdAt}>{time(event.created_at || event.createdAt)}</time><External href={runLink(event)}>Run {event.execution_id}</External></li>)}</ol> : <p>No matching logs.</p>}
+        {activity.length ? <ol className="gaming-activity">{activity.slice(0,20).map(event=><li key={event.id}><strong>{event.segment ? `Segment ${event.segment.number}/${event.segment.total}` : label(event.stage)}</strong><span>{label(event.event_type)}</span><time dateTime={event.created_at || event.createdAt}>{time(event.created_at || event.createdAt)}</time><External href={runLink(event)}>Run {event.execution_id}</External></li>)}</ol> : <p>No matching logs.</p>}
       </section>}
     </Tabs>
   </div>;

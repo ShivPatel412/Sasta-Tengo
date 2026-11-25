@@ -83,6 +83,13 @@ test('isolates segment evidence across attempts and recovers recorded historical
   assert.deepEqual(gamingSnapshot(input,now).jobs[0].segments,{total:5,completed:1,current:null,rows:['unknown','completed','failed','unknown','unknown']});
   records.events.push(event(8,'21','Analyzing · segment 3/5','ANALYZING','SEGMENT_RETRIED'));
   assert.equal(gamingSnapshot(input,now).jobs[0].segments.current,3);
+  assert.equal(gamingSnapshot(input,now).jobs[0].segments.rows[2],'retried');
+  for (const [id,event_type,start,status] of [[9,'SEGMENT_STARTED',4,'starting'],[10,'SEGMENT_PROCESSING',4,'processing'],[11,'SEGMENT_COMPLETED',4,'completed']]) {
+    records.events.push(event(id,'21',`Analyzing · segment ${start}/5`,'ANALYZING',event_type));
+    const segment = gamingSnapshot(input,now).jobs[0].segments;
+    assert.equal(segment.rows[3],status);
+    assert.equal(segment.current,status==='completed'?null:4);
+  }
 });
 
 test('weekly gaming queue distinguishes dated and undated reels and retains an active render',()=>{

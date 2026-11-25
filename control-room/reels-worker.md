@@ -59,6 +59,8 @@ Stale tracking pauses estimates, overruns request recalculation, and only receip
 on both platforms mark completion. Estimates refresh with the existing ten-second
 dashboard poll in both Start here and Track videos.
 
+FUNNY-02 records segment starts, processing, verified completions, fallback retries, and failures during AI highlight verification. Cached segments report completion after the cache is verified. Gemini's internal retries stay inside its nodes. Segment events carry the current execution ID, and a recorder error leaves processing and publishing on their existing paths.
+
 Local encoding check: a 12-second 1080x1920/60fps sample took 4.026 seconds with
 libx264 fast and 3.994 seconds with veryfast. The gain was negligible, so the
 existing quality settings remain. NVENC crashed with exit -11 in WSL, including

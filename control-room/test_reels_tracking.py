@@ -17,6 +17,14 @@ class ReelTrackingTests(unittest.TestCase):
         progress.record('job','ANALYZING',20,segment=2,total=3,command=command)
         self.assertIn("WHERE job_id='job'",calls[-1][1]['input'])
         self.assertIn('data_table_user_WatVsMggkgeC0mRr',calls[-1][1]['input'])
+        with self.assertRaises(ValueError):
+            progress.record('job','ANALYZING',20,segment=2,total=3,event_type='SEGMENT_FAILED',execution_id='wrong',command=command)
+        for event_type in progress.SEGMENT_EVENTS:
+            progress.record('job','ANALYZING',20,segment=2,total=3,event_type=event_type,execution_id='42',command=command)
+            sql=calls[-1][1]['input']
+            self.assertEqual(sql.count("AND execution_id='42'"),2)
+            self.assertIn(f"'{event_type}','ANALYZING','Analyzing · segment 2/3'",sql)
+            self.assertIn('segments_processed=GREATEST(COALESCE(segments_processed,0),'+('2' if event_type=='SEGMENT_COMPLETED' else '1')+')',sql)
     def test_handoff_does_not_mean_publication(self):
         data={'funny_jobs':[{'job_id':'job','state':'DISPATCHED','clips_selected':1}]}
         with tempfile.TemporaryDirectory() as directory:
