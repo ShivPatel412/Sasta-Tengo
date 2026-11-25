@@ -33,15 +33,26 @@
 .gaming-calendar-nav strong{min-width:125px;text-align:center}
 .gaming-calendar{width:100%;table-layout:fixed;border-collapse:collapse}
 .gaming-calendar th{font-size:12px;color:var(--gaming-muted);text-align:center;padding:5px 0}
-.gaming-calendar td{height:48px;padding:4px 2px;border:1px solid var(--gaming-line);text-align:center;font-variant-numeric:tabular-nums}
+.gaming-calendar td{padding:0;border:1px solid var(--gaming-line);text-align:center;font-variant-numeric:tabular-nums}
 .gaming-calendar td:empty{background:var(--gaming-bg)}
-.gaming-calendar td:has(.gaming-calendar-count){background:#edf5ef}
+.gaming-calendar td button{display:grid;place-content:center;justify-items:center;gap:1px;width:100%;min-height:52px;padding:4px 0;border:0;border-radius:0;background:#fff}
+.gaming-calendar td button:has(.gaming-calendar-count){background:#edf5ef}
+.gaming-calendar td button:hover{background:#e6eee9}
+.gaming-calendar td button[aria-pressed=true]{background:#deeee3;box-shadow:inset 0 0 0 2px var(--gaming-accent);font-weight:700}
+.gaming-calendar td button:focus-visible{outline-offset:-3px}
 .gaming-calendar-count{display:block;width:max-content;min-width:18px;margin:2px auto 0;padding:0 3px;border-radius:9px;background:var(--gaming-primary);color:#fff;font-size:10px}
-.gaming-schedule-list{list-style:none;padding:0}
-.gaming-schedule-list li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;border-top:1px solid var(--gaming-line);padding:9px 0}
-.gaming-schedule-list li>details{width:100%}
-.gaming-schedule-list summary time{margin-inline:8px;color:var(--gaming-muted);font-weight:400}
-.gaming-schedule-list li>div,.gaming-release{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px}
+.gaming-calendar-day{display:grid;gap:8px}
+.gaming-calendar-reels{list-style:none;padding:0}
+.gaming-calendar-reel{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap;padding:10px 0;border-top:1px solid var(--gaming-line)}
+.gaming-calendar-reel strong{color:var(--gaming-ink)}
+.gaming-calendar-times,.gaming-calendar-platforms,.gaming-release{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px}
+.gaming-calendar-reel-status{display:inline-block;margin-inline-end:4px;font-weight:650;color:var(--gaming-primary)}
+.gaming-calendar-reel-status[data-status=Scheduled]{color:#7a4c0d}
+.gaming-calendar-platforms :is(a,span){display:grid;place-items:center;width:36px;height:36px;border:1px solid var(--gaming-line);border-radius:8px;background:#fff}
+.gaming-calendar-platforms a:hover{background:#f3f6f5}
+.gaming-calendar-platforms a[data-platform=instagram]{color:#a32658}
+.gaming-calendar-platforms a[data-platform=youtube]{color:#b91c1c}
+.gaming-calendar-platforms span{color:var(--gaming-muted);background:var(--gaming-bg)}
 .gaming-delivery,.gaming-segments{display:grid;gap:10px}
 .gaming-delivery button{justify-self:start}
 .gaming-history{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}

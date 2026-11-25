@@ -2,8 +2,10 @@
 
 import {useEffect,useId,useRef,useState} from 'react';
 import {Activity,ChevronLeft,ChevronRight,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
+import {InstagramLogo,YoutubeLogo} from './dashboard-icons';
 import {adminApi} from '../../../lib/dashboard-client.mjs';
-import {analysisProgress,dashboardExecution,isProcessing,isQueued,isReelPublished,newerGamingSnapshot,reelStatus,runHistory,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
+import {CONNECTED_ACCOUNTS} from '../../../lib/funny-reels.mjs';
+import {analysisProgress,dashboardExecution,isProcessing,isQueued,isReelPublished,newerGamingSnapshot,publishingDays,reelStatus,runHistory,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
 import './gaming-studio.css';
 
 const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:studioTimeZone});
@@ -15,6 +17,12 @@ const sectionTabs = {dashboard:'Master dashboard',execution:'Current execution',
 const reelTabs = {ready:'Ready to publish',published:'Published',processing:'Processing',scheduled:'Scheduled'};
 const platformNames = {instagram:'Instagram',youtube:'YouTube'};
 const monthFormat = new Intl.DateTimeFormat('en-IN',{month:'long',year:'numeric',timeZone:'UTC'});
+const calendarDate = new Intl.DateTimeFormat('en-IN',{dateStyle:'full',timeZone:'UTC'});
+const calendarTime = new Intl.DateTimeFormat('en-IN',{hour:'numeric',minute:'2-digit',hour12:true,timeZone:studioTimeZone});
+const calendarPlatforms = {
+  instagram:{Icon:InstagramLogo,account:`https://www.instagram.com/${CONNECTED_ACCOUNTS.instagram.verified_username}/`,type:'profile'},
+  youtube:{Icon:YoutubeLogo,account:`https://www.youtube.com/channel/${CONNECTED_ACCOUNTS.youtube.channel_id}`,type:'channel'}
+};
 
 function Tabs({label,items,value,onChange,children}) {
   const id = useId();
@@ -41,16 +49,38 @@ function ReleaseTime({release}) {
   return <><time dateTime={release.at}>{time(release.at)} IST</time>{release.platform && <span className="gaming-pill">{platformNames[release.platform]}</span>}</>;
 }
 
-function ScheduleCalendar({clips,month,setMonth,available,onRun}) {
+function CalendarReel({clip,releases}) {
+  const times = [...new Map(releases.map(release=>[`${release.status}-${release.at}`,release])).values()];
+  return <li className="gaming-calendar-reel">
+    <div><strong>{clip.title || 'Generated reel'}</strong><div className="gaming-calendar-times">
+      {times.map(({at,status})=><span key={`${status}-${at}`}><span className="gaming-calendar-reel-status" data-status={status}>{status}</span> <time dateTime={at}>{calendarTime.format(new Date(at))} IST</time></span>)}
+    </div></div>
+    <div className="gaming-calendar-platforms">
+      {Object.entries(calendarPlatforms).map(([platform,{Icon,account,type}])=>{
+        const post = clip[platform]?.url;
+        const scheduled = releases.some(release=>release.status==='Scheduled' && (!release.platform || release.platform===platform));
+        const href = post || (scheduled ? account : null);
+        const name = platformNames[platform];
+        const description = post ? `Open ${name} post` : scheduled ? `Open ${name} ${type} · Scheduled` : `${name} post unavailable`;
+        const icon = <Icon size={19} aria-hidden="true"/>;
+        return href ? <a key={platform} href={href} data-platform={platform} target="_blank" rel="noopener noreferrer" aria-label={description} title={description}>{icon}</a>
+          : <span key={platform} role="img" aria-label={description} title={description}>{icon}</span>;
+      })}
+    </div>
+  </li>;
+}
+
+function ScheduleCalendar({clips,month,setMonth,available}) {
+  const [selected,setSelected] = useState(null);
+  const dayDetails = useId();
   const [year,monthNumber] = month.split('-').map(Number);
   const first = new Date(Date.UTC(year,monthNumber-1,1));
   const days = new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
   const offset = (first.getUTCDay()+6)%7;
-  const releases = scheduledReels(clips,month);
-  const awaiting = clips.filter(clip=>clip.delivery?.awaitingDate);
-  const counts = new Map();
-  for (const release of releases) counts.set(release.day,(counts.get(release.day) || 0)+1);
+  const reelsByDay = publishingDays(clips,month);
+  const dayReels = reelsByDay.get(selected) || [];
   function moveMonth(step) {
+    setSelected(null);
     setMonth(new Date(Date.UTC(year,monthNumber-1+step,1)).toISOString().slice(0,7));
   }
   return <section className="gaming-card">
@@ -66,21 +96,19 @@ function ScheduleCalendar({clips,month,setMonth,available,onRun}) {
           const day = week*7+weekday-offset+1;
           if (day<1 || day>days) return <td key={weekday}/>;
           const key = `${month}-${String(day).padStart(2,'0')}`;
-          const count = counts.get(key);
-          return <td key={weekday}><time dateTime={key}>{day}</time>{count && <span className="gaming-calendar-count" aria-label={`${count} scheduled`}>{count}</span>}</td>;
+          const count = reelsByDay.get(key)?.length || 0;
+          return <td key={weekday}><button type="button" aria-pressed={selected===key} aria-controls={dayDetails}
+            aria-label={`${calendarDate.format(new Date(key))}, ${count} ${count===1?'reel':'reels'}`} onClick={()=>setSelected(key)}>
+            <time dateTime={key}>{day}</time>{count>0 && <span className="gaming-calendar-count" aria-hidden="true">{count}</span>}
+          </button></td>;
         })}
       </tr>)}</tbody>
     </table>
-    {releases.length ? <ul className="gaming-schedule-list">{releases.map(release=>{
-      const clip = clips.find(item=>item.id===release.id);
-      return <li key={`${release.id}-${release.platform}-${release.at}`}><details>
-        <summary><span>{release.title || 'Generated reel'}</span> <ReleaseTime release={release}/></summary>
-        <ReelDelivery clip={clip} onRun={onRun}/>
-      </details></li>;
-    })}</ul> : <p>{available?'No scheduled reels this month.':'Schedule unavailable.'}</p>}
-    {awaiting.length>0 && <details><summary>Awaiting a date ({awaiting.length})</summary><ul className="gaming-schedule-list">
-      {awaiting.map(clip=><li key={clip.id}>{clip.title || 'Generated reel'}</li>)}
-    </ul></details>}
+    <div id={dayDetails} className="gaming-calendar-day" aria-live="polite">
+      {selected && <h3>{calendarDate.format(new Date(selected))}</h3>}
+      {dayReels.length ? <ul className="gaming-calendar-reels">{dayReels.map(entry=><CalendarReel key={entry.clip.id} {...entry}/>)}</ul>
+        : <p>{!available?'Calendar unavailable.':selected?'No reels on this date.':'Select a date to see its reels.'}</p>}
+    </div>
   </section>;
 }
 function runLink(row) {
@@ -274,7 +302,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
       {section==='dashboard' && <>
         <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(isReelPublished).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
         {job && isProcessing(job) && <Execution job={job} fresh={fresh} now={now} compact/>}
-        <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available} onRun={openRun}/>
+        <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
         <div className="gaming-side"><section className="gaming-card"><div className="gaming-row"><h2>Upcoming queue</h2><span className="gaming-pill">Intake paused</span></div>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued videos.</p>}</section>
           <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['Docker / n8n container',fresh&&data?.resources?.docker?'Running':'Not confirmed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources?.disk} waiting={!fresh || data?.resources?.disk==null}/></section>
         </div>

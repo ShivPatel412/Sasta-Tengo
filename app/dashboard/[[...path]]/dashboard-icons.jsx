@@ -39,6 +39,7 @@ export {Database} from '@phosphor-icons/react/dist/csr/Database';
 export {Shield} from '@phosphor-icons/react/dist/csr/Shield';
 export {FilmStrip} from '@phosphor-icons/react/dist/csr/FilmStrip';
 export {YoutubeLogo} from '@phosphor-icons/react/dist/csr/YoutubeLogo';
+export {InstagramLogo} from '@phosphor-icons/react/dist/csr/InstagramLogo';
 export {LinkedinLogo} from '@phosphor-icons/react/dist/csr/LinkedinLogo';
 export {WhatsappLogo} from '@phosphor-icons/react/dist/csr/WhatsappLogo';
 export {Heartbeat} from '@phosphor-icons/react/dist/csr/Heartbeat';

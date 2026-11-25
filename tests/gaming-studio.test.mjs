@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {analysisProgress,dashboardExecution,gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued,reelStatus,scheduledReels} from '../lib/gaming-studio.mjs';
+import {analysisProgress,dashboardExecution,gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued,publishingDays,reelStatus} from '../lib/gaming-studio.mjs';
 
 const now = Date.parse('2026-11-25T07:26:20Z');
 const stamp = '2026-11-25T07:26:17Z';
@@ -101,7 +101,7 @@ test('weekly gaming queue distinguishes dated and undated reels and retains an a
   const scheduled=clips.find(clip=>clip.title==='Assigned slot');
   assert.equal(reelStatus(scheduled),'scheduled');
   assert.equal(scheduled.delivery.platforms.youtube,'Scheduled');
-  assert.equal(scheduledReels(clips,'2026-12')[0].day,'2026-12-01');
+  assert.equal(publishingDays(clips,'2026-12').get('2026-12-01')[0].clip.title,'Assigned slot');
   assert.equal(clips.find(clip=>reelStatus(clip)==='processing')?.title,'Clip 2 of 8');
   assert.doesNotMatch(JSON.stringify(clips),/private trace/);
 });
@@ -113,11 +113,11 @@ test('a scheduled platform release belongs to the matching reel and displays in 
   const result = gamingSnapshot(input,now);
   assert.equal(reelStatus(result.clips[0]),'scheduled');
   assert.ok(result.clips[0].instagram);
-  assert.deepEqual(scheduledReels(result.clips,'2026-11'),[]);
-  assert.deepEqual(scheduledReels(result.clips,'2026-12'),[{
-    id:'job-1-1',title:'Final round',platform:'youtube',at:'2026-11-30T20:00:00.000Z',day:'2026-12-01'
-  }]);
-  assert.equal(scheduledReels(gamingSnapshot(snapshot({...scheduled,parent_job_id:'different-job'}),now).clips,'2026-12').length,0);
+  assert.equal(publishingDays(result.clips,'2026-11').size,0);
+  const [entry] = publishingDays(result.clips,'2026-12').get('2026-12-01');
+  assert.equal(entry.clip.title,'Final round');
+  assert.deepEqual(entry.releases,[{platform:'youtube',at:'2026-11-30T20:00:00.000Z',status:'Scheduled'}]);
+  assert.equal(publishingDays(gamingSnapshot(snapshot({...scheduled,parent_job_id:'different-job'}),now).clips,'2026-12').size,0);
 });
 
 test('published, canceled, missing and ambiguous times do not appear on the calendar',()=>{
@@ -126,10 +126,23 @@ test('published, canceled, missing and ambiguous times do not appear on the cale
     {...scheduled,scheduled_at:'2026-12-01T01:30'}]) {
     const input = snapshot(row);
     input.automations.youtube.uploads.push(scheduled);
-    assert.equal(scheduledReels(gamingSnapshot(input,now).clips,'2026-12').length,0);
+    assert.equal(publishingDays(gamingSnapshot(input,now).clips,'2026-12').size,0);
   }
   assert.equal(reelStatus({render_status:'RENDERED'}),'ready');
   assert.equal(reelStatus({render_status:'RENDERING'}),'processing');
   assert.equal(reelStatus({instagram:{}}),'published');
   assert.equal(reelStatus({}),null);
+});
+
+test('calendar groups both platform posts into one reel on the right IST date',()=>{
+  const clip = {id:'first',title:'Double release',instagram:{...platformReceipt(instagram,'instagram'),at:'2026-11-30T20:15:00Z'},
+    youtube:{...platformReceipt(youtube,'youtube'),at:'2026-12-01T04:00:00Z'},schedule:[{platform:'instagram',at:'2026-11-30T15:30:00Z'}]};
+  const [entry] = publishingDays([clip],'2026-12').get('2026-12-01');
+  assert.deepEqual(entry.releases.map(release=>[release.platform,release.status]),[['instagram','Published'],['youtube','Published']]);
+  assert.equal(entry.clip.youtube.url,'https://www.youtube.com/shorts/abcdefghijk');
+  assert.equal(publishingDays([clip],'2026-11').size,0);
+  const split = {...clip,youtube:null,schedule:[{platform:'youtube',at:'2026-12-02T14:30:00Z'}]};
+  const days = publishingDays([split],'2026-12');
+  assert.equal(days.get('2026-12-01')[0].releases[0].status,'Published');
+  assert.equal(days.get('2026-12-02')[0].releases[0].status,'Scheduled');
 });
