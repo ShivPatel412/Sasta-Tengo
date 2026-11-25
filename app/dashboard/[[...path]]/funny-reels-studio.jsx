@@ -1,16 +1,80 @@
 'use client';
 
-import {useEffect,useState} from 'react';
-import {Activity,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
+import {useEffect,useId,useState} from 'react';
+import {Activity,ChevronLeft,ChevronRight,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
 import {adminApi} from '../../../lib/dashboard-client.mjs';
-import {isProcessing,isQueued,newerGamingSnapshot,stages} from '../../../lib/gaming-studio.mjs';
+import {isProcessing,isQueued,newerGamingSnapshot,reelStatus,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
 import './gaming-studio.css';
 
-const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'});
+const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:studioTimeZone});
 const time = value => Number.isFinite(Date.parse(value)) ? date.format(new Date(value)) : 'Not reported';
 const label = value => value ? String(value).toLowerCase().replaceAll('_',' ') : 'Not reported';
 const videoId = id => /^[\w-]{11}$/.test(id || '') ? id : null;
 const sourceLink = id => videoId(id) && 'https://www.youtube.com/watch?v='+id;
+const sectionTabs = {dashboard:'Master dashboard',execution:'Current execution',reels:'Generated reels',logs:'Logs'};
+const reelTabs = {ready:'Ready to publish',published:'Published',processing:'Processing',scheduled:'Scheduled'};
+const platformNames = {instagram:'Instagram',youtube:'YouTube'};
+const monthFormat = new Intl.DateTimeFormat('en-IN',{month:'long',year:'numeric',timeZone:'UTC'});
+
+function Tabs({label,items,value,onChange,children}) {
+  const id = useId();
+  const names = Object.keys(items);
+  function onKeyDown(event,index) {
+    const next = {ArrowLeft:(index+names.length-1)%names.length,ArrowRight:(index+1)%names.length,Home:0,End:names.length-1}[event.key];
+    if (typeof next !== 'number') return;
+    event.preventDefault();
+    event.currentTarget.parentElement.children[next].focus();
+    onChange(names[next]);
+  }
+  return <>
+    <div className="gaming-tabs" role="tablist" aria-label={label}>
+      {names.map((name,index)=><button key={name} type="button" role="tab" id={`${id}-${name}`} aria-selected={value===name}
+        aria-controls={`${id}-panel-${name}`} tabIndex={value===name?0:-1} onClick={()=>onChange(name)} onKeyDown={event=>onKeyDown(event,index)}>{items[name]}</button>)}
+    </div>
+    {names.map(name=><div key={name} className="gaming-panel" role="tabpanel" id={`${id}-panel-${name}`} aria-labelledby={`${id}-${name}`} tabIndex={0} hidden={value!==name}>
+      {value===name && children}
+    </div>)}
+  </>;
+}
+
+function ReleaseTime({release}) {
+  return <><time dateTime={release.at}>{time(release.at)} IST</time>{release.platform && <span className="gaming-pill">{platformNames[release.platform]}</span>}</>;
+}
+
+function ScheduleCalendar({clips,month,setMonth,available}) {
+  const [year,monthNumber] = month.split('-').map(Number);
+  const first = new Date(Date.UTC(year,monthNumber-1,1));
+  const days = new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
+  const offset = (first.getUTCDay()+6)%7;
+  const releases = scheduledReels(clips,month);
+  const counts = new Map();
+  for (const release of releases) counts.set(release.day,(counts.get(release.day) || 0)+1);
+  function moveMonth(step) {
+    setMonth(new Date(Date.UTC(year,monthNumber-1+step,1)).toISOString().slice(0,7));
+  }
+  return <section className="gaming-card">
+    <div className="gaming-row"><h2>Publishing calendar</h2><div className="gaming-calendar-nav">
+      <button type="button" aria-label="Previous month" onClick={()=>moveMonth(-1)}><ChevronLeft size={18} aria-hidden="true"/></button>
+      <strong aria-live="polite">{monthFormat.format(first)}</strong>
+      <button type="button" aria-label="Next month" onClick={()=>moveMonth(1)}><ChevronRight size={18} aria-hidden="true"/></button>
+    </div></div>
+    <table className="gaming-calendar" aria-label={monthFormat.format(first)}>
+      <thead><tr>{['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map(day=><th key={day} scope="col" aria-label={day}>{day.slice(0,3)}</th>)}</tr></thead>
+      <tbody>{Array.from({length:Math.ceil((offset+days)/7)},(_,week)=><tr key={week}>
+        {Array.from({length:7},(_,weekday)=>{
+          const day = week*7+weekday-offset+1;
+          if (day<1 || day>days) return <td key={weekday}/>;
+          const key = `${month}-${String(day).padStart(2,'0')}`;
+          const count = counts.get(key);
+          return <td key={weekday}><time dateTime={key}>{day}</time>{count && <span className="gaming-calendar-count" aria-label={`${count} scheduled`}>{count}</span>}</td>;
+        })}
+      </tr>)}</tbody>
+    </table>
+    {releases.length ? <ul className="gaming-schedule-list">{releases.map(release=><li key={`${release.id}-${release.platform}-${release.at}`}>
+      <strong>{release.title || 'Generated reel'}</strong><div><ReleaseTime release={release}/></div>
+    </li>)}</ul> : <p>{available?'No scheduled reels this month.':'Schedule unavailable.'}</p>}
+  </section>;
+}
 function runLink(row) {
   if (!/^\d+$/.test(row?.execution_id || '')) return null;
   const workflow = /^[\w-]+$/.test(row.n8n_workflow_id || '') ? row.n8n_workflow_id : null;
@@ -29,7 +93,7 @@ function Progress({name,value,waiting}) {
     {!waiting && <progress max={100} value={value ?? undefined}/>}</label>;
 }
 function Execution({job,events,fresh,now}) {
-  if (!job) return <section className="gaming-card"><h2>Current execution</h2><p>No active execution appears in the collected jobs.</p></section>;
+  if (!job) return <section className="gaming-card"><h2>Current execution</h2><p>No active execution.</p></section>;
   const completed = job.segments_processed;
   const total = job.segments_total > 0 ? job.segments_total : null;
   const age = now-Date.parse(job.last_heartbeat_at);
@@ -63,7 +127,7 @@ function Execution({job,events,fresh,now}) {
         <div><dt>Latest reported milestone</dt><dd>{events[0] ? label(events[0].stage)+' · '+time(events[0].created_at || events[0].createdAt) : 'Not reported'}</dd></div>
       </dl>
     </details>
-    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External><span>Pause, resume and retry require worker support.</span></div>
+    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External></div>
   </section>;
 }
 function Reel({clip}) {
@@ -73,20 +137,22 @@ function Reel({clip}) {
   return <article className="gaming-reel">
     {cover ? <img src={cover} alt="" loading="lazy" onError={()=>setFailedCover(previous=>[...previous,cover])}/> : <div className="gaming-placeholder"><Clapperboard size={24} aria-hidden="true"/></div>}
     <h3>{clip.title || 'Generated reel'}</h3>
-    <p>{[clip.category,clip.duration_seconds && clip.duration_seconds+' s',clip.quality_score != null && clip.quality_score+'/100',clip.editing_engine].filter(Boolean).join(' · ') || 'Details from collected records'}</p>
-    <ul>{['instagram','youtube'].map(platform=><li key={platform}>{clip[platform] ? <External href={clip[platform].url}>{label(platform)} receipt</External> : label(platform)+' receipt pending'}</li>)}</ul>
-    <details><summary>Reel details</summary>
+    {(clip.category || clip.duration_seconds || clip.quality_score != null || clip.editing_engine) && <p>{[clip.category,clip.duration_seconds && clip.duration_seconds+' s',clip.quality_score != null && clip.quality_score+'/100',clip.editing_engine].filter(Boolean).join(' · ')}</p>}
+    {clip.schedule?.map(release=><div className="gaming-release" key={`${release.platform}-${release.at}`}><ReleaseTime release={release}/></div>)}
+    {(clip.instagram || clip.youtube) && <ul>{Object.keys(platformNames).filter(platform=>clip[platform]).map(platform=><li key={platform}><External href={clip[platform].url}>{platformNames[platform]}</External></li>)}</ul>}
+    {(clip.preview || clip.caption || clip.hashtags || clip.streamer || clip.start_seconds != null || clip.created_at) && <details><summary>Reel details</summary>
       {clip.preview && <External href={clip.preview}>Open private preview</External>}
       {clip.caption && <p>{clip.caption}</p>}{clip.hashtags && <p>{clip.hashtags}</p>}
       {clip.streamer && <p>Creator: {clip.streamer}</p>}
       {clip.start_seconds != null && <p>Source: {clip.start_seconds}–{clip.end_seconds ?? '—'} s</p>}
       {clip.created_at && <p>{time(clip.created_at)}</p>}
-    </details>
+    </details>}
   </article>;
 }
 export default function FunnyReelsStudio({initial,refresh}) {
   const [data,setData]=useState(initial),[error,setError]=useState(''),[now,setNow]=useState(0);
-  const [filter,setFilter]=useState('All'),[limit,setLimit]=useState(8),[severity,setSeverity]=useState('All'),[revision,reload]=useState(0);
+  const [section,setSection]=useState('dashboard'),[filter,setFilter]=useState('ready'),[limit,setLimit]=useState(8),[severity,setSeverity]=useState('All'),[revision,reload]=useState(0);
+  const [month,setMonth]=useState(()=>studioDay(new Date()).slice(0,7));
   useEffect(()=>{
     let disposed=false, timer, controller;
     async function poll(){
@@ -96,7 +162,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
         const snapshot=await adminApi('funny-reels',{signal:AbortSignal.any([controller.signal,AbortSignal.timeout(8000)])});
         if(!disposed){setData(previous=>newerGamingSnapshot(previous,snapshot));setError('');}
       } catch {
-        if(!disposed)setError('Could not refresh collector data. Showing the last available records.');
+        if(!disposed)setError('Collector refresh failed.');
       } finally {
         controller=null;
         if(!disposed){setNow(Date.now());timer=setTimeout(poll,10000);}
@@ -111,26 +177,34 @@ export default function FunnyReelsStudio({initial,refresh}) {
   const fresh=Boolean(data?.fresh && !error && (!now || age >= -30000 && age < 120000));
   const active=(data?.jobs || []).filter(isProcessing),queue=(data?.jobs || []).filter(isQueued).sort((a,b)=>(a.priority ?? Infinity)-(b.priority ?? Infinity) || Date.parse(a.requested_at || a.createdAt)-Date.parse(b.requested_at || b.createdAt));
   const job=active[0];
-  const clips=(data?.clips || []).filter(clip=>filter==='All' || filter==='Published'&&clip.published || filter==='Ready'&&clip.render_status==='RENDERED'&&!clip.published || filter==='Failed'&&/FAILED|ERROR/i.test(clip.render_status) || filter==='Processing'&&/PROCESSING|RENDERING/i.test(clip.render_status));
+  const clips=data?.clips || [];
+  const filteredClips=clips.filter(clip=>{
+    const status=reelStatus(clip);
+    return status===filter || filter==='published' && Boolean(clip.instagram || clip.youtube);
+  });
   const activity=(data?.events || []).filter(event=>severity==='All' || (severity==='Errors'&&/FAIL|ERROR/i.test(event.event_type)) ||
     (severity==='Warnings'&&/WARN|RETRY/i.test(event.event_type)) || (severity==='Milestones'&&!/FAIL|ERROR|WARN|RETRY/i.test(event.event_type)));
   return <div className="gaming-studio">
-    <div className="gaming-row gaming-status" role="status"><span className="gaming-pill">{fresh?'Collector online':data?'Collector stale':error?'Collector unavailable':'Connecting to collector'}</span><span>Last collected {time(data?.version)} IST</span><button type="button" onClick={()=>reload(value=>value+1)}><RefreshCw size={15} aria-hidden="true"/> Refresh</button></div>
+    <div className="gaming-row gaming-status"><div role="status"><span className="gaming-pill">{fresh?'Collector online':data?.available?'Collector stale':error||data?'Collector unavailable':'Connecting to collector'}</span>{data?.version && <time dateTime={data.version}>{time(data.version)} IST</time>}</div><button type="button" onClick={()=>reload(value=>value+1)}><RefreshCw size={15} aria-hidden="true"/> Refresh</button></div>
     {error && <p className="gaming-alert" role="alert">{error}</p>}
-    <section className="gaming-card"><h2>Add new video</h2><div className="gaming-intake"><input type="url" aria-label="YouTube source URL" placeholder="Paste a YouTube video or livestream URL" disabled/><button disabled>Add to queue</button></div><p>Intake is paused until the dispatcher can safely queue sources without starting another worker. Permission to edit and republish is required.</p></section>
-    <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',data?.clips?.filter(clip=>clip.published).length||0]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
-    <div className="gaming-grid">
-      <Execution job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id)} fresh={fresh} now={now}/>
-      <div className="gaming-side"><section className="gaming-card"><h2>Upcoming queue</h2>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued items appear in the collected records.</p>}<p>Reordering and removal require dispatcher support.</p></section>
-        <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['WSL / collector',fresh?'Reporting':'Awaiting update'],['Docker / n8n container',fresh&&data?.resources.docker?'Running':'Not confirmed'],['GPU / CPU / RAM','No telemetry feed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources.disk} waiting={!fresh || data?.resources.disk==null}/></section>
-      </div>
-    </div>
-    <section className="gaming-card"><div className="gaming-row"><h2>Generated reels</h2><select aria-label="Filter reels" value={filter} onChange={event=>{setFilter(event.target.value);setLimit(8);}}>{['All','Processing','Ready','Published','Failed'].map(value=><option key={value}>{value}</option>)}</select></div>
-      {clips.length ? <div className="gaming-library">{clips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip}/>)}</div>:<p>No collected reels match this view.</p>}
-      {clips.length>limit && <button onClick={()=>setLimit(n=>n+8)}>Show more reels</button>}
-    </section>
-    <section className="gaming-card"><div className="gaming-row"><h2>Recent activity</h2><select aria-label="Filter activity" value={severity} onChange={event=>setSeverity(event.target.value)}>{['All','Errors','Warnings','Milestones'].map(value=><option key={value}>{value}</option>)}</select></div>
-      {activity.length ? <details open><summary>{activity.length} collected events</summary><ol className="gaming-activity">{activity.slice(0,20).map(event=><li key={event.id}><strong>{label(event.stage)}</strong><span>{label(event.event_type)}</span><time>{time(event.created_at || event.createdAt)}</time><External href={runLink(event)}>Run {event.execution_id}</External></li>)}</ol></details> : <p>No events match this view.</p>}
-    </section>
+    <Tabs label="Gaming Studio" items={sectionTabs} value={section} onChange={setSection}>
+      {section==='dashboard' && <>
+        <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(clip=>clip.instagram || clip.youtube || clip.published).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
+        <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
+        <div className="gaming-side"><section className="gaming-card"><div className="gaming-row"><h2>Upcoming queue</h2><span className="gaming-pill">Intake paused</span></div>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued videos.</p>}</section>
+          <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['Docker / n8n container',fresh&&data?.resources?.docker?'Running':'Not confirmed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources?.disk} waiting={!fresh || data?.resources?.disk==null}/></section>
+        </div>
+      </>}
+      {section==='execution' && <Execution job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id)} fresh={fresh} now={now}/>}
+      {section==='reels' && <Tabs label="Reel status" items={reelTabs} value={filter} onChange={value=>{setFilter(value);setLimit(8);}}>
+        <section className="gaming-card">
+          {filteredClips.length ? <div className="gaming-library">{filteredClips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip}/>)}</div>:<p>{data?.available?'No reels in this view.':'Reel data unavailable.'}</p>}
+          {filteredClips.length>limit && <button type="button" onClick={()=>setLimit(n=>n+8)}>Show more reels</button>}
+        </section>
+      </Tabs>}
+      {section==='logs' && <section className="gaming-card"><div className="gaming-row"><h2>Logs</h2><select aria-label="Filter logs" value={severity} onChange={event=>setSeverity(event.target.value)}>{['All','Errors','Warnings','Milestones'].map(value=><option key={value}>{value}</option>)}</select></div>
+        {activity.length ? <ol className="gaming-activity">{activity.slice(0,20).map(event=><li key={event.id}><strong>{label(event.stage)}</strong><span>{label(event.event_type)}</span><time dateTime={event.created_at || event.createdAt}>{time(event.created_at || event.createdAt)}</time><External href={runLink(event)}>Run {event.execution_id}</External></li>)}</ol> : <p>No matching logs.</p>}
+      </section>}
+    </Tabs>
   </div>;
 }

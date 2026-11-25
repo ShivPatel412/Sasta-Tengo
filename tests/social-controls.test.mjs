@@ -25,7 +25,8 @@ test('social panels do not invent verified accounts or manual-publishing enforce
 test('gaming intake is unavailable until the dispatcher can safely queue',async()=>{
  const source=await readFile(new URL('../app/dashboard/[[...path]]/funny-reels-studio.jsx',import.meta.url),'utf8');
  const api=await readFile(new URL('../app/api/admin/funny-reels/route.js',import.meta.url),'utf8');
- assert(source.includes('<button disabled>Add to queue'));
+ assert(source.includes('Intake paused'));
+ assert(!source.includes('Add to queue'));
  assert(api.includes('reelSubmission.parse'));
  assert(!api.includes('submitReelJob('));
 });

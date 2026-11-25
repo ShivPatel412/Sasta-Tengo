@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued} from '../lib/gaming-studio.mjs';
+import {gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued,reelStatus,scheduledReels} from '../lib/gaming-studio.mjs';
 
 const now = Date.parse('2026-11-25T07:26:20Z');
 const stamp = '2026-11-25T07:26:17Z';
@@ -38,4 +38,32 @@ test('strips worker paths and diagnostics, deduplicates events and ignores older
   assert.doesNotMatch(JSON.stringify(result),/private error|private trace|\/private\/file/);
   assert.match(result.clips[0].preview,/^\/api\/admin\/reel-media\?/);
   assert.equal(newerGamingSnapshot(result,{version:'2026-11-24T00:00:00Z'}),result);
+});
+
+test('a scheduled platform release belongs to the matching reel and displays in its IST month',()=>{
+  const scheduled = {...youtube,status:'SCHEDULED',privacy_status:'private',scheduled_at:'2026-11-30T20:00:00Z'};
+  const input = snapshot(scheduled);
+  input.automations.funny_reels.clips[0].title = 'Final round';
+  const result = gamingSnapshot(input,now);
+  assert.equal(reelStatus(result.clips[0]),'scheduled');
+  assert.ok(result.clips[0].instagram);
+  assert.deepEqual(scheduledReels(result.clips,'2026-11'),[]);
+  assert.deepEqual(scheduledReels(result.clips,'2026-12'),[{
+    id:'job-1-1',title:'Final round',platform:'youtube',at:'2026-11-30T20:00:00.000Z',day:'2026-12-01'
+  }]);
+  assert.equal(scheduledReels(gamingSnapshot(snapshot({...scheduled,parent_job_id:'different-job'}),now).clips,'2026-12').length,0);
+});
+
+test('published, canceled, missing and ambiguous times do not appear on the calendar',()=>{
+  const scheduled = {...youtube,status:'SCHEDULED',scheduled_at:'2026-11-30T20:00:00Z'};
+  for (const row of [{...scheduled,status:'PUBLISHED'},{...scheduled,status:'CANCELED'},{...scheduled,scheduled_at:null},
+    {...scheduled,scheduled_at:'2026-12-01T01:30'}]) {
+    const input = snapshot(row);
+    input.automations.youtube.uploads.push(scheduled);
+    assert.equal(scheduledReels(gamingSnapshot(input,now).clips,'2026-12').length,0);
+  }
+  assert.equal(reelStatus({render_status:'RENDERED'}),'ready');
+  assert.equal(reelStatus({render_status:'RENDERING'}),'processing');
+  assert.equal(reelStatus({instagram:{}}),'published');
+  assert.equal(reelStatus({}),null);
 });
