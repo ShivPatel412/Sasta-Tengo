@@ -3,7 +3,7 @@
 import {useEffect,useId,useState} from 'react';
 import {Activity,ChevronLeft,ChevronRight,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
 import {adminApi} from '../../../lib/dashboard-client.mjs';
-import {isProcessing,isQueued,newerGamingSnapshot,reelStatus,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
+import {analysisProgress,dashboardExecution,isProcessing,isQueued,newerGamingSnapshot,reelStatus,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
 import './gaming-studio.css';
 
 const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:studioTimeZone});
@@ -88,36 +88,41 @@ function Thumbnail({id}) {
   return videoId(id) ? <img className="gaming-thumbnail" src={'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'} alt="" loading="lazy"/> :
     <div className="gaming-thumbnail gaming-placeholder"><Clapperboard size={26} aria-hidden="true"/></div>;
 }
-function Progress({name,value,waiting}) {
-  return <label className="gaming-progress"><span>{name}<strong>{waiting ? 'Awaiting fresh data' : value == null ? 'Not measured' : value+'%'}</strong></span>
-    {!waiting && <progress max={100} value={value ?? undefined}/>}</label>;
+function Progress({name,value,detail,waiting}) {
+  const status = waiting ? 'Awaiting fresh data' : value == null ? 'Not measured' : `${detail ? detail+' · ' : ''}${value}%`;
+  if (waiting || value == null) return <p className="gaming-progress"><span>{name}<strong>{status}</strong></span></p>;
+  return <label className="gaming-progress"><span>{name}<strong>{status}</strong></span><progress max={100} value={value}/></label>;
 }
-function Execution({job,events,fresh,now}) {
-  if (!job) return <section className="gaming-card"><h2>Current execution</h2><p>No active execution.</p></section>;
-  const completed = job.segments_processed;
-  const total = job.segments_total > 0 ? job.segments_total : null;
+function Execution({job,events=[],fresh,now,compact=false}) {
+  if (!job) return <section className="gaming-card"><h2>Execution</h2><p>No execution reported.</p></section>;
+  const running = isProcessing(job);
+  const cancelled = ['CANCELED','CANCELLED'].includes(job.state);
   const age = now-Date.parse(job.last_heartbeat_at);
   const heartbeatFresh = Number.isFinite(age) && age >= -30000 && age < 900000;
   const started = Date.parse(job.started_at);
-  const elapsed = fresh && Number.isFinite(started) && now >= started ? Math.floor((now-started)/60000)+' min' : 'Not reported';
-  const current = stages.findIndex(([,keys])=>keys.includes(job.stage));
-  return <section className="gaming-card"><div className="gaming-row"><h2>Current execution</h2><span className="gaming-pill">{job.failed?'Needs attention':fresh&&heartbeatFresh?'Processing':'Last reported'}</span></div>
-    <div className="gaming-source"><Thumbnail id={job.video_id}/><div><h3>{job.title || job.video_id || job.job_id}</h3><p>{label(job.stage)} · {job.workflow_version || 'Version not reported'}</p><External href={sourceLink(job.video_id)}>Source video</External></div></div>
-    <Progress name="Overall progress" value={job.overall} waiting={!fresh || !heartbeatFresh}/>
-    <Progress name="Current stage" value={job.stageProgress} waiting={!fresh || !heartbeatFresh}/>
+  const stop = running && fresh && heartbeatFresh ? now : Date.parse(job.finished_at || job.last_heartbeat_at);
+  const elapsed = Number.isFinite(started) && stop >= started ? Math.floor((stop-started)/60000)+' min' : 'Not reported';
+  const step = job.step;
+  const current = stages.findIndex(([,keys])=>keys.includes(step?.stage || job.stage));
+  const analysis = analysisProgress(job);
+  const status = running ? fresh&&heartbeatFresh?'Processing':'Last reported' : cancelled?'Cancelled':job.failed?'Failed':'Completed';
+  return <section className="gaming-card"><div className="gaming-row"><h2>{running?'Current execution':'Last execution'}</h2><span className={`gaming-pill${status==='Failed'?' gaming-pill-error':''}`}>{status}</span></div>
+    <div className="gaming-source"><Thumbnail id={job.video_id}/><div><h3>{job.title || job.video_id || job.job_id}</h3>{job.workflow_version && <p>{job.workflow_version}</p>}{!compact && <External href={sourceLink(job.video_id)}>Source video</External>}</div></div>
+    <div className="gaming-step"><p>{running?'Current step':'Last step'}</p><strong>{step?.name || (job.stage && running ? label(job.stage) : 'Not reported')}</strong>{step?.clip && <span>Clip {step.clip.number} of {step.clip.total}</span>}</div>
+    {step?.stageProgress != null && !(step.stage==='ANALYZING' && analysis) && <Progress name="Step progress" value={step.stageProgress}/>}
+    {analysis && <Progress name="Segments analysed" value={analysis.percent} detail={`${analysis.completed} / ${analysis.total}`}/>}
+    {job.overall != null && <Progress name="Overall progress" value={job.overall}/>}
+    {!compact && <>
     <dl className="gaming-facts">
-      <div><dt>Segments completed</dt><dd>{completed ?? '—'}{total ? ' / '+total : ''}</dd></div>
-      <div><dt>Segments remaining</dt><dd>{total && completed != null ? Math.max(0,total-completed) : '—'}</dd></div>
       <div><dt>Elapsed</dt><dd>{elapsed}</dd></div><div><dt>Last heartbeat</dt><dd>{time(job.last_heartbeat_at)}</dd></div>
       <div><dt>Execution</dt><dd>{job.execution_id || '—'}</dd></div><div><dt>Retries</dt><dd>{job.retry_count ?? '—'}</dd></div>
     </dl>
     <details><summary>Processing timeline</summary>
       <ol className="gaming-timeline">{stages.map(([name,keys],index)=>{
         const reported=events.some(event=>keys.includes(event.stage));
-        return <li key={name}><span>{name}</span><strong>{current===index ? 'Current' : reported ? 'Reported' : 'No event'}</strong></li>;
+        return <li key={name}><span>{name}</span><strong>{current===index ? running?'Current':'Last reported' : reported ? 'Reported' : 'No event'}</strong></li>;
       })}</ol>
       <dl className="gaming-facts">
-        <div><dt>Current step</dt><dd>{job.current_node || job.current_step || 'Not reported'}</dd></div>
         <div><dt>Current segment</dt><dd>{job.current_segment ?? 'Not reported'}</dd></div>
         <div><dt>Duration / resolution</dt><dd>{job.duration_seconds ? job.duration_seconds+' s' : '—'} / {job.resolution || '—'}</dd></div>
         <div><dt>Size / downloaded</dt><dd>{job.size_bytes ? Math.round(job.size_bytes/1e6)+' MB' : '—'} / {job.downloaded_mb != null ? job.downloaded_mb+' MB' : '—'}</dd></div>
@@ -127,7 +132,7 @@ function Execution({job,events,fresh,now}) {
         <div><dt>Latest reported milestone</dt><dd>{events[0] ? label(events[0].stage)+' · '+time(events[0].created_at || events[0].createdAt) : 'Not reported'}</dd></div>
       </dl>
     </details>
-    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External></div>
+    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External></div></>}
   </section>;
 }
 function Reel({clip}) {
@@ -176,7 +181,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
   const age=now-Date.parse(data?.version);
   const fresh=Boolean(data?.fresh && !error && (!now || age >= -30000 && age < 120000));
   const active=(data?.jobs || []).filter(isProcessing),queue=(data?.jobs || []).filter(isQueued).sort((a,b)=>(a.priority ?? Infinity)-(b.priority ?? Infinity) || Date.parse(a.requested_at || a.createdAt)-Date.parse(b.requested_at || b.createdAt));
-  const job=active[0];
+  const job=dashboardExecution(data?.jobs || []);
   const clips=data?.clips || [];
   const filteredClips=clips.filter(clip=>{
     const status=reelStatus(clip);
@@ -190,6 +195,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
     <Tabs label="Gaming Studio" items={sectionTabs} value={section} onChange={setSection}>
       {section==='dashboard' && <>
         <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(clip=>clip.instagram || clip.youtube || clip.published).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
+        {job && <Execution job={job} fresh={fresh} now={now} compact/>}
         <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
         <div className="gaming-side"><section className="gaming-card"><div className="gaming-row"><h2>Upcoming queue</h2><span className="gaming-pill">Intake paused</span></div>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued videos.</p>}</section>
           <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['Docker / n8n container',fresh&&data?.resources?.docker?'Running':'Not confirmed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources?.disk} waiting={!fresh || data?.resources?.disk==null}/></section>

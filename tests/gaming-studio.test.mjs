@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued,reelStatus,scheduledReels} from '../lib/gaming-studio.mjs';
+import {analysisProgress,dashboardExecution,gamingSnapshot,newerGamingSnapshot,platformReceipt,percent,isProcessing,isQueued,reelStatus,scheduledReels} from '../lib/gaming-studio.mjs';
 
 const now = Date.parse('2026-11-25T07:26:20Z');
 const stamp = '2026-11-25T07:26:17Z';
@@ -38,6 +38,29 @@ test('strips worker paths and diagnostics, deduplicates events and ignores older
   assert.doesNotMatch(JSON.stringify(result),/private error|private trace|\/private\/file/);
   assert.match(result.clips[0].preview,/^\/api\/admin\/reel-media\?/);
   assert.equal(newerGamingSnapshot(result,{version:'2026-11-24T00:00:00Z'}),result);
+});
+
+test('keeps the last failed run and pairs the last cover step with a clip from that execution',()=>{
+  const input=snapshot();
+  const records=input.automations.funny_reels;
+  Object.assign(records.jobs[0],{execution_id:'61413',state:'ERROR',stage:'PIPELINE_FAILED',finished_at:stamp,
+    stage_percent:81,progress_percent:60,segments_processed:118,segments_total:118});
+  records.jobs.unshift({job_id:'queued',state:'QUEUED'},{job_id:'older',state:'DONE',execution_id:'111',finished_at:'2026-11-24T00:00:00Z'});
+  records.events=[
+    {id:3,job_id:'job-1',execution_id:'61413',stage:'COVERS',event_type:'WORKER_STEP',created_at:stamp,message:'Covers'},
+    {id:4,job_id:'job-1',execution_id:'111',stage:'RENDERING',event_type:'WORKER_STEP',created_at:stamp,message:'Rendering · clip 9/10'},
+    {id:2,job_id:'job-1',execution_id:'61413',stage:'RENDERING',event_type:'WORKER_STEP',created_at:'2026-11-25T07:26:10Z',message:'Rendering · clip 3/10'}
+  ];
+  const job=dashboardExecution(gamingSnapshot(input,now).jobs);
+  assert.equal(job.execution_id,'61413');
+  assert.equal(job.failed,true);
+  assert.deepEqual(job.step,{stage:'COVERS',name:'Generating cover and captions',clip:{number:3,total:10},stageProgress:null});
+  assert.deepEqual(analysisProgress(job),{completed:118,total:118,percent:100});
+  assert.equal(job.overall,null);
+  const active={execution_id:'new',state:'PROCESSING'};
+  assert.equal(dashboardExecution([job,active]),active);
+  assert.equal(analysisProgress({segments_processed:119,segments_total:118}),null);
+  assert.equal(analysisProgress({segments_processed:117,segments_total:118}).percent,99);
 });
 
 test('a scheduled platform release belongs to the matching reel and displays in its IST month',()=>{
