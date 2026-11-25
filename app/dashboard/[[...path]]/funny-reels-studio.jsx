@@ -1,9 +1,9 @@
 'use client';
 
-import {useEffect,useId,useState} from 'react';
+import {useEffect,useId,useRef,useState} from 'react';
 import {Activity,ChevronLeft,ChevronRight,Clapperboard,ListVideo,RefreshCw,ExternalLink} from 'lucide-react';
 import {adminApi} from '../../../lib/dashboard-client.mjs';
-import {analysisProgress,dashboardExecution,isProcessing,isQueued,newerGamingSnapshot,reelStatus,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
+import {analysisProgress,dashboardExecution,isProcessing,isQueued,isReelPublished,newerGamingSnapshot,reelStatus,runHistory,scheduledReels,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
 import './gaming-studio.css';
 
 const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:studioTimeZone});
@@ -41,12 +41,13 @@ function ReleaseTime({release}) {
   return <><time dateTime={release.at}>{time(release.at)} IST</time>{release.platform && <span className="gaming-pill">{platformNames[release.platform]}</span>}</>;
 }
 
-function ScheduleCalendar({clips,month,setMonth,available}) {
+function ScheduleCalendar({clips,month,setMonth,available,onRun}) {
   const [year,monthNumber] = month.split('-').map(Number);
   const first = new Date(Date.UTC(year,monthNumber-1,1));
   const days = new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
   const offset = (first.getUTCDay()+6)%7;
   const releases = scheduledReels(clips,month);
+  const awaiting = clips.filter(clip=>clip.delivery?.awaitingDate);
   const counts = new Map();
   for (const release of releases) counts.set(release.day,(counts.get(release.day) || 0)+1);
   function moveMonth(step) {
@@ -70,9 +71,16 @@ function ScheduleCalendar({clips,month,setMonth,available}) {
         })}
       </tr>)}</tbody>
     </table>
-    {releases.length ? <ul className="gaming-schedule-list">{releases.map(release=><li key={`${release.id}-${release.platform}-${release.at}`}>
-      <strong>{release.title || 'Generated reel'}</strong><div><ReleaseTime release={release}/></div>
-    </li>)}</ul> : <p>{available?'No scheduled reels this month.':'Schedule unavailable.'}</p>}
+    {releases.length ? <ul className="gaming-schedule-list">{releases.map(release=>{
+      const clip = clips.find(item=>item.id===release.id);
+      return <li key={`${release.id}-${release.platform}-${release.at}`}><details>
+        <summary><span>{release.title || 'Generated reel'}</span> <ReleaseTime release={release}/></summary>
+        <ReelDelivery clip={clip} onRun={onRun}/>
+      </details></li>;
+    })}</ul> : <p>{available?'No scheduled reels this month.':'Schedule unavailable.'}</p>}
+    {awaiting.length>0 && <details><summary>Awaiting a date ({awaiting.length})</summary><ul className="gaming-schedule-list">
+      {awaiting.map(clip=><li key={clip.id}>{clip.title || 'Generated reel'}</li>)}
+    </ul></details>}
   </section>;
 }
 function runLink(row) {
@@ -93,6 +101,37 @@ function Progress({name,value,detail,waiting}) {
   if (waiting || value == null) return <p className="gaming-progress"><span>{name}<strong>{status}</strong></span></p>;
   return <label className="gaming-progress"><span>{name}<strong>{status}</strong></span><progress max={100} value={value}/></label>;
 }
+const segmentLabels = {completed:'Completed',processing:'Processing',failed:'Failed',pending:'Pending',unknown:'Unknown'};
+function SegmentList({segments,live}) {
+  const currentRow=useRef(null);
+  if (!segments) return <p>Segment details unavailable.</p>;
+  return <section className="gaming-segments">
+    <div className="gaming-row"><h3>Segments</h3>{segments.current && <button type="button" onClick={()=>{
+      currentRow.current?.scrollIntoView({block:'nearest'});
+      currentRow.current?.focus({preventScroll:true});
+    }}>{live?'Jump to current':'Jump to last reported'}</button>}</div>
+    <div className="gaming-segment-scroll" tabIndex={0} role="region" aria-label="Segment statuses">
+      <ol role="list">{segments.rows.map((status,index)=>{
+        const current = index+1===segments.current;
+        return <li key={index} ref={current?currentRow:undefined} aria-current={current?'step':undefined} tabIndex={current?-1:undefined}>
+          <span>Segment {index+1}</span><strong>{current&&!live?'Last reported':segmentLabels[status]}</strong>
+        </li>;
+      })}</ol>
+    </div>
+  </section>;
+}
+function ExecutionHistory({runs,value,onChange}) {
+  const [search,setSearch]=useState('');
+  const id=useId();
+  const options = runs.map(run=>({id:String(run.execution_id), name:`${run.title || run.video_id || run.job_id} · #${run.execution_id} · ${time(run.started_at || run.finished_at || run.recordedAt || run.last_heartbeat_at)}`}));
+  const visible = options.filter(option=>option.id===value || option.name.toLowerCase().includes(search.trim().toLowerCase()));
+  return <section className="gaming-card"><h2>Run history</h2><div className="gaming-history">
+    <label>Search runs <input type="search" value={search} onChange={event=>setSearch(event.target.value)} placeholder="Video, date, or execution ID"/></label>
+    <div><label htmlFor={id}>Execution</label><select id={id} value={value} onChange={event=>onChange(event.target.value)}><option value="">Current or latest run</option>
+      {visible.map(run=><option key={run.id} value={run.id}>{run.name}</option>)}
+    </select></div>
+    </div>{search && !visible.some(option=>option.name.toLowerCase().includes(search.trim().toLowerCase())) && <p>No matching runs.</p>}</section>;
+}
 function Execution({job,events=[],fresh,now,compact=false}) {
   const [selected,setSelected]=useState(null);
   const progressId=useId();
@@ -111,8 +150,9 @@ function Execution({job,events=[],fresh,now,compact=false}) {
   const history = job.steps?.[viewed];
   const clip = viewingCurrent ? step?.clip || history?.clip : history?.clip;
   const progress = viewingCurrent ? step?.stageProgress ?? history?.progress : history?.progress;
-  const analysis = compact || stages[viewed]?.[1].includes('ANALYZING') ? analysisProgress(job) : null;
-  const status = running ? fresh&&heartbeatFresh?'Processing':'Last reported' : cancelled?'Cancelled':job.failed?'Failed':'Completed';
+  const verification = stages[viewed]?.[1].includes('ANALYZING');
+  const analysis = compact || verification ? analysisProgress(job) : null;
+  const status = running ? !fresh?'Collector stale':!heartbeatFresh?'Heartbeat stale':'Processing' : cancelled?'Cancelled':job.failed?'Failed':job.state==='READY_FOR_WEEKLY_POSTING'?'Awaiting release':job.state==='UNKNOWN'?'Outcome unknown':'Completed';
   return <section className="gaming-card"><div className="gaming-row"><h2>{running?'Current execution':'Last execution'}</h2><span className={`gaming-pill${status==='Failed'?' gaming-pill-error':''}`}>{status}</span></div>
     <div className="gaming-source"><Thumbnail id={job.video_id}/><div><h3>{job.title || job.video_id || job.job_id}</h3>{job.workflow_version && <p>{job.workflow_version}</p>}{!compact && <External href={sourceLink(job.video_id)}>Source video</External>}</div></div>
     {!compact && <div className="gaming-step-scroll" role="region" aria-label="Processing steps" tabIndex={0}>
@@ -127,17 +167,19 @@ function Execution({job,events=[],fresh,now,compact=false}) {
         </li>;
       })}</ol>
     </div>}
-    <div className="gaming-step-details" id={progressId} aria-live="polite">
+    <div className="gaming-step-details" id={progressId}>
       <div className="gaming-step"><p>{viewingCurrent ? running?'Current step':'Last step' : 'Selected step'}</p><strong>{(viewingCurrent && step?.name) || stages[viewed]?.[0] || (job.stage && running ? label(job.stage) : 'Not reported')}</strong>{compact && clip && <span>Clip {clip.number} of {clip.total}</span>}</div>
       {!compact && clip && <Progress name="Clip position" value={Math.floor(clip.number/clip.total*100)} detail={`${clip.number}/${clip.total}`}/>}
       {progress != null && (!analysis || compact && step?.stage!=='ANALYZING') && <Progress name="Step progress" value={progress}/>}
       {analysis && <Progress name="Segments analysed" value={analysis.percent} detail={`${analysis.completed} / ${analysis.total}`}/>}
-      {!compact && !clip && !analysis && progress == null && <p>{history?.at ? `Reported ${time(history.at)} · Progress not reported` : 'No progress reported for this step.'}</p>}
+      {!compact && history?.startedAt && <p>First recorded {time(history.startedAt)}{history.durationSeconds!=null && ` · Observed duration ${Math.floor(history.durationSeconds/60)}m ${history.durationSeconds%60}s`}</p>}
+      {!compact && !verification && !clip && !analysis && progress == null && <p>No progress reported for this step.</p>}
+      {!compact && verification && <SegmentList segments={job.segments} live={running&&fresh&&heartbeatFresh}/>}
     </div>
     {job.overall != null && <Progress name="Overall progress" value={job.overall}/>}
     {!compact && <>
     <dl className="gaming-facts">
-      <div><dt>Elapsed</dt><dd>{elapsed}</dd></div><div><dt>Last heartbeat</dt><dd>{time(job.last_heartbeat_at)}</dd></div>
+      <div><dt>Elapsed</dt><dd>{elapsed}</dd></div><div><dt>{job.archived?'Last recorded event':'Last heartbeat'}</dt><dd>{time(job.last_heartbeat_at || job.recordedAt)}</dd></div>
       <div><dt>Execution</dt><dd>{job.execution_id || '—'}</dd></div><div><dt>Retries</dt><dd>{job.retry_count ?? '—'}</dd></div>
     </dl>
     <details><summary>Execution details</summary>
@@ -151,10 +193,23 @@ function Execution({job,events=[],fresh,now,compact=false}) {
         <div><dt>Latest reported milestone</dt><dd>{events[0] ? label(events[0].stage)+' · '+time(events[0].created_at || events[0].createdAt) : 'Not reported'}</dd></div>
       </dl>
     </details>
-    <div className="gaming-row gaming-run"><External href={runLink(job)}>Open execution</External></div></>}
+    <div className="gaming-row gaming-run"><External href={runLink(job)}>{job.failed?'Inspect failed execution':'Open execution'}</External></div></>}
   </section>;
 }
-function Reel({clip}) {
+function ReelDelivery({clip,onRun}) {
+  return <div className="gaming-delivery">
+    {clip.processingStep && <p>{clip.processingStep}</p>}
+    {clip.delivery?.awaitingDate && <p>Awaiting a publish date.</p>}
+    <dl className="gaming-facts">
+      <div><dt>Render</dt><dd>{clip.render_status==='RENDERED' || clip.delivery?.awaitingDate || clip.schedule?.length || isReelPublished(clip) ? 'Ready' : clip.render_status ? label(clip.render_status) : 'Not reported'}</dd></div>
+      <div><dt>Cover</dt><dd>{clip.cover || clip.delivery?.coverReady ? 'Available' : clip.processingStep==='Generating cover and captions' ? 'Processing' : 'Not reported'}</dd></div>
+      <div><dt>Review</dt><dd>{clip.delivery?.review || 'Not reported'}</dd></div>
+      {Object.entries(platformNames).map(([platform,name])=><div key={platform}><dt>{name}</dt><dd>{clip[platform]?.url ? <External href={clip[platform].url}>Published</External> : clip.delivery?.platforms?.[platform] || 'Not reported'}</dd></div>)}
+    </dl>
+    {clip.sourceExecution && <button type="button" onClick={()=>onRun(String(clip.sourceExecution))}>View run #{clip.sourceExecution}</button>}
+  </div>;
+}
+function Reel({clip,onRun}) {
   const [failedCover,setFailedCover]=useState([]);
   const thumbnail = clip.youtube ? 'https://i.ytimg.com/vi/'+clip.youtube.id+'/mqdefault.jpg' : null;
   const cover = [clip.cover,thumbnail].find(url=>url&&!failedCover.includes(url));
@@ -163,7 +218,7 @@ function Reel({clip}) {
     <h3>{clip.title || 'Generated reel'}</h3>
     {(clip.category || clip.duration_seconds || clip.quality_score != null || clip.editing_engine) && <p>{[clip.category,clip.duration_seconds && clip.duration_seconds+' s',clip.quality_score != null && clip.quality_score+'/100',clip.editing_engine].filter(Boolean).join(' · ')}</p>}
     {clip.schedule?.map(release=><div className="gaming-release" key={`${release.platform}-${release.at}`}><ReleaseTime release={release}/></div>)}
-    {(clip.instagram || clip.youtube) && <ul>{Object.keys(platformNames).filter(platform=>clip[platform]).map(platform=><li key={platform}><External href={clip[platform].url}>{platformNames[platform]}</External></li>)}</ul>}
+    <details open={Boolean(clip.processingStep)}><summary>Delivery status</summary><ReelDelivery clip={clip} onRun={onRun}/></details>
     {(clip.preview || clip.caption || clip.hashtags || clip.streamer || clip.start_seconds != null || clip.created_at) && <details><summary>Reel details</summary>
       {clip.preview && <External href={clip.preview}>Open private preview</External>}
       {clip.caption && <p>{clip.caption}</p>}{clip.hashtags && <p>{clip.hashtags}</p>}
@@ -177,6 +232,8 @@ export default function FunnyReelsStudio({initial,refresh}) {
   const [data,setData]=useState(initial),[error,setError]=useState(''),[now,setNow]=useState(0);
   const [section,setSection]=useState('dashboard'),[filter,setFilter]=useState('ready'),[limit,setLimit]=useState(8),[severity,setSeverity]=useState('All'),[revision,reload]=useState(0);
   const [month,setMonth]=useState(()=>studioDay(new Date()).slice(0,7));
+  const [runId,setRunId]=useState('');
+  function openRun(id){setRunId(id);setSection('execution');}
   useEffect(()=>{
     let disposed=false, timer, controller;
     async function poll(){
@@ -201,10 +258,12 @@ export default function FunnyReelsStudio({initial,refresh}) {
   const fresh=Boolean(data?.fresh && !error && (!now || age >= -30000 && age < 120000));
   const active=(data?.jobs || []).filter(isProcessing),queue=(data?.jobs || []).filter(isQueued).sort((a,b)=>(a.priority ?? Infinity)-(b.priority ?? Infinity) || Date.parse(a.requested_at || a.createdAt)-Date.parse(b.requested_at || b.createdAt));
   const job=dashboardExecution(data?.jobs || []);
+  const runs=runHistory(data?.jobs || []);
+  const viewedRun=runs.find(run=>String(run.execution_id)===runId) || job;
   const clips=data?.clips || [];
   const filteredClips=clips.filter(clip=>{
     const status=reelStatus(clip);
-    return status===filter || filter==='published' && Boolean(clip.instagram || clip.youtube);
+    return status===filter || filter==='published' && isReelPublished(clip);
   });
   const activity=(data?.events || []).filter(event=>severity==='All' || (severity==='Errors'&&/FAIL|ERROR/i.test(event.event_type)) ||
     (severity==='Warnings'&&/WARN|RETRY/i.test(event.event_type)) || (severity==='Milestones'&&!/FAIL|ERROR|WARN|RETRY/i.test(event.event_type)));
@@ -213,17 +272,20 @@ export default function FunnyReelsStudio({initial,refresh}) {
     {error && <p className="gaming-alert" role="alert">{error}</p>}
     <Tabs label="Gaming Studio" items={sectionTabs} value={section} onChange={setSection}>
       {section==='dashboard' && <>
-        <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(clip=>clip.instagram || clip.youtube || clip.published).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
+        <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(isReelPublished).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
         {job && isProcessing(job) && <Execution job={job} fresh={fresh} now={now} compact/>}
-        <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
+        <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available} onRun={openRun}/>
         <div className="gaming-side"><section className="gaming-card"><div className="gaming-row"><h2>Upcoming queue</h2><span className="gaming-pill">Intake paused</span></div>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued videos.</p>}</section>
           <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['Docker / n8n container',fresh&&data?.resources?.docker?'Running':'Not confirmed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources?.disk} waiting={!fresh || data?.resources?.disk==null}/></section>
         </div>
       </>}
-      {section==='execution' && <Execution key={job?.execution_id || job?.job_id} job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id && String(event.execution_id)===String(job?.execution_id))} fresh={fresh} now={now}/>}
+      {section==='execution' && <>
+        <ExecutionHistory runs={runs} value={String(viewedRun?.execution_id)===runId?runId:''} onChange={setRunId}/>
+        <Execution key={viewedRun?.execution_id || viewedRun?.job_id} job={viewedRun} events={(data?.events || []).filter(event=>event.job_id===viewedRun?.job_id && String(event.execution_id)===String(viewedRun?.execution_id))} fresh={fresh} now={now}/>
+      </>}
       {section==='reels' && <Tabs label="Reel status" items={reelTabs} value={filter} onChange={value=>{setFilter(value);setLimit(8);}}>
         <section className="gaming-card">
-          {filteredClips.length ? <div className="gaming-library">{filteredClips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip}/>)}</div>:<p>{data?.available?'No reels in this view.':'Reel data unavailable.'}</p>}
+          {filteredClips.length ? <div className="gaming-library">{filteredClips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip} onRun={openRun}/>)}</div>:<p>{data?.available?'No reels in this view.':'Reel data unavailable.'}</p>}
           {filteredClips.length>limit && <button type="button" onClick={()=>setLimit(n=>n+8)}>Show more reels</button>}
         </section>
       </Tabs>}

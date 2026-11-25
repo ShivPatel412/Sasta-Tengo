@@ -39,7 +39,18 @@
 .gaming-calendar-count{display:block;width:max-content;min-width:18px;margin:2px auto 0;padding:0 3px;border-radius:9px;background:var(--gaming-primary);color:#fff;font-size:10px}
 .gaming-schedule-list{list-style:none;padding:0}
 .gaming-schedule-list li{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 16px;border-top:1px solid var(--gaming-line);padding:9px 0}
+.gaming-schedule-list li>details{width:100%}
+.gaming-schedule-list summary time{margin-inline:8px;color:var(--gaming-muted);font-weight:400}
 .gaming-schedule-list li>div,.gaming-release{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;font-size:13px}
+.gaming-delivery,.gaming-segments{display:grid;gap:10px}
+.gaming-delivery button{justify-self:start}
+.gaming-history{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}
+.gaming-history>label,.gaming-history>div{display:grid;gap:5px}
+.gaming-history select{width:100%}
+.gaming-segment-scroll{max-height:18rem;overflow:auto;padding:4px}
+.gaming-segment-scroll ol{list-style:none;padding:0}
+.gaming-segment-scroll li{display:flex;justify-content:space-between;gap:12px;padding:8px 12px;border-bottom:1px solid var(--gaming-line)}
+.gaming-segment-scroll li[aria-current=step]{background:#e1efe6;color:var(--gaming-primary);border-radius:6px}
 .gaming-source{display:flex;align-items:center;gap:14px}
 .gaming-step-scroll{overflow-x:auto;padding:4px 4px 6px}
 .gaming-steps{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(7.75rem,1fr);gap:8px;list-style:none;padding:0}

@@ -103,6 +103,12 @@ def automations_data():
       'worker_executions', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT e.id,e.status FROM execution_entity e WHERE e.id::text IN (SELECT execution_id FROM "data_table_user_Ij8wnQ1Duve8Eno5" ORDER BY id DESC LIMIT 20)) t),
       'youtube_uploads', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_mpJSsahLGSp5xc90" ORDER BY id DESC LIMIT 250) t),
       'instagram_reels', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_8aPwNmzYRPGzoTKX" ORDER BY id DESC LIMIT 250) t),
+      'gaming_weekly_queue', (SELECT coalesce(json_agg(t), '[]'::json) FROM (
+        SELECT id, job_key, status, parent_job_id, title, source_id, start_seconds, end_seconds,
+               created_at, scheduled_for, instagram_state, youtube_state,
+               COALESCE(cover_path <> '', false) AS has_cover
+        FROM "data_table_user_iFBaRxpVvrX4Ffbj" WHERE lane='gaming' ORDER BY id DESC LIMIT 250
+      ) t),
       'linkedin_control', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_Yo7IUrn9QrIvYuwD" LIMIT 1) t),
       'linkedin_queue', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_3e6OLA0xHtHxwwPX" ORDER BY id DESC LIMIT 20) t),
       'linkedin_audit', (SELECT coalesce(json_agg(t), '[]'::json) FROM (SELECT * FROM "data_table_user_7BkyviIzDYMurW3c" ORDER BY id DESC LIMIT 20) t),
@@ -137,6 +143,7 @@ def automations_data():
             'streams': parsed.get('live_streams', []),
             'clips': clips,
             'instagram_reels': parsed.get('instagram_reels', []),
+            'weekly_queue': parsed.get('gaming_weekly_queue', []),
             'events': parsed.get('reel_events', []),
             'accounts': {'instagram': {'account_id': '17841467420993171', 'verified_username': 'sastatengo.clips', 'status': 'VERIFIED_AT_SETUP', 'verified_date': '2026-11-20'}, 'youtube': {'channel_id': 'UCjixoELED6wc8keo98Txa8w', 'channel': 'Sasta Tengo', 'handle': '@its.tango69', 'status': 'VERIFIED_AT_SETUP'}}
         },

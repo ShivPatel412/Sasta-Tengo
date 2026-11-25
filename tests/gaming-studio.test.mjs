@@ -56,7 +56,7 @@ test('keeps the last failed run and pairs the last cover step with a clip from t
   assert.equal(job.execution_id,'61413');
   assert.equal(job.failed,true);
   assert.deepEqual(job.step,{stage:'COVERS',name:'Generating cover and captions',clip:{number:3,total:10},stageProgress:null});
-  assert.deepEqual(job.steps[4],{at:'2026-11-25T07:26:10.000Z',clip:{number:3,total:10},progress:null});
+  assert.deepEqual(job.steps[4],{at:'2026-11-25T07:26:10.000Z',startedAt:'2026-11-25T07:26:10.000Z',durationSeconds:7,clip:{number:3,total:10},progress:null});
   assert.equal(job.steps[0].progress,100);
   assert.equal(job.steps[6],null);
   assert.deepEqual(analysisProgress(job),{completed:118,total:118,percent:100});
@@ -65,6 +65,45 @@ test('keeps the last failed run and pairs the last cover step with a clip from t
   assert.equal(dashboardExecution([job,active]),active);
   assert.equal(analysisProgress({segments_processed:119,segments_total:118}),null);
   assert.equal(analysisProgress({segments_processed:117,segments_total:118}).percent,99);
+});
+
+test('isolates segment evidence across attempts and recovers recorded historical runs',()=>{
+  const input=snapshot();
+  const records=input.automations.funny_reels;
+  records.jobs[0]={job_id:'job-1',execution_id:'21',stage:'ANALYZING',state:'PROCESSING',segments_processed:2,segments_total:5};
+  const event=(id,execution_id,message,stage='ANALYZING',event_type='WORKER_STEP')=>({id,job_id:'job-1',execution_id,message,stage,event_type,created_at:`2026-11-25T07:26:${String(id).padStart(2,'0')}Z`});
+  records.events=[event(5,'21','Analyzing · segment 3/5'),event(1,'20','Analyzing · segment 5/5'),event(2,'20','Selecting','SELECTING'),event(3,'20','Covers','COVERS')];
+  const result=gamingSnapshot(input,now);
+  assert.deepEqual(result.jobs[0].segments,{total:5,completed:2,current:3,rows:['completed','completed','processing','pending','pending']});
+  const old=result.jobs.find(job=>job.execution_id==='20');
+  assert.equal(old.archived,true);
+  assert.equal(old.state,'UNKNOWN');
+  assert.deepEqual(old.segments,{total:5,completed:5,current:null,rows:Array(5).fill('completed')});
+  records.events=[event(7,'21','Analyzing · segment 3/5','ANALYZING','SEGMENT_FAILED'),event(6,'21','Analyzing · segment 2/5','ANALYZING','SEGMENT_COMPLETED')];
+  assert.deepEqual(gamingSnapshot(input,now).jobs[0].segments,{total:5,completed:1,current:null,rows:['unknown','completed','failed','unknown','unknown']});
+  records.events.push(event(8,'21','Analyzing · segment 3/5','ANALYZING','SEGMENT_RETRIED'));
+  assert.equal(gamingSnapshot(input,now).jobs[0].segments.current,3);
+});
+
+test('weekly gaming queue distinguishes dated and undated reels and retains an active render',()=>{
+  const input=snapshot();
+  const records=input.automations.funny_reels;
+  records.jobs[0]={job_id:'job-1',execution_id:'21',stage:'RENDERING',state:'PROCESSING'};
+  records.events=[{id:1,job_id:'job-1',execution_id:'21',stage:'RENDERING',event_type:'WORKER_STEP',created_at:stamp,message:'Rendering · clip 2/8'}];
+  records.weekly_queue=[{parent_job_id:'job-1',job_key:'weekly1',title:'Weekly pick',status:'QUEUED',instagram_state:'WAITING_WEEKLY_SLOT',has_cover:true},
+    {parent_job_id:'job-1',job_key:'weekly2',title:'Assigned slot',status:'QUEUED',scheduled_for:'2026-11-30T20:00:00Z',last_error:'private trace'}];
+  const {clips}=gamingSnapshot(input,now);
+  const ready=clips.find(clip=>clip.title==='Weekly pick');
+  assert.equal(reelStatus(ready),'ready');
+  assert.equal(ready.delivery.platforms.instagram,'Waiting for a slot');
+  assert.equal(ready.delivery.coverReady,true);
+  assert.equal(ready.sourceExecution,'21');
+  const scheduled=clips.find(clip=>clip.title==='Assigned slot');
+  assert.equal(reelStatus(scheduled),'scheduled');
+  assert.equal(scheduled.delivery.platforms.youtube,'Scheduled');
+  assert.equal(scheduledReels(clips,'2026-12')[0].day,'2026-12-01');
+  assert.equal(clips.find(clip=>reelStatus(clip)==='processing')?.title,'Clip 2 of 8');
+  assert.doesNotMatch(JSON.stringify(clips),/private trace/);
 });
 
 test('a scheduled platform release belongs to the matching reel and displays in its IST month',()=>{
