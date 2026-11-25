@@ -49,12 +49,16 @@ test('keeps the last failed run and pairs the last cover step with a clip from t
   records.events=[
     {id:3,job_id:'job-1',execution_id:'61413',stage:'COVERS',event_type:'WORKER_STEP',created_at:stamp,message:'Covers'},
     {id:4,job_id:'job-1',execution_id:'111',stage:'RENDERING',event_type:'WORKER_STEP',created_at:stamp,message:'Rendering · clip 9/10'},
-    {id:2,job_id:'job-1',execution_id:'61413',stage:'RENDERING',event_type:'WORKER_STEP',created_at:'2026-11-25T07:26:10Z',message:'Rendering · clip 3/10'}
+    {id:2,job_id:'job-1',execution_id:'61413',stage:'RENDERING',event_type:'WORKER_STEP',created_at:'2026-11-25T07:26:10Z',message:'Rendering · clip 3/10'},
+    {id:1,job_id:'job-1',execution_id:'61413',stage:'DOWNLOADED',event_type:'WORKER_STEP',created_at:'2026-11-25T07:20:00Z'}
   ];
   const job=dashboardExecution(gamingSnapshot(input,now).jobs);
   assert.equal(job.execution_id,'61413');
   assert.equal(job.failed,true);
   assert.deepEqual(job.step,{stage:'COVERS',name:'Generating cover and captions',clip:{number:3,total:10},stageProgress:null});
+  assert.deepEqual(job.steps[4],{at:'2026-11-25T07:26:10.000Z',clip:{number:3,total:10},progress:null});
+  assert.equal(job.steps[0].progress,100);
+  assert.equal(job.steps[6],null);
   assert.deepEqual(analysisProgress(job),{completed:118,total:118,percent:100});
   assert.equal(job.overall,null);
   const active={execution_id:'new',state:'PROCESSING'};
