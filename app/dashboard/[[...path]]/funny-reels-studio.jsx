@@ -103,12 +103,24 @@ function Execution({job,events=[],fresh,now,compact=false}) {
   const stop = running && fresh && heartbeatFresh ? now : Date.parse(job.finished_at || job.last_heartbeat_at);
   const elapsed = Number.isFinite(started) && stop >= started ? Math.floor((stop-started)/60000)+' min' : 'Not reported';
   const step = job.step;
+  const clip = step?.clip;
   const current = stages.findIndex(([,keys])=>keys.includes(step?.stage || job.stage));
   const analysis = analysisProgress(job);
   const status = running ? fresh&&heartbeatFresh?'Processing':'Last reported' : cancelled?'Cancelled':job.failed?'Failed':'Completed';
   return <section className="gaming-card"><div className="gaming-row"><h2>{running?'Current execution':'Last execution'}</h2><span className={`gaming-pill${status==='Failed'?' gaming-pill-error':''}`}>{status}</span></div>
     <div className="gaming-source"><Thumbnail id={job.video_id}/><div><h3>{job.title || job.video_id || job.job_id}</h3>{job.workflow_version && <p>{job.workflow_version}</p>}{!compact && <External href={sourceLink(job.video_id)}>Source video</External>}</div></div>
-    <div className="gaming-step"><p>{running?'Current step':'Last step'}</p><strong>{step?.name || (job.stage && running ? label(job.stage) : 'Not reported')}</strong>{step?.clip && <span>Clip {step.clip.number} of {step.clip.total}</span>}</div>
+    {!compact && <div className="gaming-step-scroll" role="region" aria-label="Processing steps" tabIndex={0}>
+      <ol className="gaming-steps" role="list">{stages.map(([name,keys],index)=>{
+        const selected = current===index;
+        const reported = events.some(event=>keys.includes(event.stage));
+        return <li key={name} aria-current={selected?'step':undefined}>
+          <span className="gaming-step-number">{index+1}</span><strong>{name}</strong>
+          {selected ? <small>{running?'Current step':'Last step'}</small> : reported && <small>Reported</small>}
+        </li>;
+      })}</ol>
+    </div>}
+    <div className="gaming-step"><p>{running?'Current step':'Last step'}</p><strong>{step?.name || (job.stage && running ? label(job.stage) : 'Not reported')}</strong>{compact && clip && <span>Clip {clip.number} of {clip.total}</span>}</div>
+    {!compact && clip && <Progress name="Clip position" value={Math.floor(clip.number/clip.total*100)} detail={`${clip.number}/${clip.total}`}/>}
     {step?.stageProgress != null && !(step.stage==='ANALYZING' && analysis) && <Progress name="Step progress" value={step.stageProgress}/>}
     {analysis && <Progress name="Segments analysed" value={analysis.percent} detail={`${analysis.completed} / ${analysis.total}`}/>}
     {job.overall != null && <Progress name="Overall progress" value={job.overall}/>}
@@ -117,11 +129,7 @@ function Execution({job,events=[],fresh,now,compact=false}) {
       <div><dt>Elapsed</dt><dd>{elapsed}</dd></div><div><dt>Last heartbeat</dt><dd>{time(job.last_heartbeat_at)}</dd></div>
       <div><dt>Execution</dt><dd>{job.execution_id || '—'}</dd></div><div><dt>Retries</dt><dd>{job.retry_count ?? '—'}</dd></div>
     </dl>
-    <details><summary>Processing timeline</summary>
-      <ol className="gaming-timeline">{stages.map(([name,keys],index)=>{
-        const reported=events.some(event=>keys.includes(event.stage));
-        return <li key={name}><span>{name}</span><strong>{current===index ? running?'Current':'Last reported' : reported ? 'Reported' : 'No event'}</strong></li>;
-      })}</ol>
+    <details><summary>Execution details</summary>
       <dl className="gaming-facts">
         <div><dt>Current segment</dt><dd>{job.current_segment ?? 'Not reported'}</dd></div>
         <div><dt>Duration / resolution</dt><dd>{job.duration_seconds ? job.duration_seconds+' s' : '—'} / {job.resolution || '—'}</dd></div>
@@ -195,13 +203,13 @@ export default function FunnyReelsStudio({initial,refresh}) {
     <Tabs label="Gaming Studio" items={sectionTabs} value={section} onChange={setSection}>
       {section==='dashboard' && <>
         <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(clip=>clip.instagram || clip.youtube || clip.published).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
-        {job && <Execution job={job} fresh={fresh} now={now} compact/>}
+        {job && isProcessing(job) && <Execution job={job} fresh={fresh} now={now} compact/>}
         <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
         <div className="gaming-side"><section className="gaming-card"><div className="gaming-row"><h2>Upcoming queue</h2><span className="gaming-pill">Intake paused</span></div>{queue.length ? <ol>{queue.map(item=><li key={item.job_id}><strong>{item.title || item.video_id || item.job_id}</strong><p>{time(item.requested_at || item.createdAt)} · {label(item.state)}</p><External href={sourceLink(item.video_id)}>Open source</External></li>)}</ol> : <p>No queued videos.</p>}</section>
           <section className="gaming-card"><h2>System health</h2><dl className="gaming-facts">{[['n8n',data?.n8nFresh&&fresh?'Recent status':'Status unavailable'],['Docker / n8n container',fresh&&data?.resources?.docker?'Running':'Not confirmed']].map(([key,value])=><div key={key}><dt>{key}</dt><dd>{value}</dd></div>)}</dl><Progress name="Disk used" value={data?.resources?.disk} waiting={!fresh || data?.resources?.disk==null}/></section>
         </div>
       </>}
-      {section==='execution' && <Execution job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id)} fresh={fresh} now={now}/>}
+      {section==='execution' && <Execution job={job} events={(data?.events || []).filter(event=>event.job_id===job?.job_id && String(event.execution_id)===String(job?.execution_id))} fresh={fresh} now={now}/>}
       {section==='reels' && <Tabs label="Reel status" items={reelTabs} value={filter} onChange={value=>{setFilter(value);setLimit(8);}}>
         <section className="gaming-card">
           {filteredClips.length ? <div className="gaming-library">{filteredClips.slice(0,limit).map(clip=><Reel key={clip.id} clip={clip}/>)}</div>:<p>{data?.available?'No reels in this view.':'Reel data unavailable.'}</p>}
