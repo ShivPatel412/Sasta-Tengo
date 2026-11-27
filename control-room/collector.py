@@ -166,6 +166,17 @@ def collect():
             if name in previous and (name != 'n8n' or previous[name].get('scope') == N8N_SCOPE):
                 result[name]=previous[name]
                 result['source_updated_at'][name]=previous.get('source_updated_at',{}).get(name)
+    # V7 exports only bounded execution metadata, independently of semantic analysis.
+    v7 = pathlib.Path("/home/patelsastatengo/projects/shiv-os-gaming-v7/jobs/production/progress.json")
+    try:
+        if v7.stat().st_size > 200_000:
+            raise ValueError("V7 status exceeds size limit")
+        progress = json.loads(v7.read_text())
+        if progress.get("schema") != "v7-production-progress-v1":
+            raise ValueError("Unexpected V7 status schema")
+        result.setdefault("automations", {})["gaming_v7"] = progress
+    except (OSError, ValueError):
+        result["errors"]["gaming_v7"] = "StatusUnavailable"
     disk=shutil.disk_usage('/mnt/c')
     usage=shutil.disk_usage('/')
     result['storage']={'total':disk.total,'used':disk.used,'free':disk.free,'wsl_virtual_free':usage.free}

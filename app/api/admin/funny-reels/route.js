@@ -1,6 +1,7 @@
 import {admin,sameOrigin} from '../../../../lib/auth.mjs';
 import {assertWritable,body,handle,HttpError} from '../../../../lib/db.mjs';
 import {controlSnapshot} from '../../../../lib/control-room.mjs';
+import {gamingV7} from '../../../../lib/gaming-v7.mjs';
 import {gamingSnapshot} from '../../../../lib/gaming-studio.mjs';
 import {reelSubmission} from '../../../../lib/reel-dispatch.mjs';
 import {validateVideoSubmission} from '../../../../lib/funny-reels.mjs';
@@ -11,7 +12,8 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return handle(async () => {
     await admin();
-    return Response.json(gamingSnapshot(await controlSnapshot()), {headers:{'Cache-Control':'private, no-store'}});
+    const snapshot = await controlSnapshot();
+    return Response.json({...gamingSnapshot(snapshot), v7:gamingV7(snapshot?.automations?.gaming_v7)}, {headers:{'Cache-Control':'private, no-store'}});
   });
 }
 

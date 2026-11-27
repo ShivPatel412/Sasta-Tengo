@@ -7,6 +7,7 @@ import {adminApi} from '../../../lib/dashboard-client.mjs';
 import {CONNECTED_ACCOUNTS} from '../../../lib/funny-reels.mjs';
 import {analysisProgress,dashboardExecution,isProcessing,isQueued,isReelPublished,newerGamingSnapshot,publishingDays,reelStatus,runHistory,stages,studioDay,studioTimeZone} from '../../../lib/gaming-studio.mjs';
 import './gaming-studio.css';
+import GamingV7Progress from './gaming-v7-progress';
 
 const date = new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:studioTimeZone});
 const time = value => Number.isFinite(Date.parse(value)) ? date.format(new Date(value)) : 'Not reported';
@@ -300,6 +301,7 @@ export default function FunnyReelsStudio({initial,refresh}) {
     {error && <p className="gaming-alert" role="alert">{error}</p>}
     <Tabs label="Gaming Studio" items={sectionTabs} value={section} onChange={setSection}>
       {section==='dashboard' && <>
+        <GamingV7Progress snapshot={data?.v7}/>
         <div className="gaming-summary">{[[Activity,'Processing',active.length],[ListVideo,'In queue',queue.length],[Clapperboard,'Published',clips.filter(isReelPublished).length]].map(([Icon,name,count])=><section className="gaming-card" key={name}><div className="gaming-row"><h2>{name}</h2><Icon size={18} aria-hidden="true"/></div><strong>{data?.available?count:'—'}</strong></section>)}</div>
         {job && isProcessing(job) && <Execution job={job} fresh={fresh} now={now} compact/>}
         <ScheduleCalendar clips={clips} month={month} setMonth={setMonth} available={data?.available}/>
