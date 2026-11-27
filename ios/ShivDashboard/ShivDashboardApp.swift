@@ -247,6 +247,7 @@ struct DashboardTabs: View {
             OverviewView().tabItem { Label("Overview", systemImage: "square.grid.2x2") }
             CRMView().tabItem { Label("Lead CRM", systemImage: "person.2") }
             TaskBoardView().tabItem { Label("Tasks", systemImage: "rectangle.split.3x1") }
+            GamingStudioView().tabItem { Label("Gaming Studio", systemImage: "gamecontroller") }
             WorkflowView().tabItem { Label("Workflows", systemImage: "arrow.triangle.branch") }
             PortfolioView().tabItem { Label("Portfolio", systemImage: "briefcase") }
         }

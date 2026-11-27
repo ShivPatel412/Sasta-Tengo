@@ -1,4 +1,5 @@
 import SwiftUI
+import WebKit
 
 struct OverviewView: View {
     @EnvironmentObject private var session: DashboardSession
@@ -10,6 +11,7 @@ struct OverviewView: View {
     @State private var error: String?
     @State private var confirmLogout = false
     @State private var updated: Date?
+    @State private var destination: OverviewDestination?
 
     var body: some View {
         NavigationStack {
@@ -41,12 +43,12 @@ struct OverviewView: View {
                 if loading && counts.isEmpty { ProgressView("Loading dashboard…") }
                 if !counts.isEmpty {
                     Section("At a glance") {
-                        metric("Contact leads", key: "contacts", icon: "envelope")
-                        metric("Unread contacts", key: "unread_contacts", icon: "envelope.badge")
-                        metric("Inquiries & bookings", key: "appointments", icon: "bubble.left.and.bubble.right")
-                        metric("Pending requests", key: "pending_requests", icon: "clock")
-                        metric("Projects", key: "projects", icon: "square.stack.3d.up")
-                        metric("Experience", key: "experience", icon: "briefcase")
+                        metric(.contacts, key: "contacts", icon: "envelope")
+                        metric(.unread, key: "unread_contacts", icon: "envelope.badge")
+                        metric(.inquiries, key: "appointments", icon: "bubble.left.and.bubble.right")
+                        metric(.pending, key: "pending_requests", icon: "clock")
+                        metric(.projects, key: "projects", icon: "square.stack.3d.up")
+                        metric(.experience, key: "experience", icon: "briefcase")
                     }
                     if !pipeline.isEmpty {
                         Section("Lead pipeline") {
@@ -64,6 +66,10 @@ struct OverviewView: View {
                 }
             }
             .navigationTitle("Overview")
+            .sheet(item: $destination, onDismiss: { Task { await load() } }) { selected in
+                RecordList(resource: selected.resource, filter: selected.filter,
+                           includeBookings: true, presented: true, listTitle: selected.title)
+            }
             .alert("Couldn’t open Alexa", isPresented: $alexaUnavailable) {
                 Button("OK", role: .cancel) { }
             } message: {
@@ -83,12 +89,17 @@ struct OverviewView: View {
         }
     }
 
-    private func metric(_ name: String, key: String, icon: String) -> some View {
+    private func metric(_ target: OverviewDestination, key: String, icon: String) -> some View {
+        Button { destination = target } label: {
         HStack {
-            Label(name, systemImage: icon)
+            Label(target.title, systemImage: icon).foregroundStyle(.primary)
             Spacer()
             Text(counts[key]?.text ?? "0").font(.title3.monospacedDigit().bold()).foregroundStyle(.indigo)
+            Image(systemName: "chevron.right").font(.caption).foregroundStyle(.secondary)
         }.padding(.vertical, 3)
+        }
+        .accessibilityIdentifier("overview.\(target.rawValue)")
+        .accessibilityHint("Opens \(target.title.lowercased())")
     }
 
     private func load() async {
@@ -103,6 +114,130 @@ struct OverviewView: View {
             updated = Date()
         } catch { if !Task.isCancelled { self.error = error.localizedDescription } }
     }
+}
+
+struct GamingStudioView: View {
+    @EnvironmentObject private var session: DashboardSession
+    @StateObject private var browser = GamingStudioBrowser()
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                if browser.loading { ProgressView("Loading Gaming Studio…").padding() }
+                if let error = browser.error {
+                    ErrorNotice(message: error).padding()
+                    Button("Try again") { Task { await openStudio() } }.padding(.bottom)
+                }
+                GamingStudioWebView(browser: browser)
+            }
+            .navigationTitle("Gaming Studio")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                Button { Task { await openStudio() } } label: { Label("Reload Gaming Studio", systemImage: "arrow.clockwise") }
+                    .disabled(browser.loading)
+            }
+            .task { await openStudio() }
+        }
+    }
+
+    private func openStudio() async {
+        browser.onUnauthorized = {
+            session.api.clearCookies()
+            session.user = nil
+            session.notice = "Your session expired. Use Face ID or sign in again."
+        }
+        do {
+            try await session.refreshSession()
+            await browser.load(cookie: session.api.loginCookie)
+        } catch { browser.error = error.localizedDescription }
+    }
+}
+
+@MainActor
+final class GamingStudioBrowser: NSObject, ObservableObject, WKNavigationDelegate, WKUIDelegate {
+    @Published var loading = false
+    @Published var error: String?
+    var onUnauthorized: (() -> Void)?
+    let webView: WKWebView
+
+    override init() {
+        let configuration = WKWebViewConfiguration()
+        configuration.websiteDataStore = .nonPersistent()
+        configuration.allowsInlineMediaPlayback = true
+        webView = WKWebView(frame: .zero, configuration: configuration)
+        super.init()
+        webView.navigationDelegate = self
+        webView.uiDelegate = self
+        webView.allowsBackForwardNavigationGestures = true
+    }
+
+    func load(cookie: HTTPCookie?) async {
+        error = nil
+        guard let cookie, cookie.isSecure, cookie.domain == "www.shivpatel.in",
+              cookie.name == "shiv_admin", cookie.expiresDate.map({ $0 > Date() }) != false else {
+            error = "Sign in again to open Gaming Studio."
+            return
+        }
+        loading = true
+        await webView.configuration.websiteDataStore.httpCookieStore.setCookie(cookie)
+        guard !Task.isCancelled else { loading = false; return }
+        webView.load(URLRequest(url: StudioNavigation.home, cachePolicy: .reloadIgnoringLocalCacheData))
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor action: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = action.request.url else { decisionHandler(.cancel); return }
+        if StudioNavigation.isWebsite(url) {
+            if url.path == "/dashboard/login" {
+                decisionHandler(.cancel)
+                loading = false
+                onUnauthorized?()
+            } else { decisionHandler(.allow) }
+        } else {
+            decisionHandler(.cancel)
+            if action.navigationType == .linkActivated && StudioNavigation.isExternalLink(url) {
+                UIApplication.shared.open(url)
+            }
+        }
+    }
+
+    func webView(_ webView: WKWebView, decidePolicyFor response: WKNavigationResponse,
+                 decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void) {
+        if response.isForMainFrame, let http = response.response as? HTTPURLResponse, http.statusCode >= 400 {
+            decisionHandler(.cancel)
+            loading = false
+            if http.statusCode == 401 { onUnauthorized?() }
+            else { error = "Gaming Studio returned HTTP \(http.statusCode). Try refreshing." }
+        } else { decisionHandler(.allow) }
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) { loading = false }
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) { failed(error) }
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) { failed(error) }
+    func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
+        loading = false
+        error = "Gaming Studio stopped loading. Tap Try again to reload."
+    }
+    private func failed(_ failure: Error) {
+        guard (failure as NSError).code != NSURLErrorCancelled else { return }
+        loading = false
+        error = failure.localizedDescription
+    }
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+                 for action: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if let url = action.request.url, StudioNavigation.isExternalLink(url) {
+            if StudioNavigation.isWebsite(url) { webView.load(action.request) }
+            else { UIApplication.shared.open(url) }
+        }
+        return nil
+    }
+}
+
+struct GamingStudioWebView: UIViewRepresentable {
+    let browser: GamingStudioBrowser
+    func makeUIView(context: Context) -> WKWebView { browser.webView }
+    func updateUIView(_ view: WKWebView, context: Context) { }
+    static func dismantleUIView(_ view: WKWebView, coordinator: ()) { view.stopLoading() }
 }
 
 struct ResourceSwitcher: View {
@@ -390,8 +525,13 @@ struct WorkflowView: View {
 
 struct RecordList: View {
     @EnvironmentObject private var session: DashboardSession
+    @Environment(\.dismiss) private var dismiss
     let resource: Resource
     var picker: AnyView? = nil
+    var filter = ""
+    var includeBookings = false
+    var presented = false
+    var listTitle: String? = nil
     @State private var records: [Record] = []
     @State private var search = ""
     @State private var page = 0
@@ -438,7 +578,10 @@ struct RecordList: View {
                     }.disabled(loading)
                 }
             }
-            .navigationTitle(resource.title)
+            .navigationTitle(listTitle ?? resource.title)
+            .toolbar {
+                if presented { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            }
             .searchable(text: $search, prompt: "Search \(resource.title.lowercased())")
             .refreshable { await load(reset: true) }
             .task(id: search) {
@@ -456,8 +599,7 @@ struct RecordList: View {
         if reset { records = []; total = 0; page = 0 }
         defer { if requestID == token { loading = false } }
         do {
-            var query = [URLQueryItem(name: "page", value: String(next)), URLQueryItem(name: "search", value: search)]
-            if resource == .appointments { query.append(URLQueryItem(name: "kind", value: "requests")) }
+            let query = resource.listQuery(page: next, search: search, filter: filter, includeBookings: includeBookings)
             let response = try await session.api.request(resource.rawValue, query: query).object
             guard requestID == token, !Task.isCancelled else { return }
             let incoming = (response["data"]?.array ?? []).map { Record(fields: $0.object) }

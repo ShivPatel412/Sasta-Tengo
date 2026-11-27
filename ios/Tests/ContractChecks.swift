@@ -20,6 +20,25 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
 @main
 struct ContractChecks {
     @MainActor static func main() async throws {
+        assert(OverviewDestination.allCases.count == 6)
+        assert(OverviewDestination.unread.resource == .contacts && OverviewDestination.unread.filter == "unread")
+        assert(OverviewDestination.pending.resource == .appointments && OverviewDestination.pending.filter == "pending")
+        assert(OverviewDestination.inquiries.resource == .appointments && OverviewDestination.inquiries.filter.isEmpty)
+        assert(OverviewDestination.projects.resource == .projects && OverviewDestination.experience.resource == .experiences)
+        let unreadQuery = Resource.contacts.listQuery(page: 2, search: "A&B", filter: OverviewDestination.unread.filter)
+        assert(unreadQuery.contains(URLQueryItem(name: "filter", value: "unread")))
+        assert(unreadQuery.contains(URLQueryItem(name: "page", value: "2")))
+        let pendingQuery = Resource.appointments.listQuery(page: 1, search: "", filter: "pending", includeBookings: true)
+        assert(pendingQuery.contains(URLQueryItem(name: "filter", value: "pending")))
+        assert(!pendingQuery.contains { $0.name == "kind" })
+        assert(Resource.appointments.listQuery(page: 1, search: "").contains(URLQueryItem(name: "kind", value: "requests")))
+        assert(StudioNavigation.isWebsite(StudioNavigation.home))
+        for rejected in ["http://www.shivpatel.in/dashboard", "https://www.shivpatel.in.evil.test/dashboard", "https://evil.test/dashboard", "https://www.shivpatel.in:444/dashboard", "https://user:pass@www.shivpatel.in/dashboard"] {
+            assert(!StudioNavigation.isWebsite(URL(string: rejected)!))
+        }
+        assert(StudioNavigation.isExternalLink(URL(string: "https://www.youtube.com/watch?v=fixture")!))
+        assert(!StudioNavigation.isExternalLink(URL(string: "javascript:alert(1)")!))
+        assert(!StudioNavigation.isExternalLink(URL(string: "file:///tmp/fixture")!))
         let decoded = try JSONDecoder().decode(JSON.self, from: Data(#"{"data":[{"id":"9007199254740993","is_current":true,"technologies":["Swift"],"end_date":null}],"count":"21"}"#.utf8))
         assert(decoded.object["count"]?.integer == 21)
         assert(decoded.object["data"]?.array.first?.object["id"]?.text == "9007199254740993")

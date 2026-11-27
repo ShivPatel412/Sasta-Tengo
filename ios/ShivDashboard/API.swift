@@ -69,6 +69,12 @@ enum Resource: String, CaseIterable, Identifiable {
     }
     var editable: Bool { true }
     var isLead: Bool { self == .contacts || self == .appointments }
+    func listQuery(page: Int, search: String, filter: String = "", includeBookings: Bool = false) -> [URLQueryItem] {
+        var items = [URLQueryItem(name: "page", value: String(page)), URLQueryItem(name: "search", value: search)]
+        if self == .appointments && !includeBookings { items.append(URLQueryItem(name: "kind", value: "requests")) }
+        if !filter.isEmpty { items.append(URLQueryItem(name: "filter", value: filter)) }
+        return items
+    }
     func name(_ record: Record) -> String {
         record.text(self == .contacts ? "name" : self == .appointments ? "client_name" : "title")
     }
@@ -81,6 +87,41 @@ struct APIError: LocalizedError {
     let status: Int
     let message: String
     var errorDescription: String? { message }
+}
+
+enum OverviewDestination: String, Identifiable, CaseIterable {
+    case contacts, unread, inquiries, pending, projects, experience
+    var id: String { rawValue }
+    var resource: Resource {
+        switch self {
+        case .contacts, .unread: return .contacts
+        case .inquiries, .pending: return .appointments
+        case .projects: return .projects
+        case .experience: return .experiences
+        }
+    }
+    var filter: String { self == .unread ? "unread" : self == .pending ? "pending" : "" }
+    var title: String {
+        switch self {
+        case .contacts: return "Contact leads"
+        case .unread: return "Unread contacts"
+        case .inquiries: return "Inquiries & bookings"
+        case .pending: return "Pending requests"
+        case .projects: return "Projects"
+        case .experience: return "Experience"
+        }
+    }
+}
+
+enum StudioNavigation {
+    static let home = URL(string: APIClient.origin + "/dashboard/funny-reels")!
+    static func isWebsite(_ url: URL) -> Bool {
+        url.scheme == "https" && url.host == "www.shivpatel.in" && (url.port == nil || url.port == 443)
+            && url.user == nil && url.password == nil
+    }
+    static func isExternalLink(_ url: URL) -> Bool {
+        url.scheme == "https" && url.host != nil && url.user == nil && url.password == nil
+    }
 }
 
 // Never forward a login body or session to a redirected host or downgrade HTTPS.
@@ -96,7 +137,7 @@ final class SameOriginRedirects: NSObject, URLSessionTaskDelegate, @unchecked Se
 
 @MainActor
 final class APIClient {
-    static let origin = "https://www.shivpatel.in"
+    nonisolated static let origin = "https://www.shivpatel.in"
     private let session: URLSession
     var onUnauthorized: (() -> Void)?
 

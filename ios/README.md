@@ -12,7 +12,8 @@ For your physical iPhone, select your Apple development team under the app targe
 
 ## Included
 
-- Overview with website counts and lead pipeline. Inquiry totals include bookings, matching the existing website statistics endpoint.
+- Overview counts open their corresponding record lists. Unread contacts and pending requests use the server’s filters; inquiry and pending lists include bookings so records match the displayed totals. Tap Done to return and refresh the counts.
+- Gaming Studio opens the existing responsive website studio inside the app, reusing the current website session. Execution tracking, segments, reel library, publishing calendar and logs match the website; controls unavailable on the website remain unavailable here. Its web cookies/cache stay in a nonpersistent, memory-only web view. Expired login returns to native sign-in; network errors offer retry. External HTTPS links open outside the embedded studio. The native app does not receive worker credentials or start a second dispatcher.
 - Overview → Home PC → **Open Alexa to wake Shiv** opens the installed Amazon Alexa app. Turn on the device named **Shiv** there, or ask “Alexa, turn on Shiv.” The button only opens Alexa; it does not send a wake command or confirm that the PC is awake. The linked RemoteRelay skill and your home Echo must remain available. Sleep wake has been tested by the owner; shutdown wake and wake over mobile data still need separate verification. If Alexa cannot open, the dashboard shows installation/opening instructions. Uses Amazon’s documented [`alexa://` iOS link](https://developer.amazon.com/en-GB/blogs/alexa/device-makers/2020/06/creating-a-great-out-of-the-box-experience).
 - Task Kanban: create/edit tasks, project names, priorities and due dates; drag cards or use Move to for stage changes.
 - Lead CRM board: move both lead sources through the pipeline; open a lead and tap Edit for internal notes, read state or request status. Submitted form answers are preserved.
@@ -35,6 +36,8 @@ The app uses an ephemeral URLSession with no disk cache or URL credential storag
 Deploy the backend and apply the additive workspace migration before using Tasks and Workflows. See [workspace management setup](../docs/WORKSPACE-MANAGEMENT.md). Rebuild and run this updated app from Xcode to install these features on your iPhone.
 
 ## Validation
+
+See [distribution options](DISTRIBUTION.md) for the seven-day signing limit and the App Store release path.
 
 Run the isolated API and editor contract checks on macOS:
 
