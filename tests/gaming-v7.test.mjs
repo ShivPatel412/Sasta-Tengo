@@ -47,3 +47,11 @@ test('V7 retains cancellation and exact QA lifecycle while ignoring invalid coun
  assert.equal(result.counts.mock.complete,0);
 });
 
+
+test('V7 summary totals remain accurate beyond the bounded visible job list',()=>{
+ const jobs=Array.from({length:201},(_,index)=>({...input.jobs[0],id:index.toString(16).padStart(64,'0')}));
+ const result=gamingV7({...input,jobs,counts:{mock:{total:201,complete:201},real:{total:0,complete:0}}},now);
+ assert.equal(result.jobs.length,200);
+ assert.equal(result.counts.mock.total,201);
+ assert.equal(result.counts.mock.complete,201);
+});
