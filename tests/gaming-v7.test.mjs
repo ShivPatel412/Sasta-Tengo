@@ -55,3 +55,13 @@ test('V7 summary totals remain accurate beyond the bounded visible job list',()=
  assert.equal(result.counts.mock.total,201);
  assert.equal(result.counts.mock.complete,201);
 });
+
+test('V7 exposes measured audiovisual windows without inventing an emotional scoring percentage',()=>{
+ const result=gamingV7({...input,upstream:{analysis_windows_complete:38,
+  analysis_windows_review_required:1,analysis_windows_invalid:0,emotional_analysis_status:'REVIEW_REQUIRED'}},now);
+ assert.equal(result.upstream.analysis_windows_complete,38);
+ assert.equal(result.upstream.analysis_windows_review_required,1);
+ assert.equal(result.upstream.emotional_analysis_status,'REVIEW_REQUIRED');
+ assert.equal(result.upstream.emotional_analysis_percentage,undefined);
+ assert.deepEqual(gamingV7(result,now),result);
+});
